@@ -1,0 +1,23 @@
+*~
+*.diff
+*.patch
+.DS_Store
+#ignore folders
+#-----------------------------
+target/dentalfusioni/
+target/classes/
+target/m2e-wtp
+target/maven-archiver/
+target/maven-status/
+target/dentalfusioni.war
+.settings/
+#-----------------------------
+// file
+.classpath
+.factorypath
+.project
+#-----------------------------
+/target/
+#-----------------------------
+# FRONTEND BUILD OUTPUT (Nuovo!)
+src/main/resources/static/
