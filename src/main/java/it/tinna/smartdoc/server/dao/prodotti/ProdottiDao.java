@@ -26,7 +26,8 @@ public class ProdottiDao extends BaseDao {
         super(jdbcTemplate);
     }
 
-    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir) throws SQLException {
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro) throws SQLException {
         BeanPropertyRowMapper<ProdottoDto> rowMapper = new BeanPropertyRowMapper<>(ProdottoDto.class);
         try {
             String query = FileQueryReader.getQuery("PRODOTTI_S01");
@@ -52,7 +53,43 @@ public class ProdottiDao extends BaseDao {
             args.add(searchLike);
             args.add(searchLike);
             args.add(searchLike);
-
+            
+            // Inject Advanced Filters BEFORE "ORDER BY"
+            StringBuilder sb = new StringBuilder();
+            
+            // Giacenza
+            if (giacenza != null) {
+                // Validate operator
+                String op = ">=";
+                if (operatoreGiacenza != null) {
+                    if ("=".equals(operatoreGiacenza) || ">=".equals(operatoreGiacenza) || "<=".equals(operatoreGiacenza) || ">".equals(operatoreGiacenza) || "<".equals(operatoreGiacenza)) {
+                        op = operatoreGiacenza;
+                    }
+                }
+                sb.append(" AND get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, 1) ").append(op).append(" ? ");
+                args.add(giacenza);
+            }
+            
+            // Fornitore
+            if (idFornitore != null) {
+                sb.append(" AND k_d_e_fornitori = ? ");
+                args.add(idFornitore);
+            }
+            
+            // Tono
+            if (idTono != null) {
+                sb.append(" AND k_d_e_toniarticolo = ? ");
+                args.add(idTono);
+            }
+            
+            // Calibro
+            if (idCalibro != null) {
+                sb.append(" AND k_d_e_calibriarticolo = ? ");
+                args.add(idCalibro);
+            }
+            
+            query = query.replace("${EXTRA_FILTERS}", sb.toString());
+            
             // Dynamic Ordering
             String orderBy = "descrizione"; // Default
             switch (orderColumn) {

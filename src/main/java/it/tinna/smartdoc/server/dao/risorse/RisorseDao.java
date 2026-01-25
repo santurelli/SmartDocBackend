@@ -61,7 +61,7 @@ public class RisorseDao extends BaseDao {
         sql = sql.replace("${LIMIT}", limit);
         
         String searchTerm = (search != null && !search.isEmpty()) ? "%" + search + "%" : null;
-        return jdbcTemplate.query(sql, rowMapper, tipologia, searchTerm, searchTerm);
+        return jdbcTemplate.query(sql, rowMapper, tipologia, searchTerm);
     }
 
     public List<RisorsaDto> getListForCombo(String tipologia) throws SQLException {

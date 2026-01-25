@@ -4735,6 +4735,7 @@
 			    	OR LOWER(codice_fiscale) LIKE ?)
 			   AND fl_deleted = 0 
 		  ORDER BY denominazione
+		  LIMIT 50
 		</content>
 	</query>
 	<query name="FORNITORI_S07">
@@ -8055,6 +8056,7 @@
  					  AND (   LOWER(codice) LIKE COALESCE(LOWER(?), LOWER(codice))
 					       OR LOWER(d_e_prodotti.descrizione) LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.descrizione))
 					       OR COALESCE(LOWER(d_e_categorie.descrizione), '') LIKE COALESCE(LOWER(?), LOWER(d_e_categorie.descrizione), ''))
+				 ${EXTRA_FILTERS}
 				 ORDER BY ${ORDER_BY}
 				 ${LIMIT}
 					) x

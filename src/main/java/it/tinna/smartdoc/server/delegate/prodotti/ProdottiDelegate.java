@@ -18,9 +18,10 @@ public class ProdottiDelegate extends BaseDelegate {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir) throws SQLException {
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir,
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro) throws SQLException {
         ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.getList(categoria, search, length, start, orderColumn, orderDir);
+        return dao.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro);
     }
 
     public ProdottoDto getById(long id) throws SQLException {

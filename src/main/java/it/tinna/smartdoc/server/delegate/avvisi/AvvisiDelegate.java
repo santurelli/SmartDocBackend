@@ -39,8 +39,8 @@ public class AvvisiDelegate {
     }
 
     @Transactional
-    public void delete(Integer id) throws SQLException {
-        avvisiDao.delete(id);
+    public void delete(Integer id, Integer userId) throws SQLException {
+        avvisiDao.delete(id, userId);
     }
     
     public boolean isExistent(String descrizione, Integer id) throws SQLException {

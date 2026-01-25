@@ -48,7 +48,21 @@ public class ArticoliController {
             int orderColumn = (int) params.getOrDefault("orderColumn", 0);
             String orderDir = (String) params.getOrDefault("orderDir", "asc");
 
-            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir);
+            Object giacenzaObj = params.get("giacenza");
+            Double giacenza = (giacenzaObj != null && !"".equals(giacenzaObj.toString())) ? Double.parseDouble(giacenzaObj.toString()) : null;
+            
+            String operatoreGiacenza = (String) params.get("operatoreGiacenza");
+            
+            Object idFornitoreObj = params.get("idFornitore");
+            Integer idFornitore = (idFornitoreObj != null && !"".equals(idFornitoreObj.toString())) ? Integer.parseInt(idFornitoreObj.toString()) : null;
+            
+            Object idTonoObj = params.get("idTono");
+            Integer idTono = (idTonoObj != null && !"".equals(idTonoObj.toString())) ? Integer.parseInt(idTonoObj.toString()) : null;
+            
+            Object idCalibroObj = params.get("idCalibro");
+            Integer idCalibro = (idCalibroObj != null && !"".equals(idCalibroObj.toString())) ? Integer.parseInt(idCalibroObj.toString()) : null;
+
+            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro);
             long total = list.isEmpty() ? 0 : list.get(0).getTotal();
 
             DatatablesResponseDto<ProdottoDto> response = new DatatablesResponseDto<>();

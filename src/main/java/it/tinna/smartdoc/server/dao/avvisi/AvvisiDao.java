@@ -71,9 +71,9 @@ public class AvvisiDao extends BaseDao {
         jdbcTemplate.update(sql, dto.getDescrizione(), userId, dto.getId());
     }
 
-    public void delete(Integer id) throws SQLException {
+    public void delete(Integer id, Integer userId) throws SQLException {
         String sql = FileQueryReader.getQuery("AVVISI_D01");
-        jdbcTemplate.update(sql, id);
+        jdbcTemplate.update(sql, userId, id);
     }
     
     public boolean checkUniqueness(String descrizione, Integer id) throws SQLException {

@@ -77,7 +77,10 @@ public class AvvisiController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Integer id) {
         try {
-            avvisiDelegate.delete(id);
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+
+            avvisiDelegate.delete(id, userDetails.getId());
             return ResponseEntity.ok().build();
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().build();

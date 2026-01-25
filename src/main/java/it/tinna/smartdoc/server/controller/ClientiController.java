@@ -164,4 +164,35 @@ public class ClientiController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    @GetMapping("/export-excel")
+    public ResponseEntity<byte[]> exportExcel(@RequestParam(required = false) String search) {
+        try {
+            List<ClienteDto> list = clientiDelegate.getList(search, null, null, 0, "asc");
+
+            org.jxls.common.Context context = new org.jxls.common.Context();
+            context.putVar("clienti", list);
+
+            org.springframework.core.io.ClassPathResource templateResource = new org.springframework.core.io.ClassPathResource("report/elenco_clienti.xls");
+            try (java.io.InputStream is = templateResource.getInputStream()) {
+                java.io.ByteArrayOutputStream os = new java.io.ByteArrayOutputStream();
+
+                org.jxls.util.JxlsHelper.getInstance().processTemplate(is, os, context);
+
+                byte[] content = os.toByteArray();
+
+                org.springframework.http.HttpHeaders headers = new org.springframework.http.HttpHeaders();
+                headers.setContentType(org.springframework.http.MediaType.parseMediaType("application/vnd.ms-excel"));
+                headers.setContentDispositionFormData("attachment", "elenco_clienti.xls");
+                headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+
+                return ResponseEntity.ok()
+                        .headers(headers)
+                        .body(content);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
