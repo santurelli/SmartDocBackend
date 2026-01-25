@@ -11273,4 +11273,22 @@
 			 WHERE k_d_e_preventivi = ?
 		</content>
 	</query>
+	<query name="CITTA_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT cap,
+				   nome,
+				   provincia        
+			  FROM d_e_comuni
+			 WHERE lower(nome) = ?      
+			 UNION
+	   (SELECT cap,
+			   nome,
+			   provincia        
+		  FROM d_e_comuni
+		 WHERE lower(nome) LIKE ?   
+		   AND lower(nome) != ?     
+		 LIMIT 10)
+	  ORDER BY nome
+		</content>
+	</query>
 </root>

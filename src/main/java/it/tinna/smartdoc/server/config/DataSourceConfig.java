@@ -5,6 +5,7 @@ import java.util.Map;
 
 import javax.sql.DataSource;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
@@ -125,6 +126,11 @@ public class DataSourceConfig {
         return new JdbcTemplate(dataSource);
     }
     
+    @Bean(name = "serviceJdbcTemplate")
+    public JdbcTemplate serviceJdbcTemplate(@Qualifier("servicedbDataSource") DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
+
     @Bean
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
