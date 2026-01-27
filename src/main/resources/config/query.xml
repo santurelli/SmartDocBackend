@@ -8025,7 +8025,7 @@
 					  		    AND d_e_prodotti_confordine.k_d_e_prodotti = x.id
 					  		    AND NOT (d_e_confordine.k_d_e_confordine IN (SELECT d_r_doccollegati.id_docpadre
 						 											 		   FROM d_r_doccollegati
-																	 		  WHERE d_r_doccollegati.tipo_docpadre::text = 'CONF_ORDINE'::text))),0) END AS quantitaImpegnata,
+																	 		  WHERE CAST(d_r_doccollegati.tipo_docpadre AS text) = 'CONF_ORDINE'))),0) END AS quantitaImpegnata,
 				  
 				   COALESCE(d_e_formatiarticolo.descrizione, '') AS descrFormato,
 				   COALESCE(d_e_sceltearticolo.descrizione, '') AS descrScelta,
@@ -11289,6 +11289,142 @@
 		   AND lower(nome) != ?     
 		 LIMIT 10)
 	  ORDER BY nome
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_causalimovimentiprodotti
+			   SET fl_deleted = 1, 
+				   user_last_update = ?, 
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_causalimovimentiprodotti = ?
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_causalimovimentiprodotti
+				 	   (descrizione, 
+				 	    user_created, 
+				 	    dt_created)
+				 VALUES(?,?,CURRENT_TIMESTAMP)
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_causalimovimentiprodotti AS id,
+				   descrizione,
+				   COUNT(*) OVER() AS total
+			  FROM d_e_causalimovimentiprodotti
+		     WHERE LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione))
+			   AND fl_deleted = 0
+		  ORDER BY ${ORDER_BY}
+				   ${LIMIT}
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_causalimovimentiprodotti AS id,
+				   descrizione
+			  FROM d_e_causalimovimentiprodotti
+		     WHERE k_d_e_causalimovimentiprodotti = ?
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_e_causalimovimentiprodotti
+		     WHERE lower(descrizione) = lower(?)
+		       AND k_d_e_causalimovimentiprodotti != COALESCE(?, 0) 
+		       AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_causalimovimentiprodotti AS id,
+				   descrizione
+			  FROM d_e_causalimovimentiprodotti
+		     WHERE fl_deleted = 0
+		       AND LOWER(descrizione) LIKE LOWER(?)
+		  ORDER BY descrizione
+		</content>
+	</query>
+	<query name="CAUSALIMOVIMENTOARTICOLI_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_causalimovimentiprodotti
+			   SET descrizione = ?, 
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_causalimovimentiprodotti = ?
+		</content>
+	</query>
+	<query name="MOVIMENTIMAGAZZINO_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_movimenti_magazzino
+					   (k_d_e_prodotti,
+					    tipo_movimento,
+					    quantita, 
+					    k_d_e_unitamisura,
+					    prezzo_unitario,
+					    k_d_e_aliquoteiva,
+					    data,
+					    k_d_e_scelte,
+					    k_d_e_toni,
+					    k_d_e_taglie,
+					    k_d_e_colori,
+					    k_d_e_magazzini,
+					    k_d_e_fornitori,
+					    desc_causale,
+					    user_created,
+					    dt_created)
+				 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+			 returning k_d_e_movimenti_magazzino
+		</content>
+	</query>
+	<query name="MOVIMENTIMAGAZZINO_I02">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_movimenti_magazzino
+					   (k_d_e_prodotti,
+					    tipo_movimento,
+					    quantita, 
+					    k_d_e_unitamisura,
+					    prezzo_unitario,
+					    k_d_e_aliquoteiva,
+					    data,
+					    k_d_e_scelte,
+					    k_d_e_toni,
+					    k_d_e_taglie,
+					    k_d_e_colori,
+					    k_d_e_magazzini,
+					    k_d_e_clienti,
+					    desc_causale,
+					    user_created,
+					    dt_created)
+				 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+			 returning k_d_e_movimenti_magazzino
+		</content>
+	</query>
+	<query name="MOVIMENTIMAGAZZINO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT m.k_d_e_movimenti_magazzino AS id,
+				   TO_CHAR(m.data, 'DD/MM/YYYY') AS dataMovimento,
+				   COALESCE(p.codice, '') || ' - ' || COALESCE(p.descrizione, '') AS descrizioneProdotto,
+				   COALESCE(c.ragione_sociale, f.denominazione, '') AS clienteFornitore,
+				   m.quantita,
+				   m.quantita AS quantitaBase,
+				   m.tipo_movimento AS tipoMovimento,
+				   CASE WHEN m.tipo_movimento = 'I' THEN m.quantita ELSE 0 END AS quantitaCarico,
+				   CASE WHEN m.tipo_movimento = 'U' THEN m.quantita ELSE 0 END AS quantitaScarico,
+				   COALESCE(m.desc_causale, '') AS causale,
+				   m.k_d_e_prodotti AS idProdotto
+			  FROM d_e_movimenti_magazzino m
+			  JOIN d_e_prodotti p ON m.k_d_e_prodotti = p.k_d_e_prodotti
+		 LEFT JOIN d_e_clienti c ON m.k_d_e_clienti = c.k_d_e_clienti
+		 LEFT JOIN d_e_fornitori f ON m.k_d_e_fornitori = f.k_d_e_fornitori
+			 WHERE m.data &gt;= TO_DATE(?, 'DD/MM/YYYY')
+			   AND m.data &lt;= TO_DATE(?, 'DD/MM/YYYY')
+			   AND (? IS NULL OR m.k_d_e_prodotti = ?)
+		  ORDER BY m.data DESC
+		     LIMIT ? OFFSET ?
 		</content>
 	</query>
 </root>

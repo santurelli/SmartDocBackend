@@ -15,5 +15,6 @@ public class DatatablesResponseDto<T> implements Serializable {
     private List<T> list;
     private Long totalCount;
     private Long totalFiltered;
+    private String error;
 
 }

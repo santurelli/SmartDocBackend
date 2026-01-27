@@ -100,17 +100,48 @@ public class ProdottiDao extends BaseDao {
                 case 5: orderBy = "(quantitaEsistente - quantitaImpegnata)"; break;
             }
             
-            // Note: Postgres is case insensitive for unquoted identifiers, but if alias is mixed case unquoted, it is lowercase in reference?
-            // "AS descCategoria" -> referenced as descCategoria or desccategoria?
-            // Usually safest is to match exact casing if quoted, or assume case-insensitive.
-            // But let's check the query XML alias casing: "descCategoria", "descSottoCategoria".
-            // I'll use "descCategoria" etc.
-            
+            // Note: Postgres is case insensitive for unquoted identifiers.
             if (orderColumn == 2) orderBy = "descCategoria";
             if (orderColumn == 3) orderBy = "descSottoCategoria";
-            
-            query = query.replace("${ORDER_BY}", orderBy + " " + orderDir);
-            query = query.replace("${ORDER_BY_2}", orderBy + " " + orderDir); // Replace outer order too
+
+            String innerOrderBy = orderBy;
+            String outerOrderBy = orderBy;
+
+            if (orderColumn == 4) {
+                 // Esistenza
+                 innerOrderBy = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, 1)";
+                 outerOrderBy = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, 1) END";
+            } else if (orderColumn == 5) {
+                 // Disponibile (Esistenza - Impegnato)
+                 
+                 // Inner Logic (uses d_e_prodotti table)
+                 String innerEsistenza = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, 1)";
+                 String innerImpegnato = "COALESCE((SELECT SUM(quantita) " +
+                                       "FROM d_e_prodotti_confordine " +
+                                       "JOIN d_e_confordine ON d_e_prodotti_confordine.k_d_e_confordine = d_e_confordine.k_d_e_confordine " +
+                                       "WHERE d_e_confordine.fl_deleted = 0 " +
+                                       "AND d_e_prodotti_confordine.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti " +
+                                       "AND NOT (d_e_confordine.k_d_e_confordine IN (SELECT d_r_doccollegati.id_docpadre FROM d_r_doccollegati WHERE CAST(d_r_doccollegati.tipo_docpadre AS text) = 'CONF_ORDINE'))), 0)";
+                 
+                 innerOrderBy = "(" + innerEsistenza + " - " + innerImpegnato + ")";
+
+                 // Outer Logic (uses x alias from subquery)
+                 // We must replicate the full expression because calculating on aliases (alias1 - alias2) is often not supported in ORDER BY
+                 String outerEsistenza = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, 1) END";
+                 
+                 // Repoint subquery reference to x.id
+                 String outerImpegnato = innerImpegnato.replace("d_e_prodotti.k_d_e_prodotti", "x.id");
+                 // Wrap in CASE for consistency with SELECT list
+                 outerImpegnato = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE " + outerImpegnato + " END";
+
+                 outerOrderBy = "(" + outerEsistenza + " - " + outerImpegnato + ")";
+            }
+
+            query = query.replace("${ORDER_BY}", innerOrderBy + " " + orderDir);
+            query = query.replace("${ORDER_BY_2}", outerOrderBy + " " + orderDir); // Replace outer order too
+
+            query = query.replace("${ORDER_BY}", innerOrderBy + " " + orderDir);
+            query = query.replace("${ORDER_BY_2}", outerOrderBy + " " + orderDir); // Replace outer order too
             query = query.replace("${LIMIT}", "OFFSET " + start + " LIMIT " + length);
 
             return jdbcTemplate.query(query, rowMapper, args.toArray());

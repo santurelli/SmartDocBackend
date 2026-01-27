@@ -106,8 +106,7 @@ public class DataSourceConfig {
         targetDataSources.put("servicedb", servicedbDataSource());
         targetDataSources.put("sd_riggiolandia", riggiolandiaDataSource());
         targetDataSources.put("sd_romax", romaxDataSource());
-        targetDataSources.put("smartdoc_bema", justdesignDataSource()); // Wait, Bema isn't in my list but mapping logic might need keys matching 'dbName' from DB.
-        // Assuming keys match the 'dbName' column in 'd_e_entita'. 
+        // Assuming keys match the 'dbName' column in 'd_e_entita'.
         // User asked for: Riggiolandia, Romax, JustDesign, JustEat, JustFood, PiuForty, Santurelli.
         // I will map them as requested. I should double check logic or keys if possible but for now:
         targetDataSources.put("sd_justdesign", justdesignDataSource());

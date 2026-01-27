@@ -25,7 +25,7 @@ import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 
 @RestController
-@RequestMapping("/preventivi")
+@RequestMapping("/api/preventivi")
 public class PreventiviController {
 
     @Autowired
