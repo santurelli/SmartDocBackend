@@ -73,7 +73,6 @@ public class MovimentiMagazzinoDelegate extends BaseDelegate {
             dto.setQuantita(Math.abs(delta));
             dao.insertScarico(dto);
         }
-        }
     }
 
     public List<MovimentoMagazzinoDto> list(MovimentiSearchCriteriaDto criteria) throws SQLException {

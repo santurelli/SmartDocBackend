@@ -4,6 +4,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,7 @@ import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.categorie.CategoriaDto;
 
 @Service
+@CacheConfig(cacheNames = "categorie", cacheResolver = "companyCacheResolver")
 public class CategorieDelegate extends BaseDelegate {
 
     @Autowired
@@ -21,6 +25,7 @@ public class CategorieDelegate extends BaseDelegate {
         return categorieDao.getList(search, length, start, orderCol, orderDir);
     }
 
+    @Cacheable
     public List<CategoriaDto> getListForCombo() throws SQLException {
         return categorieDao.getListForCombo();
     }
@@ -30,16 +35,19 @@ public class CategorieDelegate extends BaseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void insert(CategoriaDto dto, Integer userId) throws SQLException {
         categorieDao.insert(dto, userId);
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void update(CategoriaDto dto, Integer userId) throws SQLException {
         categorieDao.update(dto, userId);
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void delete(Integer id, Integer userId) throws SQLException {
         categorieDao.delete(id, userId);
     }

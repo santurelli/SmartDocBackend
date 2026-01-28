@@ -122,6 +122,15 @@ public class FornitoriController {
         }
     }
     
+    @GetMapping("/listForCombo")
+    public ResponseEntity<List<FornitoreDto>> getListForCombo() {
+        try {
+            return ResponseEntity.ok(fornitoriDelegate.getListForCombo());
+        } catch (SQLException e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+    
     @GetMapping("/suggestion")
     public ResponseEntity<List<FornitoreDto>> getSuggestion(@RequestParam String q) {
         try {

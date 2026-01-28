@@ -19,7 +19,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
+import lombok.extern.slf4j.Slf4j;
 @Component
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
@@ -63,7 +65,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     Integer userId = jwtService.extractClaim(jwt, claims -> claims.get("id", Integer.class));
                     
                     if (dbName != null) {
+                        log.info("Setting Database Context to: {}", dbName);
                         DatabaseContextHolder.setClientDatabase(dbName);
+                    } else {
+                        log.warn("No dbName found in token!");
                     }
 
                     // Create UserDetailsImpl

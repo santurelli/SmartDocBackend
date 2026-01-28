@@ -3,12 +3,9 @@ package it.tinna.smartdoc.server.delegate.aliquoteiva;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
-
-import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
-import it.tinna.smartdoc.server.delegate.BaseDelegate;
-import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
-
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +14,7 @@ import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 
 @Service
+@CacheConfig(cacheNames = "aliquoteiva", cacheResolver = "companyCacheResolver")
 public class AliquoteIvaDelegate extends BaseDelegate {
 
     public List<AliquotaIvaDto> getList(String search, Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
@@ -24,6 +22,7 @@ public class AliquoteIvaDelegate extends BaseDelegate {
         return dao.getList(search, start, length, orderColumn, orderDir);
     }
 
+    @Cacheable
     public List<AliquotaIvaDto> getListForCombo() throws SQLException {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
         return dao.getListForCombo();
@@ -40,6 +39,7 @@ public class AliquoteIvaDelegate extends BaseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void insert(AliquotaIvaDto dto) throws SQLException {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
         if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
@@ -49,6 +49,7 @@ public class AliquoteIvaDelegate extends BaseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void update(AliquotaIvaDto dto) throws SQLException {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
         if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
@@ -58,6 +59,7 @@ public class AliquoteIvaDelegate extends BaseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void delete(long id, long userId) throws SQLException {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
         dao.delete(id, (int) userId);

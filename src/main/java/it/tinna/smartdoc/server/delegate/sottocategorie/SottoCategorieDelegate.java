@@ -4,6 +4,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,7 @@ import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.sottocategorie.SottoCategoriaDto;
 
 @Service
+@CacheConfig(cacheNames = "sottocategorie", cacheResolver = "companyCacheResolver")
 public class SottoCategorieDelegate extends BaseDelegate {
 
     @Autowired
@@ -21,6 +25,7 @@ public class SottoCategorieDelegate extends BaseDelegate {
         return sottoCategorieDao.getList(idCategoria, search, length, start, orderCol, orderDir);
     }
 
+    @Cacheable
     public List<SottoCategoriaDto> getListForCombo(Integer idCategoria) throws SQLException {
         return sottoCategorieDao.getListForCombo(idCategoria);
     }
@@ -30,16 +35,19 @@ public class SottoCategorieDelegate extends BaseDelegate {
     }
 
     @Transactional(rollbackFor = Throwable.class)
+    @CacheEvict(allEntries = true)
     public void insert(SottoCategoriaDto dto, Integer userId) throws SQLException {
         sottoCategorieDao.insert(dto, userId);
     }
 
     @Transactional(rollbackFor = Throwable.class)
+    @CacheEvict(allEntries = true)
     public void update(SottoCategoriaDto dto, Integer userId) throws SQLException {
         sottoCategorieDao.update(dto, userId);
     }
 
     @Transactional(rollbackFor = Throwable.class)
+    @CacheEvict(allEntries = true)
     public void delete(Integer id, Integer userId) throws SQLException {
         sottoCategorieDao.delete(id, userId);
     }

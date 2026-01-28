@@ -4,6 +4,9 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,6 +14,7 @@ import it.tinna.smartdoc.server.dao.vettori.VettoriDao;
 import it.tinna.smartdoc.shared.dto.vettori.VettoreDto;
 
 @Service
+@CacheConfig(cacheNames = "vettori", cacheResolver = "companyCacheResolver")
 public class VettoriDelegate {
 
     @Autowired
@@ -20,6 +24,7 @@ public class VettoriDelegate {
         return vettoriDao.getList(search, length, start, orderCol, orderDir);
     }
 
+    @Cacheable
     public List<VettoreDto> getListForCombo() throws SQLException {
         return vettoriDao.getListForCombo();
     }
@@ -29,16 +34,19 @@ public class VettoriDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void insert(VettoreDto dto, Integer userId) throws SQLException {
         vettoriDao.insert(dto, userId);
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void update(VettoreDto dto, Integer userId) throws SQLException {
         vettoriDao.update(dto, userId);
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void delete(Integer id, Integer userId) throws SQLException {
         vettoriDao.delete(id, userId);
     }

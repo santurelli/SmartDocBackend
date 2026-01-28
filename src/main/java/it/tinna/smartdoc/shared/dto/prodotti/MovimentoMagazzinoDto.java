@@ -83,7 +83,9 @@ public class MovimentoMagazzinoDto extends BaseDto
 
     // View Fields
     private String descrizioneProdotto;
+    private String descrizioneProdottoExcel;
     private String clienteFornitore;
+    private Double quantitaBase;
     private Double quantitaCarico;
     private Double quantitaScarico;
 }

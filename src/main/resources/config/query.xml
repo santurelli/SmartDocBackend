@@ -4921,17 +4921,20 @@
 	</query>
 	<query name="INVENTARIOMAGAZZINO_S01">
 		<content delimiterParsingDisabled="true">
-		    SELECT x.*,
-		    	   get_totale_disponibile(d_e_prodotti.k_d_e_prodotti,NULLIF(?,0),?) AS quantita,
+		    SELECT x.k_d_e_prodotti AS id,
 		    	   d_e_prodotti.codice AS codiceProdotto,
 				   d_e_prodotti.descrizione AS descrizioneProdotto,
+				   x.descCategoria AS descCategoria,
+				   x.descSottoCategoria AS descSottoCategoria,
 				   COALESCE(d_e_fornitori.denominazione, '') AS descrizioneFornitore,
+				   COALESCE(d_e_unitamisura.descrizione, '') AS descunitaMisuraBase,
+		    	   get_totale_disponibile(d_e_prodotti.k_d_e_prodotti,NULLIF(?,0),?) AS quantita,
 		    	   COALESCE(get_valore_prodotto(d_e_prodotti.k_d_e_prodotti,?,NULLIF(?,0),NULLIF(?,0),?), 0) AS valoreUnitario,
-				   COALESCE(d_e_unitamisura.descrizione, '') AS descUnitaMisuraBase,
 				   COALESCE(d_e_formatiarticolo.descrizione, '') AS descrFormato,
 				   COALESCE(d_e_sceltearticolo.descrizione, '') AS descrScelta,
 				   COALESCE(d_e_toniarticolo.descrizione, '') AS descrTono,
-				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro
+				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro,
+				   x.total
 		      FROM (
 			    	SELECT d_e_prodotti.k_d_e_prodotti,
 			    		   COALESCE(d_e_categorie.descrizione, '') AS descCategoria,
@@ -4957,13 +4960,13 @@
 		 LEFT JOIN d_e_fornitori
 		 		ON d_e_prodotti.k_d_e_fornitori = d_e_fornitori.k_d_e_fornitori
 		 LEFT JOIN d_e_formatiarticolo
-				   ON d_e_formatiarticolo.k_d_e_formatiarticolo = d_e_prodotti.k_d_e_formatiarticolo
-			LEFT JOIN d_e_sceltearticolo
-				   ON d_e_sceltearticolo.k_d_e_sceltearticolo = d_e_prodotti.k_d_e_sceltearticolo
-			LEFT JOIN d_e_toniarticolo
-				   ON d_e_toniarticolo.k_d_e_toniarticolo = d_e_prodotti.k_d_e_toniarticolo
-			LEFT JOIN d_e_calibriarticolo
-				   ON d_e_calibriarticolo.k_d_e_calibriarticolo = d_e_prodotti.k_d_e_calibriarticolo
+				ON d_e_prodotti.k_d_e_formatiarticolo = d_e_formatiarticolo.k_d_e_formatiarticolo
+		 LEFT JOIN d_e_sceltearticolo
+				ON d_e_prodotti.k_d_e_sceltearticolo = d_e_sceltearticolo.k_d_e_sceltearticolo
+		 LEFT JOIN d_e_toniarticolo
+				ON d_e_prodotti.k_d_e_toniarticolo = d_e_toniarticolo.k_d_e_toniarticolo
+		 LEFT JOIN d_e_calibriarticolo
+				ON d_e_prodotti.k_d_e_calibriarticolo = d_e_calibriarticolo.k_d_e_calibriarticolo
 		</content>
 	</query>
 	<query name="INVENTARIOMAGAZZINO_S02">
@@ -11408,7 +11411,8 @@
 			SELECT m.k_d_e_movimenti_magazzino AS id,
 				   TO_CHAR(m.data, 'DD/MM/YYYY') AS dataMovimento,
 				   COALESCE(p.codice, '') || ' - ' || COALESCE(p.descrizione, '') AS descrizioneProdotto,
-				   COALESCE(c.ragione_sociale, f.denominazione, '') AS clienteFornitore,
+		   COALESCE(p.codice, '') || ' - ' || COALESCE(p.descrizione, '') AS descrizioneProdottoExcel,
+				   COALESCE(c.denominazione, f.denominazione, '') AS clienteFornitore,
 				   m.quantita,
 				   m.quantita AS quantitaBase,
 				   m.tipo_movimento AS tipoMovimento,
@@ -11422,9 +11426,14 @@
 		 LEFT JOIN d_e_fornitori f ON m.k_d_e_fornitori = f.k_d_e_fornitori
 			 WHERE m.data &gt;= TO_DATE(?, 'DD/MM/YYYY')
 			   AND m.data &lt;= TO_DATE(?, 'DD/MM/YYYY')
-			   AND (? IS NULL OR m.k_d_e_prodotti = ?)
+			   AND (CAST(? AS BIGINT) IS NULL OR m.k_d_e_prodotti = ?)
+			   AND m.fl_deleted = 0
+			   AND p.fl_deleted = 0
 		  ORDER BY m.data DESC
 		     LIMIT ? OFFSET ?
 		</content>
 	</query>
+
+
+
 </root>
