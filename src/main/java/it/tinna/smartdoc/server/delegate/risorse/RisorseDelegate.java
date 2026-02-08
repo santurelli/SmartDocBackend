@@ -9,8 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.risorse.RisorseDao;
 import it.tinna.smartdoc.shared.dto.risorse.RisorsaDto;
+import org.springframework.cache.annotation.CacheConfig;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 @Service
+@CacheConfig(cacheNames = "risorse", cacheResolver = "companyCacheResolver")
 public class RisorseDelegate {
 
     @Autowired
@@ -20,6 +24,7 @@ public class RisorseDelegate {
         return risorseDao.getList(tipologia, search, length, start, orderCol, orderDir);
     }
 
+    @Cacheable
     public List<RisorsaDto> getListForCombo(String tipologia) throws SQLException {
         return risorseDao.getListForCombo(tipologia);
     }
@@ -29,6 +34,7 @@ public class RisorseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void insert(RisorsaDto dto, Integer userId) throws SQLException {
         if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
             risorseDao.resetPredefinita(dto.getTipologia(), userId);
@@ -37,6 +43,7 @@ public class RisorseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void update(RisorsaDto dto, Integer userId) throws SQLException {
          if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
             risorseDao.resetPredefinita(dto.getTipologia(), userId);
@@ -45,6 +52,7 @@ public class RisorseDelegate {
     }
 
     @Transactional
+    @CacheEvict(allEntries = true)
     public void delete(Integer id, Integer userId) throws SQLException {
         risorseDao.delete(id, userId);
     }

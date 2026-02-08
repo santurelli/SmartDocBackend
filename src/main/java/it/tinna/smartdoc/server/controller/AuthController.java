@@ -56,9 +56,9 @@ public class AuthController {
                 String abilitaDivisioni = configurazioneDelegate.getByKey(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_DOMAIN_GLOBAL, it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_ABILITADIVISIONI);
                 extraClaims.put(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_ABILITADIVISIONI, org.apache.commons.lang3.StringUtils.defaultIfEmpty(abilitaDivisioni, "0"));
 
-                String tipoStore = configurazioneDelegate.getByKey(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_DOMAIN_GLOBAL, it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_TIPOSTORE);
-                extraClaims.put(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_TIPOSTORE, org.apache.commons.lang3.StringUtils.defaultIfEmpty(tipoStore, ""));
-                
+                String abilitaProgetti = configurazioneDelegate.getByKey(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_DOMAIN_GLOBAL, it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_ABILITAPROGETTI);
+                extraClaims.put(it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_ABILITAPROGETTI, org.apache.commons.lang3.StringUtils.defaultIfEmpty(abilitaProgetti, "0"));
+
                 // Fetch Articoli Config for convenience (optional, user asked for "config parameter")
                 // Better to fetch ARTICOLI domain entirely? User said: "if configuration parameter... interface receives info immediately"
                 // Putting Articoli config in JWT might bloat it, but "read at login and stored in token" was the request.

@@ -2,11 +2,15 @@ package it.tinna.smartdoc.server.controller;
 
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,9 +20,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.core.io.ClassPathResource;
+import org.jxls.common.Context;
+import org.jxls.util.JxlsHelper;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 
 //import it.tinna.smartdoc.server.constants.ISessionConstants;
 import it.tinna.smartdoc.server.delegate.documenti.PreventiviDelegate;
+import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.PreventivoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
@@ -32,19 +42,30 @@ public class PreventiviController {
     private PreventiviDelegate preventiviDelegate;
 
     @PostMapping("/list")
-    public DatatablesResponseDto<PreventivoDto> getList(@RequestParam Map<String, String> p) throws SQLException {
-        Integer start = Integer.valueOf(p.getOrDefault("start", "0"));
-        Integer length = Integer.valueOf(p.getOrDefault("length", "10"));
-        Integer orderColumn = Integer.valueOf(p.getOrDefault("orderColumn", "0"));
-        String orderDir = p.getOrDefault("orderDir", "asc");
+    public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
+        Integer start = (Integer) p.getOrDefault("start", 0);
+        Integer length = (Integer) p.getOrDefault("length", 10);
+        Integer orderColumn = (Integer) p.getOrDefault("orderColumn", 0);
+        String orderDir = (String) p.getOrDefault("orderDir", "asc");
         
         // Filters
-        String dtFrom = p.get("dtFrom");
-        String dtTo = p.get("dtTo");
-        Integer idCliente = p.get("idCliente") != null && !p.get("idCliente").isEmpty() ? Integer.valueOf(p.get("idCliente")) : null;
-        Integer idAgente = p.get("idAgente") != null && !p.get("idAgente").isEmpty() ? Integer.valueOf(p.get("idAgente")) : null;
+        String dtFrom = (String) p.get("dtFrom");
+        String dtTo = (String) p.get("dtTo");
+        
+        Object idClienteObj = p.get("idCliente");
+        Integer idCliente = (idClienteObj != null && !"".equals(idClienteObj.toString())) ? Integer.valueOf(idClienteObj.toString()) : null;
+        
+        Object idAgenteObj = p.get("idAgente");
+        Integer idAgente = (idAgenteObj != null && !"".equals(idAgenteObj.toString())) ? Integer.valueOf(idAgenteObj.toString()) : null;
 
         return preventiviDelegate.getList(idCliente, dtFrom, dtTo, idAgente, length, start, orderColumn, orderDir);
+    }
+
+    @GetMapping("/combos-map")
+    public GenericResponseDto<Map<String, Object>> getCombosMap() throws SQLException {
+        GenericResponseDto<Map<String, Object>> response = new GenericResponseDto<>();
+        response.setPayload(preventiviDelegate.getCombosMap());
+        return response;
     }
 
     @GetMapping("/{id}")
@@ -94,5 +115,40 @@ public class PreventiviController {
         long userId = user != null ? user.getId() : 0;
         preventiviDelegate.delete(id, userId);
         return response;
+    }
+
+    @PostMapping("/export-excel")
+    public ResponseEntity<byte[]> exportExcel(@RequestBody Map<String, Object> p) {
+        try {
+            // Extract same params as list
+            String dtFrom = (String) p.get("dtFrom");
+            String dtTo = (String) p.get("dtTo");
+            Object idClienteObj = p.get("idCliente");
+            Integer idCliente = (idClienteObj != null && !"".equals(idClienteObj.toString())) ? Integer.valueOf(idClienteObj.toString()) : null;
+            Object idAgenteObj = p.get("idAgente");
+            Integer idAgente = (idAgenteObj != null && !"".equals(idAgenteObj.toString())) ? Integer.valueOf(idAgenteObj.toString()) : null;
+            Integer orderColumn = (Integer) p.getOrDefault("orderColumn", 0);
+            String orderDir = (String) p.getOrDefault("orderDir", "asc");
+
+            List<MovimentiDocumentoDto> list = preventiviDelegate.getList(idCliente, dtFrom, dtTo, idAgente, null, null, orderColumn, orderDir).getList();
+
+            Context context = new Context();
+            context.putVar("preventivi", list);
+
+            ClassPathResource templateResource = new ClassPathResource("report/elenco_preventivi.xls");
+            try (InputStream is = templateResource.getInputStream()) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                JxlsHelper.getInstance().processTemplate(is, os, context);
+                byte[] content = os.toByteArray();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType("application/vnd.ms-excel"));
+                headers.setContentDispositionFormData("attachment", "elenco_preventivi.xls");
+                return ResponseEntity.ok().headers(headers).body(content);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

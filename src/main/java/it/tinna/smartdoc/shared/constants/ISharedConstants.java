@@ -38,4 +38,13 @@ public class ISharedConstants {
 
     public static String COMBOSMAP_KEY_DATIAZIENDA = "DATIAZIENDA";
     public static String COMBOSMAP_KEY_REGIMIFISCALI = "REGIMIFISCALI";
+    public static String COMBOSMAP_KEY_ALIQUOTEIVA = "aliquoteIva";
+    public static String COMBOSMAP_KEY_UNITAMISURA = "unitaMisura";
+    public static String COMBOSMAP_KEY_PARTICELLE = "particelle";
+    public static String COMBOSMAP_KEY_TIPIPAGAMENTO = "tipiPagamento";
+    public static String COMBOSMAP_KEY_LISTINI = "listini";
+    public static String COMBOSMAP_KEY_RISORSE = "risorse";
+    public static String COMBOSMAP_KEY_MAGAZZINI = "magazzini";
+    public static String COMBOSMAP_KEY_AGENTI = "agenti";
+    public static String COMBOSMAP_KEY_PROGETTI = "progetti";
 }

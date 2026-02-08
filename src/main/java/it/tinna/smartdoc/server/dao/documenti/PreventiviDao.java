@@ -39,11 +39,20 @@ public class PreventiviDao extends BaseDao {
         }
     }
 
+    private String formatDate(String date) {
+        if (StringUtils.isEmpty(date)) return null;
+        if (date.matches("\\d{4}-\\d{2}-\\d{2}")) { // ISO YYYY-MM-DD
+            String[] parts = date.split("-");
+            return parts[2] + "/" + parts[1] + "/" + parts[0];
+        }
+        return date;
+    }
+
     public String generaCodice(String data) throws SQLException {
+        String formattedDate = formatDate(data);
         try {
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("PREVENTIVI_S06"), String.class, 
-                    StringUtils.isEmpty(data) ? null : data, StringUtils.isEmpty(data) ? null : data,
-                    StringUtils.isEmpty(data) ? null : data, StringUtils.isEmpty(data) ? null : data);
+                    formattedDate, formattedDate, formattedDate, formattedDate);
         } catch (EmptyResultDataAccessException e) {
             return "1";
         } catch (DataAccessException e) {
@@ -74,12 +83,12 @@ public class PreventiviDao extends BaseDao {
         }
     }
 
-    public List<PreventivoDto> getList(Integer idCliente, String dtFrom, String dtTo, Integer idAgente,
+    public List<MovimentiDocumentoDto> getList(Integer idCliente, String dtFrom, String dtTo, Integer idAgente,
             Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("PREVENTIVI_S07");
         List<Object> params = new ArrayList<>();
-        params.add(StringUtils.isEmpty(dtFrom) ? null : dtFrom);
-        params.add(StringUtils.isEmpty(dtTo) ? null : dtTo);
+        params.add(formatDate(dtFrom));
+        params.add(formatDate(dtTo));
         params.add(idCliente);
         params.add(idAgente);
         
@@ -109,10 +118,11 @@ public class PreventiviDao extends BaseDao {
         }
         
         query = StringSubstitutor.replace(query, valuesMap);
+        _log.debug("Esecuzione ricerca preventivi: {} con parametri {}", query, params);
 
         try {
-            BeanPropertyRowMapper<PreventivoDto> rowMapper = new BeanPropertyRowMapper<>();
-            rowMapper.setMappedClass(PreventivoDto.class);
+            BeanPropertyRowMapper<MovimentiDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(MovimentiDocumentoDto.class);
             return jdbcTemplate.query(query, rowMapper, params.toArray());
         } catch (EmptyResultDataAccessException e) {
             return new ArrayList<>();
@@ -134,7 +144,7 @@ public class PreventiviDao extends BaseDao {
         try {
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("PREVENTIVI_I01"), Integer.class,
                     dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null),
-                    dto.getDataDocumento(), dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
+                    formatDate(dto.getDataDocumento()), dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
                     dto.getIdCliente(), dto.getIdTipoPagamento(), dto.getIdNsBanca(),
                     StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null),
                     StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null),
@@ -186,7 +196,7 @@ public class PreventiviDao extends BaseDao {
             jdbcTemplate.update(FileQueryReader.getQuery("PREVENTIVI_D01"), dto.getId());
             jdbcTemplate.update(FileQueryReader.getQuery("PREVENTIVI_U01"),
                     dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null),
-                    dto.getDataDocumento(), dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
+                    formatDate(dto.getDataDocumento()), dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
                     dto.getIdCliente(), dto.getIdTipoPagamento(), dto.getIdNsBanca(),
                     StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null),
                     StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null),

@@ -12,11 +12,13 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Repository;
 
 import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.database.FileQueryReader;
 import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 
+@Repository
 public class IndirizziDao extends BaseDao {
 
     public IndirizziDao(JdbcTemplate jdbcTemplate) {

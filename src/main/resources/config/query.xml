@@ -59,6 +59,15 @@
 		     WHERE k_d_e_agenti = ?
 		</content>
 	</query>
+	<query name="AGENTI_S05">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_agenti as id,
+				   denominazione
+			  FROM d_e_agenti
+			 WHERE fl_deleted = 0
+		  ORDER BY denominazione
+		</content>
+	</query>
 	<query name="AGENTI_S03">
 		<content delimiterParsingDisabled="true">
 			SELECT COUNT(*)
@@ -80,6 +89,27 @@
 		</content>
 	</query>
 	<query name="AGENTI_S05">
+		<content delimiterParsingDisabled="true">
+		    select k_d_e_agenti as id,
+				denominazione,
+				indirizzo,
+				cap,
+				citta,
+				provincia,
+				nazione,
+				telefono,
+				fax,
+				cellulare,
+				email,
+				perc_provvigione as percProvvigione,
+				k_d_e_zonecompetenza as idZonaCompetenza,
+				tipo_maturazione_provvigione as tipoMaturazioneProvvigione
+			from d_e_agenti
+			where fl_deleted = 0
+			order by denominazione
+		</content>
+	</query>
+	<query name="AGENTI_S07">
 		<content delimiterParsingDisabled="true">
 		    select k_d_e_agenti as id,
 				denominazione,
@@ -4905,7 +4935,7 @@
 	</query>
 	<query name="INDIRIZZI_S01">
 		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_indirizzi as id,
+			SELECT k_d_e_indirizzi AS id,
 				   tipologia,
 				   descrizione,
 				   indirizzo,
@@ -4913,10 +4943,12 @@
 				   citta,
 				   provincia,
 				   nazione,
-				   codice_ufficio as codiceUfficio
+				   codice_ufficio AS codiceUfficio,
+				   id_richiedente AS idRichiedente
 			  FROM ${nometabella}
-			 WHERE fl_deleted = 0
-			   AND id_richiedente = ?
+			 WHERE id_richiedente = ?
+			   AND fl_deleted = 0
+		  ORDER BY tipologia
 		</content>
 	</query>
 	<query name="INVENTARIOMAGAZZINO_S01">
@@ -5186,7 +5218,7 @@
 			  on d_e_prodotti_fatture.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
 			join d_e_fatture
 			  on d_e_prodotti_fatture.k_d_e_fatture = d_e_fatture.k_d_e_fatture
-			where 1=1
+			
 			and to_char(d_e_fatture.data_fattura, 'YYYY') = coalesce(?, to_char(d_e_fatture.data_fattura, 'YYYY'))
 			${WHERE_PERIODO}
 			union
@@ -5200,7 +5232,7 @@
 			  on d_e_speseincasso_fatture.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
 			join d_e_fatture
 			  on d_e_speseincasso_fatture.k_d_e_fatture = d_e_fatture.k_d_e_fatture
-			where 1=1
+			
 			and to_char(d_e_fatture.data_fattura, 'YYYY') = coalesce(?, to_char(d_e_fatture.data_fattura, 'YYYY'))
 			${WHERE_PERIODO}
 			) x
@@ -5225,7 +5257,7 @@
 			  on d_e_prodotti_bollecarico.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
 			join d_e_bollecarico
 			  on d_e_prodotti_bollecarico.k_d_e_bollecarico = d_e_bollecarico.k_d_e_bollecarico
-			where 1=1
+			
 			and to_char(d_e_bollecarico.data_bolla, 'YYYY') = coalesce(?, to_char(d_e_bollecarico.data_bolla, 'YYYY'))
 			${WHERE_PERIODO}
 			union
@@ -5239,7 +5271,7 @@
 			  on d_e_speseincasso_bollecarico.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
 			join d_e_bollecarico
 			  on d_e_speseincasso_bollecarico.k_d_e_bollecarico = d_e_bollecarico.k_d_e_bollecarico
-			where 1=1
+			
 			and to_char(d_e_bollecarico.data_bolla, 'YYYY') = coalesce(?, to_char(d_e_bollecarico.data_bolla, 'YYYY'))
 			${WHERE_PERIODO}
 			) x
@@ -5667,7 +5699,7 @@
 			 LEFT JOIN d_e_scelte
 			    ON d_e_scelte.k_d_e_scelte = d_e_movimenti_magazzino.k_d_e_scelte
 			   AND d_e_scelte.fl_deleted = 0
-			 WHERE 1=1
+			 
 			   AND d_e_movimenti_magazzino.k_d_e_prodotti = ?
 			   AND tipo_movimento = coalesce(?,tipo_movimento)
 			   AND idmagazzino = coalesce(?, idmagazzino)
@@ -5679,7 +5711,7 @@
 		<content delimiterParsingDisabled="true">
 			select coalesce(sum(quantita),0)
 				from d_e_movimenti_magazzino
-			where 1=1
+			
 			  and k_d_e_prodotti = ?
 			  and tipo_movimento = 'I'
 			  and fl_deleted = 0
@@ -5689,7 +5721,7 @@
 		<content delimiterParsingDisabled="true">
 			SELECT coalesce(sum(quantita),0)
 				from d_e_movimenti_magazzino
-			where 1=1
+			
 			  and k_d_e_prodotti = ?
 			  and tipo_movimento = 'U'
 			  and fl_deleted = 0
@@ -7569,6 +7601,7 @@
 				   d_e_preventivi.k_d_e_listini as idListino,
 				   COALESCE(d_e_preventivi.k_d_e_agenti, 0) AS idAgente,
 				   COALESCE(d_e_preventivi.k_d_e_progetti, 0) AS idProgetto,
+				   COALESCE(d_e_progetti.descrizione, '') AS progetto,
 				   COALESCE(d_e_agenti.denominazione, '') AS agente,
 				   COALESCE(LPAD(d_e_agenti.k_d_e_agenti::character varying, 6, '0'), '') AS codAgente,
 				   d_e_agenti.perc_provvigione AS percProvvigioneAgente,
@@ -7616,6 +7649,8 @@
 			   ON d_e_preventivi.k_d_e_agenti = d_e_agenti.k_d_e_agenti
 		LEFT JOIN d_e_risorse nsbanca
 			   ON d_e_preventivi.k_d_e_risorse = nsbanca.k_d_e_risorse
+		LEFT JOIN d_e_progetti
+			   ON d_e_preventivi.k_d_e_progetti = d_e_progetti.k_d_e_progetti
 			WHERE k_d_e_preventivi = ?
 		</content>
 	</query>
@@ -7725,10 +7760,11 @@
                 ON d_e_preventivi.k_d_e_clienti = d_e_clienti.k_d_e_clienti
          LEFT JOIN d_e_agenti
          		ON d_e_preventivi.k_d_e_agenti = d_e_agenti.k_d_e_agenti
-			 WHERE data_preventivo &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_preventivo)
-			   AND data_preventivo &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_preventivo)
-			   AND d_e_preventivi.k_d_e_clienti = COALESCE(?, d_e_preventivi.k_d_e_clienti)
-			   AND COALESCE(d_e_preventivi.k_d_e_agenti, 0) = COALESCE(?, d_e_preventivi.k_d_e_agenti, 0)
+ 			 
+			 WHERE data_preventivo &gt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_preventivo)
+			 AND data_preventivo &lt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_preventivo)
+			 AND d_e_preventivi.k_d_e_clienti = COALESCE(?, d_e_preventivi.k_d_e_clienti)
+			 AND COALESCE(d_e_preventivi.k_d_e_agenti, 0) = COALESCE(?, d_e_preventivi.k_d_e_agenti, 0)
 			   AND d_e_preventivi.fl_deleted = 0
 		  ORDER BY ${ORDER_BY}
 		  	${LIMIT}
@@ -9315,7 +9351,7 @@
 				   data - CURRENT_DATE AS giorni,
 				   tipo_pagamento as tipoPagamento
 			  FROM v_scadenze_pagamenti
-			 WHERE 1=1
+			 
 			   ${RICERCA}
 			   AND soggetto = COALESCE(?, soggetto)
 			   AND tipo_pagamento = COALESCE(?, tipo_pagamento)
@@ -10789,651 +10825,4 @@
 			 WHERE k_d_e_vettori = ?
 		</content>
 	</query>
-    <query name="RISORSE_D01">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_risorse
-			   SET fl_deleted = 1, 
-				   user_last_update = ?, 
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_risorse = ?
-		</content>
-	</query>
-	<query name="RISORSE_I01">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_risorse
-				 	   (tipologia,
-				 	    descrizione,
-				 	    saldo_iniziale,
-				 	    cod_sia,
-				 	    banca,
-				 	    iban,
-				 	    cin,
-				 	    abi,
-				 	    cab,
-				 	    conto,
-				 	    bic,
-				 	    note,
-				 	    fl_predefinita, 
-				 	    user_created, 
-				 	    dt_created)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-		</content>
-	</query>
-	<query name="RISORSE_S01">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_risorse AS id,
-				   tipologia,
-				   descrizione,
-				   saldo_iniziale AS saldoIniziale,
-				   COALESCE(cod_sia, '') AS codSia,
-				   COALESCE(banca, '') AS descBanca,
-				   COALESCE(iban, '') AS iban,
-				   COALESCE(cin, '') AS cin,
-				   COALESCE(abi, '') AS abi,
-				   COALESCE(cab, '') AS cab,
-				   COALESCE(conto, '') AS conto,
-				   COALESCE(bic, '') AS bic,
-				   COALESCE(note, '') AS note,
-				   fl_predefinita AS predefinita,
-				   COUNT(*) OVER() AS total
-			  FROM d_e_risorse
-		     WHERE tipologia = COALESCE(?, tipologia)
-		       AND LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione))
-			   AND fl_deleted = 0
-		  ORDER BY ${ORDER_BY}
-				   ${LIMIT}
-		</content>
-	</query>
-	<query name="RISORSE_S02">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_risorse AS id,
-				   tipologia,
-				   descrizione,
-				   saldo_iniziale AS saldoIniziale,
-				   COALESCE(cod_sia, '') AS codSia,
-				   COALESCE(banca, '') AS descBanca,
-				   COALESCE(iban, '') AS iban,
-				   COALESCE(cin, '') AS cin,
-				   COALESCE(abi, '') AS abi,
-				   COALESCE(cab, '') AS cab,
-				   COALESCE(conto, '') AS conto,
-				   COALESCE(bic, '') AS bic,
-				   COALESCE(note, '') AS note,
-				   fl_predefinita AS predefinita
-			FROM d_e_risorse
-		   WHERE k_d_e_risorse = ?
-		</content>
-	</query>
-	<query name="RISORSE_S03">
-		<content delimiterParsingDisabled="true">
-			SELECT COUNT(*)
-			FROM d_e_risorse
-		   WHERE tipologia = ?
-		     AND lower(descrizione) = lower(?)
-		     AND k_d_e_risorse != COALESCE(?, 0) 
-		     AND fl_deleted = 0
-		</content>
-	</query>
-	<query name="RISORSE_S04">
-		<content delimiterParsingDisabled="true">
-			SELECT descrizione AS displayString,
-				   descrizione AS replacementString
-			  FROM d_e_risorse
-		     WHERE tipologia = 'BA'
-		       AND lower(descrizione) LIKE lower(?)
-		       AND fl_deleted = 0
-		</content>
-	</query>
-	<query name="RISORSE_S05">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_risorse AS id,
-				   tipologia,
-				   descrizione,
-				   saldo_iniziale AS saldoIniziale,
-				   COALESCE(cod_sia, '') AS codSia,
-				   COALESCE(banca, '') AS descBanca,
-				   COALESCE(iban, '') AS iban,
-				   COALESCE(cin, '') AS cin,
-				   COALESCE(abi, '') AS abi,
-				   COALESCE(cab, '') AS cab,
-				   COALESCE(conto, '') AS conto,
-				   COALESCE(bic, '') AS bic,
-				   COALESCE(note, '') AS note,
-				   fl_predefinita AS predefinita
-			FROM d_e_risorse
-		   WHERE tipologia = ?
-		     AND LOWER(descrizione) = LOWER(?)
-		     AND fl_deleted = 0
-		</content>
-	</query>
-	<query name="RISORSE_S06">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_risorse AS id,
-				   tipologia,
-				   descrizione,
-				   saldo_iniziale AS saldoIniziale,
-				   COALESCE(cod_sia, '') AS codSia,
-				   COALESCE(banca, '') AS descBanca,
-				   COALESCE(iban, '') AS iban,
-				   COALESCE(cin, '') AS cin,
-				   COALESCE(abi, '') AS abi,
-				   COALESCE(cab, '') AS cab,
-				   COALESCE(conto, '') AS conto,
-				   COALESCE(bic, '') AS bic,
-				   COALESCE(note, '') AS note,
-				   fl_predefinita AS predefinita
-			  FROM d_e_risorse
-		     WHERE tipologia = COALESCE(?, tipologia)
-		       AND fl_deleted = 0
-		  ORDER BY descrizione
-		</content>
-	</query>
-	<query name="RISORSE_U01">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_risorse
-			   SET tipologia = ?,
-			   	   descrizione = ?,
-			   	   saldo_iniziale = ?,
-			   	   cod_sia = ?,
-			   	   banca = ?,
-			   	   iban = ?,
-			   	   cin = ?,
-			   	   abi = ?,
-			   	   cab = ?,
-			   	   conto = ?,
-			   	   bic = ?,
-			   	   note = ?,
-			   	   fl_predefinita = ?, 
-				   user_last_update = ?,
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_risorse = ?
-		</content>
-	</query>
-	<query name="RISORSE_U02">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_risorse
-			   SET fl_predefinita = 0, 
-				   user_last_update = ?,
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE tipologia = ?
-		</content>
-	</query>
-	 <query name="PREVENTIVI_D01">
-		<content delimiterParsingDisabled="true">
-			DELETE FROM d_e_prodotti_preventivi
-				  WHERE k_d_e_preventivi = ?
-		</content>
-	</query>
-	<query name="PREVENTIVI_D02">
-		<content delimiterParsingDisabled="true">
-			DELETE FROM d_e_speseincasso_preventivi
-				  WHERE k_d_e_preventivi = ?
-		</content>
-	</query>
-	<query name="PREVENTIVI_D03">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_preventivi
-			   SET fl_deleted = 1,
-				   user_last_update = ?,
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_preventivi = ?
-		</content>
-	</query>
-	<query name="PREVENTIVI_I01">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_preventivi
-					   (num_preventivo,
-						particella,
-						data_preventivo,
-						k_d_e_listini,
-						k_d_e_agenti,
-						k_d_e_progetti,
-						k_d_e_clienti,
-						k_d_e_tipipagamento,
-						k_d_e_risorse,
-						banca,
-						iban,
-						cin,
-						abi,
-						cab,
-						conto,
-						bic,
-						acconto,
-						indirizzo_intestazione,
-						cap_intestazione,
-						citta_intestazione,
-						provincia_intestazione,
-						nazione_intestazione,
-						indirizzo_destinazione,
-						cap_destinazione,
-						citta_destinazione,
-						provincia_destinazione,
-						nazione_destinazione,
-						k_d_e_magazzini,
-						annotazione_estesa,
-						user_created,
-						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-			returning k_d_e_preventivi
-		</content>
-	</query>
-	<query name="PREVENTIVI_I02">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_prodotti_preventivi
-					   (k_d_e_preventivi, 
-						k_d_e_prodotti,
-						quantita,
-						k_d_e_unitamisura,
-						prezzo,
-						sconto,
-						provvigione,
-						k_d_e_aliquoteiva,
-						nota,
-						k_d_e_colori,
-						k_d_e_taglie,
-						k_d_e_scelte,
-						k_d_e_toni,
-						k_d_e_conti,
-						fm_codice,
-						fm_descrizione,
-						fm_unitamisura,
-						fm_tono,
-						fm_scelta,
-						fm_taglia,
-						fm_colore)
-				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),?,?,?,?,?,?,?)
-		</content>
-	</query>
-	<query name="PREVENTIVI_I03">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_speseincasso_preventivi
-					   (k_d_e_preventivi,
-						k_d_e_speseincasso,
-						k_d_e_aliquoteiva,
-						importo)
-				VALUES (?,?,?,?)
-		</content>
-	</query>
-	<query name="PREVENTIVI_S02">
-		<content delimiterParsingDisabled="true">
-			SELECT COUNT(*) 
-			  FROM d_e_preventivi
-			 WHERE num_preventivo = ?
-			   AND CASE WHEN ?::character varying IS NULL THEN particella IS NULL ELSE particella = ?::character varying END
-			   AND k_d_e_preventivi != coalesce(?, 0)
-			   AND EXTRACT(year FROM data_preventivo) = CASE WHEN ?::character varying IS NULL THEN EXTRACT(year FROM CURRENT_DATE) ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
-			   AND fl_deleted = 0
-		</content>
-	</query>
-	<query name="PREVENTIVI_S03">
-		<content delimiterParsingDisabled="true">
-			SELECT d_e_preventivi.k_d_e_preventivi as id,
-				   d_e_preventivi.num_preventivo as numDocumento,
-				   d_e_preventivi.particella,
-				   to_char(d_e_preventivi.data_preventivo,'DD/MM/YYYY') as dataDocumento,
-				   d_e_preventivi.k_d_e_listini as idListino,
-				   COALESCE(d_e_preventivi.k_d_e_agenti, 0) AS idAgente,
-				   COALESCE(d_e_preventivi.k_d_e_progetti, 0) AS idProgetto,
-				   COALESCE(d_e_agenti.denominazione, '') AS agente,
-				   COALESCE(LPAD(d_e_agenti.k_d_e_agenti::character varying, 6, '0'), '') AS codAgente,
-				   d_e_agenti.perc_provvigione AS percProvvigioneAgente,
-				   d_e_preventivi.k_d_e_tipipagamento AS idTipoPagamento,
-				   COALESCE(d_e_tipipagamento.descrizione, '') AS descTipoPagamento,
-				   COALESCE(d_e_tipipagamento.modalita, '') AS modalitaPagamento,
-				   d_e_preventivi.k_d_e_risorse AS idNsBanca,
-				   COALESCE(nsbanca.banca, '') AS descrizioneNsBanca,
-				   COALESCE(nsbanca.iban, '') as ibanNsBanca,
-				   COALESCE(nsbanca.cin, '') as cinNsBanca,
-				   COALESCE(nsbanca.abi, '') as abiNsBanca,
-				   COALESCE(nsbanca.cab, '') as cabNsBanca,
-				   COALESCE(nsbanca.conto, '') as contoNsBanca,
-				   COALESCE(nsbanca.bic, '') as bicNsBanca,
-				   acconto,
-				   d_e_preventivi.k_d_e_clienti as idCliente,
-				   d_e_clienti.denominazione as denominazioneCliente,
-				   d_e_clienti.codice_fiscale AS codiceFiscale,
-				   d_e_clienti.partita_iva AS partitaIva,
-				   d_e_preventivi.banca AS descrizioneBanca,
-				   d_e_preventivi.iban as iban,
-				   d_e_preventivi.cin as cin,
-				   d_e_preventivi.abi as abi,
-				   d_e_preventivi.cab as cab,
-				   d_e_preventivi.conto as conto,
-				   d_e_preventivi.bic as bic,
-				   d_e_preventivi.indirizzo_intestazione as indirizzoIntestazione,
-				   d_e_preventivi.cap_intestazione as capIntestazione,
-				   d_e_preventivi.citta_intestazione as cittaIntestazione,
-				   d_e_preventivi.provincia_intestazione as provinciaIntestazione,
-				   d_e_preventivi.nazione_intestazione as nazioneIntestazione,
-				   d_e_preventivi.indirizzo_destinazione as indirizzoDestinazione,
-				   d_e_preventivi.cap_destinazione as capDestinazione,
-				   d_e_preventivi.citta_destinazione as cittaDestinazione,
-				   d_e_preventivi.provincia_destinazione as provinciaDestinazione,
-				   d_e_preventivi.nazione_destinazione as nazioneDestinazione,
-				   k_d_e_magazzini as idMagazzino,
-				   COALESCE(annotazione_estesa,'') AS annotazioneEstesa
-			  FROM d_e_preventivi
-		 LEFT JOIN d_e_tipipagamento
-				ON d_e_preventivi.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
-		LEFT JOIN d_e_clienti
-			   ON d_e_preventivi.k_d_e_clienti = d_e_clienti.k_d_e_clienti
-		LEFT JOIN d_e_agenti
-			   ON d_e_preventivi.k_d_e_agenti = d_e_agenti.k_d_e_agenti
-		LEFT JOIN d_e_risorse nsbanca
-			   ON d_e_preventivi.k_d_e_risorse = nsbanca.k_d_e_risorse
-			WHERE k_d_e_preventivi = ?
-		</content>
-	</query>
-	<query name="PREVENTIVI_S04">
-		<content delimiterParsingDisabled="true">
-			SELECT d_e_prodotti_preventivi.k_d_e_prodotti_preventivi AS id,
-				   d_e_prodotti_preventivi.k_d_e_preventivi AS idDocumento,
-				   d_e_prodotti_preventivi.k_d_e_prodotti AS idProdotto,
-				   d_e_prodotti.descrizione AS descProdotto,
-				   d_e_prodotti.codice AS codiceProdotto,
-				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
-				   d_e_prodotti_preventivi.k_d_e_aliquoteiva AS idAliquotaIva,
-				   d_e_aliquoteiva.imposta AS percentualeIva,
-				   d_e_prodotti_preventivi.k_d_e_unitamisura AS idUnitaMisura,
-				   d_e_unitamisura.descrizione AS descUnitaMisura,
-				   d_e_prodotti_preventivi.prezzo,
-				   d_e_prodotti_preventivi.sconto,
-				   d_e_prodotti_preventivi.quantita,
-				   d_e_prodotti_preventivi.provvigione,
-				   get_prezzoscontato_prodottopreventivo(d_e_prodotti_preventivi.k_d_e_prodotti_preventivi) AS totale,
-				   get_prezzoscontato_senzaiva_prodottopreventivo(d_e_prodotti_preventivi.k_d_e_prodotti_preventivi) AS totaleSenzaIva,
-				   d_e_prodotti_preventivi.nota,
-				   CASE (coalesce(d_e_prodotti_preventivi.k_d_e_prodotti,0))
-				  	      WHEN 0 THEN false
-						  ELSE true
-				   END prodotto,
-				   k_d_e_colori as idColore,
-				   k_d_e_taglie as idTaglia,
-				   k_d_e_toni as idTono,
-				   k_d_e_scelte as idScelta,
-				   COALESCE(d_e_prodotti_preventivi.k_d_e_conti, 0) AS idConto,
-				   COALESCE(d_e_conti.descrizione, '') AS descConto,
-				   CASE (COALESCE(d_e_prodotti_preventivi.fm_descrizione, ''))
-				   WHEN '' THEN false
-						  ELSE true
-				   END fuoriMagazzino,
-				   fm_codice as fmCodice,
-				   fm_descrizione as fmDescrizione,
-				   fm_unitamisura as fmUnitaMisura,
-				   fm_taglia as fmTaglia,
-				   fm_colore as fmColore,
-				   fm_tono as fmTono,
-				   fm_scelta as fmScelta
-			  FROM d_e_prodotti_preventivi
-		 LEFT JOIN d_e_aliquoteiva
-				ON d_e_prodotti_preventivi.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
-		 LEFT JOIN d_e_prodotti
-				ON d_e_prodotti_preventivi.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
-		 LEFT JOIN d_e_unitamisura
-				ON d_e_prodotti_preventivi.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
-		 LEFT JOIN d_e_conti
-		 		ON d_e_prodotti_preventivi.k_d_e_conti = d_e_conti.k_d_e_conti
-			 WHERE d_e_prodotti_preventivi.k_d_e_preventivi = ?
-			 ORDER BY k_d_e_prodotti_preventivi
-		</content>
-	</query>
-	<query name="PREVENTIVI_S05">
-		<content delimiterParsingDisabled="true">
-			SELECT d_e_speseincasso_preventivi.k_d_e_speseincasso_preventivi as id,
-				   d_e_speseincasso_preventivi.k_d_e_speseincasso as idSpesaIncasso,
-				   d_e_speseincasso_preventivi.importo,
-				   d_e_speseincasso.descrizione AS descrizione,
-				   d_e_speseincasso_preventivi.k_d_e_aliquoteiva as idAliquotaIva,
-				   COALESCE(d_e_aliquoteiva.imposta, 0) AS percIva,
-				   d_e_speseincasso.trasporto
-			  FROM d_e_speseincasso_preventivi
-		INNER JOIN d_e_speseincasso
-				ON d_e_speseincasso_preventivi.k_d_e_speseincasso = d_e_speseincasso.k_d_e_speseincasso
-		 LEFT JOIN d_e_aliquoteiva
-		 		ON d_e_speseincasso_preventivi.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
-			 WHERE k_d_e_preventivi = ?
-		  ORDER BY k_d_e_speseincasso_preventivi
-		</content>
-	</query>
-	<query name="PREVENTIVI_S06">
-		<content delimiterParsingDisabled="true">
-			SELECT num_preventivo + 1 AS numero
-			  FROM d_e_preventivi
-			 WHERE num_preventivo + 1 NOT IN (SELECT num_preventivo 
-			 								 FROM d_e_preventivi 
-			 								WHERE fl_deleted = 0 
-			 								AND EXTRACT(year FROM data_preventivo) = CASE WHEN ?::character varying IS NULL 
-			 																	  THEN EXTRACT(year FROM CURRENT_DATE) 
-			 																	  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
-			 							   )
-			   AND EXTRACT(year FROM data_preventivo) = CASE WHEN ?::character varying IS NULL 
-			   											  THEN EXTRACT(year FROM CURRENT_DATE) 
-			   											  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
-			   AND fl_deleted = 0
-		  GROUP BY numero
-		  ORDER BY numero DESC
-		     LIMIT 1
-		</content>
-	</query>
-	<query name="PREVENTIVI_S07">
-		<content delimiterParsingDisabled="true">
-			SELECT d_e_preventivi.k_d_e_preventivi AS idDocumento,
-			  	   d_e_preventivi.num_preventivo || CASE WHEN d_e_preventivi.particella LIKE ' %' OR d_e_preventivi.particella LIKE '/%' OR d_e_preventivi.particella LIKE '\\%' THEN d_e_preventivi.particella ELSE COALESCE(' ' || d_e_preventivi.particella, '') END AS numeroDocumento,
-			  	   TO_CHAR(d_e_preventivi.data_preventivo,'DD/MM/YYYY') AS dataDocumento,
-			  	   d_e_clienti.denominazione AS soggetto,
-			  	   get_totale_preventivo(d_e_preventivi.k_d_e_preventivi) AS totale,
-			  	   get_descrizione_doccollegato(d_e_preventivi.k_d_e_preventivi, 'PREVENTIVO'::character varying) AS stato,
-			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
-			  	   COUNT(*) OVER() AS total
-			  FROM d_e_preventivi
-              JOIN d_e_clienti
-                ON d_e_preventivi.k_d_e_clienti = d_e_clienti.k_d_e_clienti
-         LEFT JOIN d_e_agenti
-         		ON d_e_preventivi.k_d_e_agenti = d_e_agenti.k_d_e_agenti
-			 WHERE data_preventivo &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_preventivo)
-			   AND data_preventivo &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_preventivo)
-			   AND d_e_preventivi.k_d_e_clienti = COALESCE(?, d_e_preventivi.k_d_e_clienti)
-			   AND COALESCE(d_e_preventivi.k_d_e_agenti, 0) = COALESCE(?, d_e_preventivi.k_d_e_agenti, 0)
-			   AND d_e_preventivi.fl_deleted = 0
-		  ORDER BY ${ORDER_BY}
-		  	${LIMIT}
-		</content>
-	</query>
-	<query name="PREVENTIVI_U01">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_preventivi
-			   SET num_preventivo = ?,
-				   particella = ?,
-				   data_preventivo = to_date(?,'DD/MM/YYYY'),
-				   k_d_e_listini = ?,
-				   k_d_e_agenti = ?,
-				   k_d_e_progetti = ?,
-				   k_d_e_clienti = ?,
-				   k_d_e_tipipagamento = ?,
-				   k_d_e_risorse = ?,
-				   banca = ?,
-				   iban = ?,
-				   cin = ?,
-				   abi = ?,
-				   cab = ?,
-				   conto = ?,
-				   bic = ?,
-				   acconto = ?,
-				   indirizzo_intestazione = ?,
-				   cap_intestazione = ?,
-				   citta_intestazione = ?,
-				   provincia_intestazione = ?,
-				   nazione_intestazione = ?,
-				   indirizzo_destinazione = ?,
-				   cap_destinazione = ?,
-				   citta_destinazione = ?,
-				   provincia_destinazione = ?,
-				   nazione_destinazione = ?,
-				   k_d_e_magazzini = ?,
-				   annotazione_estesa = ?,
-				   user_last_update = ?,
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_preventivi = ?
-		</content>
-	</query>
-	<query name="CITTA_S01">
-		<content delimiterParsingDisabled="true">
-			SELECT cap,
-				   nome,
-				   provincia        
-			  FROM d_e_comuni
-			 WHERE lower(nome) = ?      
-			 UNION
-	   (SELECT cap,
-			   nome,
-			   provincia        
-		  FROM d_e_comuni
-		 WHERE lower(nome) LIKE ?   
-		   AND lower(nome) != ?     
-		 LIMIT 10)
-	  ORDER BY nome
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_D01">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_causalimovimentiprodotti
-			   SET fl_deleted = 1, 
-				   user_last_update = ?, 
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_causalimovimentiprodotti = ?
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_I01">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_causalimovimentiprodotti
-				 	   (descrizione, 
-				 	    user_created, 
-				 	    dt_created)
-				 VALUES(?,?,CURRENT_TIMESTAMP)
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_S01">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_causalimovimentiprodotti AS id,
-				   descrizione,
-				   COUNT(*) OVER() AS total
-			  FROM d_e_causalimovimentiprodotti
-		     WHERE LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione))
-			   AND fl_deleted = 0
-		  ORDER BY ${ORDER_BY}
-				   ${LIMIT}
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_S02">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_causalimovimentiprodotti AS id,
-				   descrizione
-			  FROM d_e_causalimovimentiprodotti
-		     WHERE k_d_e_causalimovimentiprodotti = ?
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_S03">
-		<content delimiterParsingDisabled="true">
-			SELECT COUNT(*)
-			  FROM d_e_causalimovimentiprodotti
-		     WHERE lower(descrizione) = lower(?)
-		       AND k_d_e_causalimovimentiprodotti != COALESCE(?, 0) 
-		       AND fl_deleted = 0
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_S04">
-		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_causalimovimentiprodotti AS id,
-				   descrizione
-			  FROM d_e_causalimovimentiprodotti
-		     WHERE fl_deleted = 0
-		       AND LOWER(descrizione) LIKE LOWER(?)
-		  ORDER BY descrizione
-		</content>
-	</query>
-	<query name="CAUSALIMOVIMENTOARTICOLI_U01">
-		<content delimiterParsingDisabled="true">
-			UPDATE d_e_causalimovimentiprodotti
-			   SET descrizione = ?, 
-				   user_last_update = ?,
-				   dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_causalimovimentiprodotti = ?
-		</content>
-	</query>
-	<query name="MOVIMENTIMAGAZZINO_I01">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_movimenti_magazzino
-					   (k_d_e_prodotti,
-					    tipo_movimento,
-					    quantita, 
-					    k_d_e_unitamisura,
-					    prezzo_unitario,
-					    k_d_e_aliquoteiva,
-					    data,
-					    k_d_e_scelte,
-					    k_d_e_toni,
-					    k_d_e_taglie,
-					    k_d_e_colori,
-					    k_d_e_magazzini,
-					    k_d_e_fornitori,
-					    desc_causale,
-					    user_created,
-					    dt_created)
-				 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-			 returning k_d_e_movimenti_magazzino
-		</content>
-	</query>
-	<query name="MOVIMENTIMAGAZZINO_I02">
-		<content delimiterParsingDisabled="true">
-			INSERT INTO d_e_movimenti_magazzino
-					   (k_d_e_prodotti,
-					    tipo_movimento,
-					    quantita, 
-					    k_d_e_unitamisura,
-					    prezzo_unitario,
-					    k_d_e_aliquoteiva,
-					    data,
-					    k_d_e_scelte,
-					    k_d_e_toni,
-					    k_d_e_taglie,
-					    k_d_e_colori,
-					    k_d_e_magazzini,
-					    k_d_e_clienti,
-					    desc_causale,
-					    user_created,
-					    dt_created)
-				 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-			 returning k_d_e_movimenti_magazzino
-		</content>
-	</query>
-	<query name="MOVIMENTIMAGAZZINO_S01">
-		<content delimiterParsingDisabled="true">
-			SELECT m.k_d_e_movimenti_magazzino AS id,
-				   TO_CHAR(m.data, 'DD/MM/YYYY') AS dataMovimento,
-				   COALESCE(p.codice, '') || ' - ' || COALESCE(p.descrizione, '') AS descrizioneProdotto,
-		   COALESCE(p.codice, '') || ' - ' || COALESCE(p.descrizione, '') AS descrizioneProdottoExcel,
-				   COALESCE(c.denominazione, f.denominazione, '') AS clienteFornitore,
-				   m.quantita,
-				   m.quantita AS quantitaBase,
-				   m.tipo_movimento AS tipoMovimento,
-				   CASE WHEN m.tipo_movimento = 'I' THEN m.quantita ELSE 0 END AS quantitaCarico,
-				   CASE WHEN m.tipo_movimento = 'U' THEN m.quantita ELSE 0 END AS quantitaScarico,
-				   COALESCE(m.desc_causale, '') AS causale,
-				   m.k_d_e_prodotti AS idProdotto
-			  FROM d_e_movimenti_magazzino m
-			  JOIN d_e_prodotti p ON m.k_d_e_prodotti = p.k_d_e_prodotti
-		 LEFT JOIN d_e_clienti c ON m.k_d_e_clienti = c.k_d_e_clienti
-		 LEFT JOIN d_e_fornitori f ON m.k_d_e_fornitori = f.k_d_e_fornitori
-			 WHERE m.data &gt;= TO_DATE(?, 'DD/MM/YYYY')
-			   AND m.data &lt;= TO_DATE(?, 'DD/MM/YYYY')
-			   AND (CAST(? AS BIGINT) IS NULL OR m.k_d_e_prodotti = ?)
-			   AND m.fl_deleted = 0
-			   AND p.fl_deleted = 0
-		  ORDER BY m.data DESC
-		     LIMIT ? OFFSET ?
-		</content>
-	</query>
-
-
-
 </root>
