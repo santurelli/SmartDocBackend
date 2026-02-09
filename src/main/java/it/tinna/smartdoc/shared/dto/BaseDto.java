@@ -46,4 +46,51 @@ public class BaseDto implements Serializable {
     // @Expose
     private String value; // per la risposta per typeahead
 
+    public long getId() {
+        return id;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public String getErrorText() {
+        return errorText;
+    }
+
+    public void setErrorText(String errorText) {
+        this.errorText = errorText;
+    }
+
+    public List<String> getTokens() {
+        return tokens;
+    }
+
+    public void setTokens(List<String> tokens) {
+        this.tokens = tokens;
+    }
+
+    public Long getTotal() {
+        return total;
+    }
+
+    public void setTotal(Long total) {
+        this.total = total;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public String getValue() {
+        return value;
+    }
+
+    public void setValue(String value) {
+        this.value = value;
+    }
 }

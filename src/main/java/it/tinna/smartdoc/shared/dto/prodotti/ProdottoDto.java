@@ -106,6 +106,9 @@ public class ProdottoDto extends BaseDto
     private String                  dataUltimoScarico;
 
     private String                  descAliquotaIva;
+    
+    @Expose
+    private Double                  prezzoFornitore;
 
     @Expose
     private String                  descCategoria;

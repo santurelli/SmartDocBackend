@@ -17,4 +17,35 @@ public class DatatablesResponseDto<T> implements Serializable {
     private Long totalFiltered;
     private String error;
 
+    public List<T> getList() {
+        return list;
+    }
+
+    public void setList(List<T> list) {
+        this.list = list;
+    }
+
+    public Long getTotalCount() {
+        return totalCount;
+    }
+
+    public void setTotalCount(Long totalCount) {
+        this.totalCount = totalCount;
+    }
+
+    public Long getTotalFiltered() {
+        return totalFiltered;
+    }
+
+    public void setTotalFiltered(Long totalFiltered) {
+        this.totalFiltered = totalFiltered;
+    }
+
+    public String getError() {
+        return error;
+    }
+
+    public void setError(String error) {
+        this.error = error;
+    }
 }

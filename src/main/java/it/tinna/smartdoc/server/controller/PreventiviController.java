@@ -151,4 +151,20 @@ public class PreventiviController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/print/{id}")
+    public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
+        try {
+            it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto doc = preventiviDelegate.esportaPreventivoPdf(null, id);
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.add("Content-Disposition", "attachment; filename=" + doc.getNome());
+            
+            return ResponseEntity.ok().headers(headers).body(doc.getFlusso());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }

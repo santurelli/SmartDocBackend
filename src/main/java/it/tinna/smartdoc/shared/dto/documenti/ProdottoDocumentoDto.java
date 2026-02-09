@@ -120,4 +120,13 @@ public class ProdottoDocumentoDto extends BaseDto {
 
     @Expose
     private String data;
+
+    // Report fields
+    private String quantitaFormattata;
+    private String percentualeIvaFormattata;
+    private String prezzoFormattato;
+    private String totaleFormattato;
+
+    // Field expected by report for description
+    private String descrizione;
 }

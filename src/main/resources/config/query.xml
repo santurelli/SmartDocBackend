@@ -7693,7 +7693,11 @@
 				   fm_taglia as fmTaglia,
 				   fm_colore as fmColore,
 				   fm_tono as fmTono,
-				   fm_scelta as fmScelta
+				   fm_scelta as fmScelta,
+				   COALESCE(d_e_sceltearticolo.descrizione, '') AS descrScelta,
+				   COALESCE(d_e_toniarticolo.descrizione, '') AS descrTono,
+				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro,
+				   COALESCE(d_e_formatiarticolo.descrizione, '') AS descrFormato
 			  FROM d_e_prodotti_preventivi
 		 LEFT JOIN d_e_aliquoteiva
 				ON d_e_prodotti_preventivi.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
@@ -7703,6 +7707,15 @@
 				ON d_e_prodotti_preventivi.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
 		 LEFT JOIN d_e_conti
 		 		ON d_e_prodotti_preventivi.k_d_e_conti = d_e_conti.k_d_e_conti
+		 LEFT JOIN d_e_sceltearticolo
+		 		ON COALESCE(NULLIF(d_e_prodotti_preventivi.k_d_e_scelte, 0), d_e_prodotti.k_d_e_sceltearticolo) = d_e_sceltearticolo.k_d_e_sceltearticolo
+		 LEFT JOIN d_e_toniarticolo
+		 		ON COALESCE(NULLIF(d_e_prodotti_preventivi.k_d_e_toni, 0), d_e_prodotti.k_d_e_toniarticolo) = d_e_toniarticolo.k_d_e_toniarticolo
+		 LEFT JOIN d_e_calibriarticolo
+		 		ON COALESCE(NULLIF(d_e_prodotti_preventivi.k_d_e_taglie, 0), d_e_prodotti.k_d_e_calibriarticolo) = d_e_calibriarticolo.k_d_e_calibriarticolo
+
+		 LEFT JOIN d_e_formatiarticolo
+		 		ON d_e_prodotti.k_d_e_formatiarticolo = d_e_formatiarticolo.k_d_e_formatiarticolo
 			 WHERE d_e_prodotti_preventivi.k_d_e_preventivi = ?
 			 ORDER BY k_d_e_prodotti_preventivi
 		</content>
@@ -8000,6 +8013,7 @@
 				 	   	k_d_e_aliquoteiva,
 				 	   	k_d_e_fornitori,
 				 	   	cod_prod_fornitore,
+ 				 	   	prezzo_fornitore,
 				 	   	note,
 				 	   	k_d_e_unitamisura1,
 				 	   	relazione_unita_misura,
@@ -8033,7 +8047,7 @@
 				 	   	dot,
 				 	    user_created, 
 				 	    dt_created)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_prodotti
 		</content>
 	</query>
@@ -8122,7 +8136,8 @@
 				   COALESCE(d_e_prodotti.fl_obsoleto, 0) as obsoleto,
 				   COALESCE(d_e_prodotti.k_d_e_aliquoteiva, 0) AS idAliquotaIva,
 				   d_e_prodotti.k_d_e_fornitori AS idFornitore,
-				   COALESCE(cod_prod_fornitore, '') AS codicePerFornitore,
+				   d_e_prodotti.prezzo_fornitore AS prezzoFornitore,
+ 				   COALESCE(cod_prod_fornitore, '') AS codicePerFornitore,
 				   COALESCE(d_e_prodotti.k_d_e_divisioni, 0) AS idDivisione,
 				   COALESCE(d_e_prodotti.k_d_e_conti, 0) AS idConto,
 				   COALESCE(d_e_prodotti.k_d_e_categorie, 0) AS idCategoria,
@@ -8893,6 +8908,7 @@
 				   k_d_e_aliquoteiva = ?,
 				   k_d_e_fornitori = ?,
 				   cod_prod_fornitore = ?,
+ 				   prezzo_fornitore = ?,
 				   note = ?,
 				   k_d_e_unitamisura1 = ?,
 				   relazione_unita_misura = ?,

@@ -62,7 +62,13 @@ public class ArticoliController {
             Object idCalibroObj = params.get("idCalibro");
             Integer idCalibro = (idCalibroObj != null && !"".equals(idCalibroObj.toString())) ? Integer.parseInt(idCalibroObj.toString()) : null;
 
-            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro);
+            Object idFormatoObj = params.get("idFormato");
+            Integer idFormato = (idFormatoObj != null && !"".equals(idFormatoObj.toString())) ? Integer.parseInt(idFormatoObj.toString()) : null;
+
+            Object idSceltaObj = params.get("idScelta");
+            Integer idScelta = (idSceltaObj != null && !"".equals(idSceltaObj.toString())) ? Integer.parseInt(idSceltaObj.toString()) : null;
+
+            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta);
             long total = list.isEmpty() ? 0 : list.get(0).getTotal();
 
             DatatablesResponseDto<ProdottoDto> response = new DatatablesResponseDto<>();

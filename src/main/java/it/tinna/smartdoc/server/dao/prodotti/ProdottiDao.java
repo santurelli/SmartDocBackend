@@ -27,7 +27,7 @@ public class ProdottiDao extends BaseDao {
     }
 
     public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
-            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro) throws SQLException {
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta) throws SQLException {
         BeanPropertyRowMapper<ProdottoDto> rowMapper = new BeanPropertyRowMapper<>(ProdottoDto.class);
         try {
             String query = FileQueryReader.getQuery("PRODOTTI_S01");
@@ -86,6 +86,18 @@ public class ProdottiDao extends BaseDao {
             if (idCalibro != null) {
                 sb.append(" AND k_d_e_calibriarticolo = ? ");
                 args.add(idCalibro);
+            }
+
+            // Formato
+            if (idFormato != null) {
+                sb.append(" AND k_d_e_formatiarticolo = ? ");
+                args.add(idFormato);
+            }
+
+            // Scelta
+            if (idScelta != null) {
+                sb.append(" AND k_d_e_sceltearticolo = ? ");
+                args.add(idScelta);
             }
             
             query = query.replace("${EXTRA_FILTERS}", sb.toString());
@@ -198,6 +210,7 @@ public class ProdottiDao extends BaseDao {
                 dto.getIdAliquotaIva() != null && dto.getIdAliquotaIva() != 0 ? dto.getIdAliquotaIva() : null,
                 dto.getIdFornitore() != null && dto.getIdFornitore() != 0 ? dto.getIdFornitore() : null,
                 dto.getCodicePerFornitore(),
+                dto.getPrezzoFornitore(),
                 dto.getNote(),
                 dto.getIdUnitaMisura1() != null && dto.getIdUnitaMisura1() != 0 ? dto.getIdUnitaMisura1() : null,
                 dto.getEquivUnitaMisura(),
@@ -256,6 +269,7 @@ public class ProdottiDao extends BaseDao {
                 dto.getIdAliquotaIva() != null && dto.getIdAliquotaIva() != 0 ? dto.getIdAliquotaIva() : null,
                 dto.getIdFornitore() != null && dto.getIdFornitore() != 0 ? dto.getIdFornitore() : null,
                 dto.getCodicePerFornitore(),
+                dto.getPrezzoFornitore(),
                 dto.getNote(),
                 dto.getIdUnitaMisura1() != null && dto.getIdUnitaMisura1() != 0 ? dto.getIdUnitaMisura1() : null,
                 dto.getEquivUnitaMisura(),

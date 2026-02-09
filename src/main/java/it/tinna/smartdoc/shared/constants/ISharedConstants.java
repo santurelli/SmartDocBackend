@@ -8,6 +8,9 @@ public class ISharedConstants {
     public static String CONFIG_DOMAIN_CLIENTI = "CLIENTI";
     public static String CONFIG_DOMAIN_FORNITORI = "FORNITORI";
     public static String CONFIG_DOMAIN_STAMPA = "PRINT";
+
+    public static String CONFIGURAZIONE_DOMINIO_STAMPA = "PRINT";
+    public static String CONFIG_KEY_STAMPA_AGENTE = "STAMPA_AGENTE";
     
     // Alias for legacy compatibility
     public static String CONFIGURAZIONE_DOMINIO_ARTICOLI = CONFIG_DOMAIN_ARTICOLI;
