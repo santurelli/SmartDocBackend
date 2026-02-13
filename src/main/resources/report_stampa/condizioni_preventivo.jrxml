@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="condizioni_preventivo" language="java" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9f4db213-50da-4b12-83f7-85c4a52cbd40">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="335"/>
+	<style name="Text Body" hAlign="Left" fontSize="8"/>
+	<parameter name="condizioni" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["<b>bbb</b><br />uuu"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="logopath" class="java.io.InputStream" isForPrompting="false"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="57">
+			<image onErrorType="Blank">
+				<reportElement x="0" y="0" width="276" height="57" uuid="22d5b495-0dee-4472-8cd6-9861ca2bb61f"/>
+				<imageExpression><![CDATA[$P{logopath}]]></imageExpression>
+			</image>
+		</band>
+	</title>
+	<detail>
+		<band height="722" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="722" uuid="db5090bf-6375-4af2-aaea-edd791319c4c"/>
+				<textElement markup="html"/>
+				<textFieldExpression><![CDATA[$P{condizioni}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

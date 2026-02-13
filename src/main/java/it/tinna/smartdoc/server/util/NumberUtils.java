@@ -13,6 +13,12 @@ public class NumberUtils
 
     public static String formatAsCurrency(double importo)
     {
+        return formatAsCurrency((Double)importo);
+    }
+
+    public static String formatAsCurrency(Double importo)
+    {
+        if (importo == null) return "";
         NumberFormat nf = NumberFormat.getNumberInstance(new Locale("it", "IT"));
         nf.setGroupingUsed(true);
         nf.setMaximumFractionDigits(2);
@@ -23,6 +29,7 @@ public class NumberUtils
 
     public static String formatAsQuantity(Double importo)
     {
+        if (importo == null) return "";
         NumberFormat nf = NumberFormat.getNumberInstance(new Locale("it", "IT"));
         nf.setGroupingUsed(true);
         nf.setMaximumFractionDigits(2);
@@ -39,6 +46,7 @@ public class NumberUtils
 
     public static String formatAsPercentage(Double importo)
     {
+        if (importo == null) return "";
         NumberFormat nf = NumberFormat.getNumberInstance(new Locale("it", "IT"));
         nf.setMaximumFractionDigits(3);
         DecimalFormat df = (DecimalFormat) nf;

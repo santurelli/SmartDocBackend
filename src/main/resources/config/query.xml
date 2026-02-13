@@ -2136,9 +2136,12 @@
 						nazione_destinazione,
 						acconto,
 						k_d_e_magazzini,
+						annotazione_estesa,
+						k_d_e_docassociato,
+						tipo_docassociato,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_confordine;
 		</content>
 	</query>
@@ -2237,7 +2240,8 @@
 				   d_e_confordine.nazione_destinazione as nazioneDestinazione,
 				   acconto,
 				   d_e_confordine.k_d_e_magazzini as idMagazzino,
-				   d_e_magazzini.descrizione AS descrMagazzino
+				   d_e_magazzini.descrizione AS descrMagazzino,
+				   d_e_confordine.annotazione_estesa as annotazioneEstesa
 			  FROM d_e_confordine
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_confordine.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -2300,7 +2304,11 @@
 				   fm_taglia as fmTaglia,
 				   fm_colore as fmColore,
 				   fm_tono as fmTono,
-				   fm_scelta as fmScelta
+				   fm_scelta as fmScelta,
+				   COALESCE(d_e_sceltearticolo.descrizione, '') AS descrScelta,
+				   COALESCE(d_e_toniarticolo.descrizione, '') AS descrTono,
+				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro,
+				   COALESCE(d_e_formatiarticolo.descrizione, '') AS descrFormato
 			  FROM d_e_prodotti_confordine
 		 LEFT JOIN d_e_aliquoteiva
 				ON d_e_prodotti_confordine.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
@@ -2310,14 +2318,21 @@
 				ON d_e_prodotti_confordine.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
 		 LEFT JOIN d_e_conti
 		 		ON d_e_prodotti_confordine.k_d_e_conti = d_e_conti.k_d_e_conti
+		 LEFT JOIN d_e_sceltearticolo
+				ON COALESCE(NULLIF(d_e_prodotti_confordine.k_d_e_scelte, 0), d_e_prodotti.k_d_e_sceltearticolo) = d_e_sceltearticolo.k_d_e_sceltearticolo
+		 LEFT JOIN d_e_toniarticolo
+				ON COALESCE(NULLIF(d_e_prodotti_confordine.k_d_e_toni, 0), d_e_prodotti.k_d_e_toniarticolo) = d_e_toniarticolo.k_d_e_toniarticolo
+		 LEFT JOIN d_e_calibriarticolo
+				ON COALESCE(NULLIF(d_e_prodotti_confordine.k_d_e_taglie, 0), d_e_prodotti.k_d_e_calibriarticolo) = d_e_calibriarticolo.k_d_e_calibriarticolo
+		 LEFT JOIN d_e_formatiarticolo
+				ON d_e_prodotti.k_d_e_formatiarticolo = d_e_formatiarticolo.k_d_e_formatiarticolo
 			 WHERE d_e_prodotti_confordine.k_d_e_confordine = ?
 			 ORDER BY k_d_e_prodotti_confordine
 		</content>
 	</query>
 	<query name="CONFORDINE_S03">
 		<content delimiterParsingDisabled="true">
-			SELECT num_confordine + 1 AS numero, 
-				   COUNT(*)
+			SELECT num_confordine + 1 AS numero
 			  FROM d_e_confordine
 			 WHERE num_confordine + 1 NOT IN (SELECT num_confordine 
 			 								 FROM d_e_confordine
@@ -2332,6 +2347,7 @@
 			   AND fl_deleted = 0
 		  GROUP BY numero
 		  ORDER BY numero DESC
+		  LIMIT 1
 		</content>
 	</query>
 	<query name="CONFORDINE_S04">
@@ -2402,6 +2418,7 @@
 				   nazione_destinazione = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
+				   annotazione_estesa = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_confordine = ?
@@ -2415,6 +2432,33 @@
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_confordine = ?
+		</content>
+	</query>
+	<query name="CONFORDINE_S07">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_confordine.k_d_e_confordine AS idDocumento,
+			  	   d_e_confordine.num_confordine || COALESCE(' ' || d_e_confordine.particella, '') AS numeroDocumento,
+			  	   TO_CHAR(d_e_confordine.data_confordine,'DD/MM/YYYY') AS dataDocumento,
+			  	   d_e_clienti.denominazione AS soggetto,
+			  	   (SELECT COALESCE(SUM(get_prezzoscontato_prodottoconfordine(k_d_e_prodotti_confordine)), 0) 
+                      FROM d_e_prodotti_confordine 
+                     WHERE k_d_e_confordine = d_e_confordine.k_d_e_confordine) AS totale,
+			  	   get_descrizione_doccollegato(d_e_confordine.k_d_e_confordine, 'CONF_ORDINE'::character varying) AS stato,
+			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
+			  	   COUNT(*) OVER() AS total
+			  FROM d_e_confordine
+              JOIN d_e_clienti
+                ON d_e_confordine.k_d_e_clienti = d_e_clienti.k_d_e_clienti
+          LEFT JOIN d_e_agenti
+          		ON d_e_confordine.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+ 			 
+			 WHERE data_confordine &gt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_confordine)
+			 AND data_confordine &lt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_confordine)
+			 AND d_e_confordine.k_d_e_clienti = COALESCE(?, d_e_confordine.k_d_e_clienti)
+			 AND COALESCE(d_e_confordine.k_d_e_agenti, 0) = COALESCE(?, d_e_confordine.k_d_e_agenti, 0)
+			   AND d_e_confordine.fl_deleted = 0
+		  ORDER BY ${ORDER_BY}
+		  	${LIMIT}
 		</content>
 	</query>
 	<query name="CONTATTI_I01">
@@ -2911,6 +2955,7 @@
 			   AND data_ddt &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_ddt)
 			   AND d_e_ddt.k_d_e_clienti = COALESCE(?, d_e_ddt.k_d_e_clienti)
 			   AND COALESCE(d_e_ddt.k_d_e_agenti, 0) = COALESCE(?, d_e_ddt.k_d_e_agenti, 0)
+			   AND COALESCE(d_e_ddt.num_ddt, 0) = COALESCE(?, d_e_ddt.num_ddt, 0)
 			   AND d_e_ddt.fl_deleted = 0
 		  ORDER BY ${ORDER_BY}
 		  	${LIMIT}
@@ -3178,6 +3223,16 @@
  				  ORDER BY data_fattura DESC, k_d_e_fatture DESC
 		 			 LIMIT 10
 		 		   ) a
+		</content>
+	</query>
+	<query name="DOCUMENTI_S10">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_r_doccollegati
+			 WHERE id_docpadre = ?
+			   AND tipo_docpadre = ?
+			   AND id_docfiglio = ?
+			   AND tipo_docfiglio = ?
 		</content>
 	</query>
 	<query name="ESIGIBILITADIFFERITA_D01">

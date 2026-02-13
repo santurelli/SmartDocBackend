@@ -21,7 +21,4 @@ public class PreventivoDto extends DocumentoDto {
     @Expose
     private String descTipoPagamento;
 
-    @Expose
-    private String fatturareA;
-
 }

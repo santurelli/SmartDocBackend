@@ -10,6 +10,7 @@ public abstract class ITemplate {
 	private List<ProdottoDocumentoDto> prodotti;
 	private List<RiepilogoIvaDto> riepilogoIva;
 	private List<ScadenzaPagamentoDocumentoDto> scadenze;
+	private String annotazioneEstesa;
 	
 	public List<ProdottoDocumentoDto> getProdotti() {
 		return prodotti;
@@ -33,6 +34,14 @@ public abstract class ITemplate {
 
 	public void setScadenze(List<ScadenzaPagamentoDocumentoDto> scadenze) {
 		this.scadenze = scadenze;
+	}
+
+	public String getAnnotazioneEstesa() {
+		return annotazioneEstesa;
+	}
+
+	public void setAnnotazioneEstesa(String annotazioneEstesa) {
+		this.annotazioneEstesa = annotazioneEstesa;
 	}
 
 }

@@ -159,6 +159,15 @@ public class DocumentoDto extends BaseDto {
     private String numeroOrdineAcquisto;
 
     @Expose
+    private Integer pallet;
+
+    @Expose
+    private String targa;
+
+    @Expose
+    private String dataOraTrasporto;
+
+    @Expose
     private String particella;
 
     @Expose
@@ -178,6 +187,9 @@ public class DocumentoDto extends BaseDto {
 
     @Expose
     private List<ProdottoDocumentoDto> prodotti;
+
+    @Expose
+    private List<SpesaIncassoDocumentoDto> listaSpeseIncassoFattura;
 
     @Expose
     @SerializedName("progetto")
@@ -201,4 +213,13 @@ public class DocumentoDto extends BaseDto {
     private Double totaleIva;
 
     private Double totalePagato;
+
+    @Expose
+    private String fatturareA;
+
+    @Expose
+    private Integer idDocAssociato;
+
+    @Expose
+    private String tipoDocAssociato;
 }

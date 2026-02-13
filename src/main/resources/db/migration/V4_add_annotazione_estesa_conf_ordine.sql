@@ -1,0 +1,1 @@
+ALTER TABLE d_e_confordine ADD COLUMN annotazione_estesa TEXT;
