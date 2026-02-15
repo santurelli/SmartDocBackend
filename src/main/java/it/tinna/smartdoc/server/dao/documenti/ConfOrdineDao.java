@@ -83,7 +83,7 @@ public class ConfOrdineDao extends BaseDao {
     }
 
     public List<MovimentiDocumentoDto> getList(Integer idCliente, String dtFrom, String dtTo, Integer idAgente,
-            Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
+            Integer length, Integer start, String orderColumn, String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("CONFORDINE_S07");
         List<Object> params = new ArrayList<>();
         params.add(formatDate(dtFrom));
@@ -92,18 +92,8 @@ public class ConfOrdineDao extends BaseDao {
         params.add(idAgente);
         
         Map<String, String> valuesMap = new HashMap<>();
-        if (orderColumn != null) {
-            if (orderColumn == 0) {
-                valuesMap.put("ORDER_BY", new StringBuilder("data_confordine ").append(orderDir).toString());
-            } else if (orderColumn == 1) {
-                valuesMap.put("ORDER_BY", new StringBuilder("num_confordine ").append(orderDir).toString());
-            } else if (orderColumn == 2) {
-                valuesMap.put("ORDER_BY", new StringBuilder("d_e_clienti.denominazione ").append(orderDir).toString());
-            } else if (orderColumn == 3) {
-                 valuesMap.put("ORDER_BY", new StringBuilder("d_e_agenti.denominazione ").append(orderDir).toString());
-            } else {
-                 valuesMap.put("ORDER_BY", new StringBuilder("data_confordine DESC, num_confordine DESC").toString());
-            }
+        if (StringUtils.isNotEmpty(orderColumn)) {
+            valuesMap.put("ORDER_BY", orderColumn + " " + orderDir);
         } else {
              valuesMap.put("ORDER_BY", "data_confordine DESC, num_confordine DESC");
         }

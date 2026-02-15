@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.documenti.DdtDao;
+import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.server.delegate.agenti.AgentiDelegate;
 import it.tinna.smartdoc.server.delegate.aliquoteiva.AliquoteIvaDelegate;
 import it.tinna.smartdoc.server.delegate.clienti.ClientiDelegate;
@@ -20,7 +21,11 @@ import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.server.delegate.progetti.ProgettiDelegate;
 import it.tinna.smartdoc.server.delegate.risorse.RisorseDelegate;
 import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
+import it.tinna.smartdoc.server.delegate.tipiporto.TipiPortoDelegate;
 import it.tinna.smartdoc.server.delegate.unitamisura.UnitaMisuraDelegate;
+import it.tinna.smartdoc.server.delegate.vettori.VettoriDelegate;
+import it.tinna.smartdoc.server.delegate.aspettobeni.AspettoBeniDelegate;
+import it.tinna.smartdoc.server.delegate.causalitrasporto.CausaliTrasportoDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.documenti.DdtDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
@@ -30,7 +35,7 @@ import it.tinna.smartdoc.shared.dto.documenti.SpesaIncassoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 
 @Service
-public class DdtDelegate {
+public class DdtDelegate extends BaseDelegate {
 
     @Autowired
     private DdtDao ddtDao;
@@ -65,6 +70,18 @@ public class DdtDelegate {
     @Autowired
     private DatiAziendaDelegate datiaziendaDelegate;
 
+    @Autowired
+    private VettoriDelegate vettoriDelegate;
+
+    @Autowired
+    private TipiPortoDelegate tipiPortoDelegate;
+
+    @Autowired
+    private AspettoBeniDelegate aspettoBeniDelegate;
+
+    @Autowired
+    private CausaliTrasportoDelegate causaliTrasportoDelegate;
+
     @Transactional(rollbackFor = Exception.class)
     public void delete(long id, long userId) throws SQLException {
         DdtDto dto = new DdtDto();
@@ -97,7 +114,7 @@ public class DdtDelegate {
                                                                  Integer idDocumento,
                                                                  Integer length,
                                                                  Integer start,
-                                                                 Integer orderColumn,
+                                                                 String orderColumn,
                                                                  String orderDir) throws SQLException {
         List<MovimentiDocumentoDto> list = ddtDao.getList(idCliente, dtFrom, dtTo, idAgente, idDocumento, length, start, orderColumn, orderDir);
         long total = 0;
@@ -164,10 +181,10 @@ public class DdtDelegate {
         map.put(ISharedConstants.COMBOSMAP_KEY_PROGETTI, progettiDelegate.getListForCombo());
         
         // Specific combos for DDT
-        map.put("ASPETTIBENI", risorseDelegate.getListForCombo("AB"));
-        map.put("CAUSALITRASPORTO", risorseDelegate.getListForCombo("CT"));
-        map.put("TIPIPORTO", risorseDelegate.getListForCombo("TP"));
-        map.put("VETTORI", risorseDelegate.getListForCombo("VE"));
+        map.put("ASPETTIBENI", aspettoBeniDelegate.getListForCombo());
+        map.put("CAUSALITRASPORTO", causaliTrasportoDelegate.getListForCombo());
+        map.put("TIPIPORTO", tipiPortoDelegate.getListForCombo());
+        map.put("VETTORI", vettoriDelegate.getListForCombo());
 
         String particelleAsString = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
         if (StringUtils.isNotEmpty(particelleAsString)) {
@@ -179,11 +196,122 @@ public class DdtDelegate {
     }
 
     public DocumentoWrapperDto esportaDdtPdf(String dbKey, long id) {
-        // This will be implemented if needed, similar to PreventiviDelegate.esportaPreventivoPdf
-        // For now, I'll return an empty placeholder to keep the code compilable if called.
-        DocumentoWrapperDto result = new DocumentoWrapperDto();
-        result.setFlusso(new byte[0]);
-        result.setNome("ddt_not_implemented.pdf");
-        return result;
+        _log.info("Inizio generazione PDF per DDT ID: {}", id);
+        try {
+            DdtDto dto = getById(id);
+            if (dto == null) {
+                _log.error("DDT non trovato per ID: {}", id);
+                throw new Exception("DDT non trovato: " + id);
+            }
+            _log.info("Dati DDT recuperati con successo per ID: {}", id);
+
+            it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto daDto = datiaziendaDelegate.getDatiAzienda();
+            
+            // Popolamento campi per la stampa
+            StringBuilder fatturareA = new StringBuilder();
+            if (dto.getClienteDto() != null) {
+                fatturareA.append(dto.getClienteDto().getDenominazione()).append("\n");
+                fatturareA.append(StringUtils.defaultString(dto.getIndirizzoIntestazione())).append("\n");
+                fatturareA.append(StringUtils.defaultString(dto.getCapIntestazione())).append(" ");
+                fatturareA.append(StringUtils.defaultString(dto.getCittaIntestazione())).append(" ");
+                if (StringUtils.isNotEmpty(dto.getProvinciaIntestazione())) {
+                    fatturareA.append("(").append(dto.getProvinciaIntestazione()).append(")");
+                }
+                fatturareA.append("\n").append(StringUtils.defaultString(dto.getNazioneIntestazione()));
+            }
+            dto.setFatturareA(fatturareA.toString());
+
+            StringBuilder luogoDest = new StringBuilder();
+            luogoDest.append(StringUtils.defaultString(dto.getIndirizzoDestinazione())).append("\n");
+            luogoDest.append(StringUtils.defaultString(dto.getCapDestinazione())).append(" ");
+            luogoDest.append(StringUtils.defaultString(dto.getCittaDestinazione())).append(" ");
+            if (StringUtils.isNotEmpty(dto.getProvinciaDestinazione())) {
+                luogoDest.append("(").append(dto.getProvinciaDestinazione()).append(")");
+            }
+            dto.setLuogoDestinazione(luogoDest.toString());
+
+            if (dto.getIdTipoPagamento() != null) {
+                it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto tp = tipiPagamentoDelegate.getById(dto.getIdTipoPagamento());
+                if (tp != null) dto.setDescTipoPagamento(tp.getDescrizione());
+            }
+
+            if (dto.getIdTipoPorto() != null) {
+                it.tinna.smartdoc.shared.dto.tipiporto.TipoPortoDto r = tipiPortoDelegate.getById(dto.getIdTipoPorto());
+                if (r != null) dto.setDescTipoPorto(r.getDescrizione());
+            }
+            if (dto.getIdCausaleTrasporto() != null) {
+                it.tinna.smartdoc.shared.dto.documenti.CausaleTrasportoDto r = causaliTrasportoDelegate.getById(dto.getIdCausaleTrasporto());
+                if (r != null) dto.setDescCausaleTrasporto(r.getDescrizione());
+            }
+            if (dto.getIdVettore() != null) {
+                it.tinna.smartdoc.shared.dto.vettori.VettoreDto r = vettoriDelegate.getById(dto.getIdVettore());
+                if (r != null) dto.setDescVettore(r.getDescrizione());
+            }
+            if (dto.getIdAspettoBeni() != null) {
+                it.tinna.smartdoc.shared.dto.aspettobeni.AspettoBeniDto r = aspettoBeniDelegate.getById(dto.getIdAspettoBeni());
+                if (r != null) dto.setDescAspettoBeni(r.getDescrizione());
+            }
+            if (dto.getPesoLordo() != null) {
+                dto.setDescPesoLordo(it.tinna.smartdoc.server.util.NumberUtils.formatAsQuantity(dto.getPesoLordo()) + " Kg");
+            }
+
+            Map<String, Object> params = new HashMap<>();
+            params.put("documento", dto);
+            params.put("datiazienda", daDto);
+            
+            if (daDto != null && daDto.getByteLogo() != null) {
+                params.put("logopath", new java.io.ByteArrayInputStream(daDto.getByteLogo()));
+            }
+
+            if (dto.getDataDocumento() != null) {
+                String dStr = dto.getDataDocumento();
+                if (dStr.contains("/")) {
+                    String[] parts = dStr.split("/");
+                    if (parts.length >= 3) params.put("anno", parts[2]);
+                } else if (dStr.contains("-")) {
+                    String[] parts = dStr.split("-");
+                    if (parts.length >= 1) params.put("anno", parts[0]); // assuming YYYY-MM-DD
+                }
+            }
+            if (!params.containsKey("anno")) params.put("anno", "");
+
+            String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
+            params.put("print_codagente", "1".equals(stampaAgente) || "true".equalsIgnoreCase(stampaAgente));
+
+            if (dto.getProdotti() != null) {
+                _log.info("Formattazione di {} prodotti", dto.getProdotti().size());
+                for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
+                    pdDto.setQuantitaFormattata(it.tinna.smartdoc.server.util.NumberUtils.formatAsQuantity(pdDto.getQuantita()));
+                    
+                    if (pdDto.isFuoriMagazzino()) {
+                        pdDto.setCodiceProdotto(StringUtils.defaultString(pdDto.getFmCodice()));
+                        pdDto.setDescrizione(StringUtils.defaultString(pdDto.getFmDescrizione()));
+                        pdDto.setDescrScelta(StringUtils.defaultString(pdDto.getFmScelta()));
+                        pdDto.setDescrTono(StringUtils.defaultString(pdDto.getFmTono()));
+                        pdDto.setDescrCalibro(StringUtils.defaultString(pdDto.getFmTaglia()));
+                    } else {
+                        pdDto.setDescrizione(StringUtils.defaultString(pdDto.getDescProdotto()));
+                        // CodiceProdotto should be handled by DAO but let's ensure it's not null for the report
+                        if (pdDto.getCodiceProdotto() == null) pdDto.setCodiceProdotto("");
+                    }
+                }
+            }
+
+            _log.info("Caricamento jasperReport: ddt.jrxml");
+            net.sf.jasperreports.engine.JasperReport jasperReport = it.tinna.smartdoc.server.util.ReportLoader.getReport("ddt.jrxml");
+            _log.info("Riempimento report...");
+            net.sf.jasperreports.engine.JasperPrint jasperPrint = net.sf.jasperreports.engine.JasperFillManager.fillReport(jasperReport, params, new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource(java.util.Arrays.asList(dto)));
+            _log.info("Esportazione in PDF...");
+            byte[] bytes = net.sf.jasperreports.engine.JasperExportManager.exportReportToPdf(jasperPrint);
+            _log.info("PDF generato con successo, dimensione: {} bytes", bytes.length);
+
+            DocumentoWrapperDto result = new DocumentoWrapperDto();
+            result.setFlusso(bytes);
+            result.setNome("DDT_" + dto.getNumDocumento() + ".pdf");
+            return result;
+        } catch (Exception e) {
+            _log.error("Errore critico durante la generazione del PDF per DDT ID: {}", id, e);
+            return null;
+        }
     }
 }

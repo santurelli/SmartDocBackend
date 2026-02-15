@@ -3861,14 +3861,15 @@
 	</query>
 	<query name="FATTURE_S16">
 		<content delimiterParsingDisabled="true">
-				SELECT d_e_fatture.k_d_e_fatture AS id_documento,
+				SELECT d_e_fatture.k_d_e_fatture AS id,
 					   d_e_fatture.tipo_fattura AS tipoFattura,
-					   d_e_fatture.num_fattura AS numFattura, 
+					   d_e_fatture.num_fattura AS numDocumento, 
 	                   d_e_fatture.num_fattura || CASE WHEN d_e_fatture.particella LIKE ' %' OR d_e_fatture.particella LIKE '/%' OR d_e_fatture.particella LIKE '\\%' THEN d_e_fatture.particella ELSE COALESCE(' ' || d_e_fatture.particella, '') END AS numeroDocumento,
+	                   d_e_fatture.fl_fatturaelettronica as flFatturaElettronica,
 	                   d_e_fatture.data_fattura AS dataFattura,
 	                   COALESCE(d_e_fatture.particella,'') AS particella, 
 	                   TO_CHAR(d_e_fatture.data_fattura,'DD/MM/YYYY') AS dataDocumento,
-				  	   d_e_clienti.denominazione AS soggetto,
+				  	   d_e_clienti.denominazione AS denominazioneCliente,
 				  	   d_e_clienti.denominazione AS text,
 				  	   d_e_fatture.totale AS totale,
 				  	   d_e_fatture.totale_pagato AS totalePagato, 
@@ -3891,6 +3892,7 @@
 				   AND d_e_fatture.fl_deleted = 0
 				   ${TIPO_FATTURA}
 		    	   ${STATO}
+		    	   ${NUM_DOCUMENTO}
 		  	  ORDER BY ${ORDER_BY}
 		  			   ${LIMIT}
 		</content>
@@ -4690,6 +4692,638 @@
 			 WHERE k_d_e_fornitori = ?
 		</content>
 	</query>
+	<query name="FATTURE_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_fatture
+					   (num_fattura,
+						particella,
+						data_fattura,
+						k_d_e_listini,
+						k_d_e_agenti,
+						k_d_e_progetti,
+						k_d_e_causalitrasporto,
+						data_ora_trasporto,
+						targa,
+						k_d_e_tipiporto,
+						k_d_e_vettori,
+						k_d_e_aspettobeni,
+						colli,
+						pallet,
+						peso_netto,
+						peso_lordo,
+						k_d_e_clienti,
+						k_d_e_tipipagamento,
+						k_d_e_risorse,
+						banca,
+						iban,
+						cin,
+						abi,
+						cab,
+						conto,
+						bic,
+						indirizzo_intestazione,
+						cap_intestazione,
+						citta_intestazione,
+						provincia_intestazione,
+						nazione_intestazione,
+						indirizzo_destinazione,
+						cap_destinazione,
+						citta_destinazione,
+						provincia_destinazione,
+						nazione_destinazione,
+						fl_esigibilitadifferita,
+						k_d_e_causaliesigibilitadifferita,
+						tipo_comunicazione,
+						codice_ufficio_destinazione,
+						pec_destinazione,
+						k_d_e_magazzini,
+						split_payment,
+						fl_fatturaelettronica,
+						causale,
+						numero_ordine_acquisto,
+						data_ordine_acquisto,
+						cig,
+						cup,
+						dati_commessa,
+						numero_scontrino,
+						data_scontrino,
+						tipo_fattura,
+						stato_fattura_elettronica,
+						id_fatturacollegata,
+						user_created,
+						dt_created)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?, TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,CURRENT_TIMESTAMP)
+			  RETURNING k_d_e_fatture;
+		</content>
+	</query>
+	<query name="FATTURE_I02">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_prodotti_fatture
+					   (k_d_e_fatture, 
+						k_d_e_prodotti,
+						quantita,
+						k_d_e_unitamisura,
+						prezzo,
+						sconto,
+						prezzo_scontato,
+						provvigione,
+						k_d_e_aliquoteiva,
+						fl_scarica,
+						nota,
+						k_d_e_colori,
+						k_d_e_taglie,
+						k_d_e_scelte,
+						k_d_e_toni,
+						k_d_e_conti,
+						fm_codice,
+						fm_descrizione,
+						fm_unitamisura,
+						fm_tono,
+						fm_scelta,
+						fm_taglia,
+						fm_colore,
+						k_d_e_divisioni)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0))
+		</content>
+	</query>
+	<query name="FATTURE_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_fatture.k_d_e_fatture AS id,
+				   d_e_fatture.tipo_fattura AS tipoFattura,
+				   d_e_fatture.num_fattura AS numDocumento,
+				   d_e_fatture.particella,
+				   to_char(d_e_fatture.data_fattura,'DD/MM/YYYY') AS dataDocumento,
+				   d_e_fatture.k_d_e_listini AS idListino,
+				   COALESCE(d_e_fatture.k_d_e_agenti, 0) AS idAgente,
+				   COALESCE(d_e_agenti.denominazione, '') AS agente,
+				   COALESCE(LPAD(d_e_agenti.k_d_e_agenti::character varying, 6, '0'), '') AS codAgente,
+				   COALESCE(d_e_fatture.k_d_e_progetti, 0) AS idProgetto,
+				   d_e_agenti.perc_provvigione AS percProvvigioneAgente,
+				   d_e_fatture.k_d_e_causalitrasporto as idCausaleTrasporto,
+				   COALESCE(d_e_causalitrasporto.descrizione, '') AS descCausaleTrasporto,
+				   COALESCE(TO_CHAR(data_ora_trasporto,'DD/MM/YYYY HH24:MI'), '') AS dataOraTrasporto,
+				   COALESCE(targa, '') AS targa,
+				   d_e_fatture.k_d_e_tipiporto AS idTipoPorto,
+				   COALESCE(d_e_tipiporto.descrizione, '') AS descTipoPorto,
+				   d_e_fatture.k_d_e_vettori AS idVettore,
+				   COALESCE(d_e_vettori.descrizione, '') AS descVettore,
+				   d_e_fatture.k_d_e_aspettobeni AS idAspettoBeni,
+				   COALESCE(d_e_aspettibeni.descrizione, '') AS descAspettoBeni,
+				   d_e_fatture.k_d_e_tipipagamento AS idTipoPagamento,
+				   COALESCE(d_e_tipipagamento.descrizione, '') AS descTipoPagamento,
+				   COALESCE(d_e_tipipagamento.modalita, '') AS modalitaPagamento,
+				   d_e_fatture.k_d_e_risorse AS idNsBanca,
+				   COALESCE(nsbanca.banca, '') AS descrizioneNsBanca,
+				   COALESCE(nsbanca.iban, '') as ibanNsBanca,
+				   COALESCE(nsbanca.cin, '') as cinNsBanca,
+				   COALESCE(nsbanca.abi, '') as abiNsBanca,
+				   COALESCE(nsbanca.cab, '') as cabNsBanca,
+				   COALESCE(nsbanca.conto, '') as contoNsBanca,
+				   COALESCE(nsbanca.bic, '') as bicNsBanca,
+				   NULLIF(colli, 0) AS colli,
+				   NULLIF(pallet, 0) AS pallet,
+				   d_e_fatture.k_d_e_clienti as idCliente,
+				   d_e_clienti.denominazione as denominazioneCliente,
+				   d_e_fatture.banca AS descrizioneBanca,
+				   d_e_fatture.iban as iban,
+				   d_e_fatture.cin as cin,
+				   d_e_fatture.abi as abi,
+				   d_e_fatture.cab as cab,
+				   d_e_fatture.conto as conto,
+				   d_e_fatture.bic as bic,
+				   d_e_fatture.indirizzo_intestazione AS indirizzoIntestazione,
+				   d_e_fatture.cap_intestazione AS capIntestazione,
+				   d_e_fatture.citta_intestazione AS cittaIntestazione,
+				   d_e_fatture.provincia_intestazione AS provinciaIntestazione,
+				   d_e_fatture.nazione_intestazione AS nazioneIntestazione,
+				   d_e_fatture.indirizzo_destinazione AS indirizzoDestinazione,
+				   d_e_fatture.cap_destinazione AS capDestinazione,
+				   d_e_fatture.citta_destinazione AS cittaDestinazione,
+				   d_e_fatture.provincia_destinazione AS provinciaDestinazione,
+				   d_e_fatture.nazione_destinazione AS nazioneDestinazione,
+				   d_e_fatture.codice_ufficio_destinazione AS codiceUfficioDestinazione,
+				   COALESCE(d_e_fatture.pec_destinazione, '') AS pec,
+				   COALESCE(d_e_fatture.fl_esigibilitadifferita, 0) AS esigibilitaDifferita,
+				   d_e_fatture.k_d_e_causaliesigibilitadifferita AS idCausaleEsigibilitaDifferita,
+				   COALESCE(tipo_comunicazione, 'S') AS tipoComunicazione,
+				   k_d_e_magazzini as idMagazzino,
+				   split_payment AS splitPayment,
+				   get_totale_fattura(d_e_fatture.k_d_e_fatture) AS totale,
+				   get_totaleiva_fattura(d_e_fatture.k_d_e_fatture) AS totaleIva,
+				   d_e_fatture.fl_fatturaelettronica as flFatturaElettronica,
+				   d_e_fatture.stato_fattura_elettronica AS statoFatturaElettronica,
+				   COALESCE(d_e_fatture.causale, '') AS causale,
+				   COALESCE(numero_ordine_acquisto, '') AS numeroOrdineAcquisto,
+				   COALESCE(TO_CHAR(data_ordine_acquisto,'DD/MM/YYYY'), '') AS dataOrdineAcquisto,
+				   COALESCE(cig, '') AS cig,
+				   COALESCE(cup, '') AS cup,
+				   COALESCE(dati_commessa, '') AS datiCommessa,
+				   numero_scontrino AS numeroScontrino,
+				   COALESCE(TO_CHAR(data_scontrino, 'DD/MM/YYYY'), '') AS dataScontrino,
+				   COALESCE(d_e_fatture.id_fatturacollegata, 0) AS idFatturaCollegata
+			  FROM d_e_fatture
+		 LEFT JOIN d_e_tipipagamento
+				ON d_e_fatture.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
+		LEFT JOIN d_e_vettori
+			   ON d_e_fatture.k_d_e_vettori = d_e_vettori.k_d_e_vettori
+		LEFT JOIN d_e_clienti
+			   ON d_e_fatture.k_d_e_clienti = d_e_clienti.k_d_e_clienti
+		LEFT JOIN d_e_tipiporto
+			   ON d_e_fatture.k_d_e_tipiporto = d_e_tipiporto.k_d_e_tipiporto
+		LEFT JOIN d_e_causalitrasporto
+			   ON d_e_fatture.k_d_e_causalitrasporto = d_e_causalitrasporto.k_d_e_causalitrasporto
+		LEFT JOIN d_e_aspettibeni
+			   ON d_e_fatture.k_d_e_aspettobeni = d_e_aspettibeni.k_d_e_aspettibeni
+		LEFT JOIN d_e_agenti
+			   ON d_e_fatture.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+		LEFT JOIN d_e_risorse nsbanca
+			   ON d_e_fatture.k_d_e_risorse = nsbanca.k_d_e_risorse
+			WHERE k_d_e_fatture = ?
+		</content>
+	</query>
+	<query name="FATTURE_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_prodotti_fatture.k_d_e_prodotti_fatture AS id,
+				   d_e_prodotti_fatture.k_d_e_fatture AS idDocumento,
+				   d_e_prodotti_fatture.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti.descrizione AS descProdotto,
+				   d_e_prodotti.codice AS codiceProdotto,
+				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
+				   d_e_prodotti_fatture.k_d_e_aliquoteiva AS idAliquotaIva,
+				   d_e_aliquoteiva.imposta AS percentualeIva,
+				   d_e_prodotti_fatture.k_d_e_unitamisura AS idUnitaMisura,
+				   d_e_unitamisura.descrizione AS descUnitaMisura,
+				   d_e_prodotti_fatture.prezzo,
+				   d_e_prodotti_fatture.sconto,
+				   COALESCE(d_e_prodotti_fatture.prezzo_scontato,0) AS prezzoImponibile, 
+				   d_e_prodotti_fatture.quantita,
+				   d_e_prodotti_fatture.provvigione,
+				   COALESCE(d_e_prodotti.tipologia, '') AS tipologia,
+				   d_e_prodotti_fatture.fl_scarica AS scarica,
+				   get_prezzoscontato_prodottofattura(d_e_prodotti_fatture.k_d_e_prodotti_fatture, 0) AS totale,
+				   get_prezzoscontato_senzaiva_prodottofattura(d_e_prodotti_fatture.k_d_e_prodotti_fatture) AS totaleSenzaIva,
+				   d_e_prodotti_fatture.nota,
+				   CASE (coalesce(d_e_prodotti_fatture.k_d_e_prodotti,0))
+				   WHEN 0 THEN false
+						  ELSE true
+				   END prodotto,
+				   k_d_e_colori as idColore,
+				   k_d_e_taglie as idTaglia,
+				   k_d_e_toni as idTono,
+				   k_d_e_scelte as idScelta,
+				   COALESCE(d_e_prodotti_fatture.k_d_e_conti, 0) AS idConto,
+				   COALESCE(d_e_conti.descrizione, '') AS descConto,
+				   CASE (coalesce(d_e_prodotti_fatture.fm_descrizione, ''))
+				   WHEN '' THEN false
+						  ELSE true
+				   END fuoriMagazzino,
+				   fm_codice as fmCodice,
+				   fm_descrizione as fmDescrizione,
+				   fm_unitamisura as fmUnitaMisura,
+				   fm_taglia as fmTaglia,
+				   fm_colore as fmColore,
+				   fm_tono as fmTono,
+				   fm_scelta as fmScelta,
+				   d_e_prodotti_fatture.k_d_e_divisioni AS idDivisione
+			  FROM d_e_prodotti_fatture
+		 LEFT JOIN d_e_prodotti
+				ON d_e_prodotti_fatture.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
+		 LEFT JOIN d_e_aliquoteiva
+				ON d_e_prodotti_fatture.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
+		 LEFT JOIN d_e_unitamisura
+				ON d_e_prodotti_fatture.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
+		 LEFT JOIN d_e_conti
+				ON d_e_prodotti_fatture.k_d_e_conti = d_e_conti.k_d_e_conti
+			 WHERE d_e_prodotti_fatture.k_d_e_fatture = ?
+			 ORDER BY k_d_e_prodotti_fatture
+		</content>
+	</query>
+
+	<query name="FATTURE_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_fatture set
+				   num_fattura = ?,
+				   particella = ?,
+				   data_fattura = to_date(?,'DD/MM/YYYY'),
+				   k_d_e_listini = ?,
+				   k_d_e_agenti = ?,
+				   k_d_e_progetti = ?,
+				   k_d_e_causalitrasporto = ?,
+				   data_ora_trasporto = TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
+				   targa = ?,
+				   k_d_e_tipiporto = ?,
+				   k_d_e_vettori = ?,
+				   k_d_e_aspettobeni = ?,
+				   colli = ?,
+				   pallet = ?,
+				   peso_netto = ?,
+				   peso_lordo = ?,
+				   k_d_e_clienti = ?,
+				   k_d_e_tipipagamento = ?,
+				   k_d_e_risorse = ?,
+				   banca = ?,
+				   iban = ?,
+				   cin = ?,
+				   abi = ?,
+				   cab = ?,
+				   conto = ?,
+				   bic = ?,
+				   indirizzo_intestazione = ?,
+				   cap_intestazione = ?,
+				   citta_intestazione = ?,
+				   provincia_intestazione = ?,
+				   nazione_intestazione = ?,
+				   indirizzo_destinazione = ?,
+				   cap_destinazione = ?,
+				   citta_destinazione = ?,
+				   provincia_destinazione = ?,
+				   nazione_destinazione = ?,
+				   fl_esigibilitadifferita = ?,
+				   k_d_e_causaliesigibilitadifferita = ?,
+				   tipo_comunicazione = ?,
+				   codice_ufficio_destinazione = ?,
+				   pec_destinazione = ?,
+				   k_d_e_magazzini = ?,
+				   split_payment = ?,
+				   fl_fatturaelettronica = ?,
+				   causale = ?,
+				   numero_ordine_acquisto = ?,
+				   data_ordine_acquisto = TO_DATE(?,'DD/MM/YYYY'),
+				   cig = ?,
+				   cup = ?,
+				   dati_commessa = ?,
+				   numero_scontrino = ?,
+				   data_scontrino = TO_DATE(?,'DD/MM/YYYY'),
+				   tipo_fattura = ?,
+				   stato_fattura_elettronica = ?,
+				   id_fatturacollegata = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_fatture = ?
+		</content>
+	</query>
+	<query name="NOTECREDITO_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_notecredito
+					   (num_notacredito,
+						particella,
+						data_notacredito,
+						k_d_e_progetti,
+						k_d_e_clienti,
+						k_d_e_listini,
+						k_d_e_agenti,
+						k_d_e_tipipagamento,
+						k_d_e_risorse,
+						banca,
+						iban,
+						cin,
+						abi,
+						cab,
+						conto,
+						bic,
+						indirizzo_intestazione,
+						cap_intestazione,
+						citta_intestazione,
+						provincia_intestazione,
+						nazione_intestazione,
+						indirizzo_destinazione,
+						cap_destinazione,
+						citta_destinazione,
+						provincia_destinazione,
+						nazione_destinazione,
+						dt_liquidazione_provvigione,
+						fl_esigibilitadifferita,
+						k_d_e_causaliesigibilitadifferita,
+						k_d_e_fatture,
+						tipo_comunicazione,
+						codice_ufficio_destinazione,
+						k_d_e_magazzini,
+						split_payment,
+						fl_fatturaelettronica,
+						causale,
+						numero_ordine_acquisto,
+						data_ordine_acquisto,
+						cig,
+						cup,
+						dati_commessa,
+						stato_fattura_elettronica,
+						user_created,
+						dt_created)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,CURRENT_TIMESTAMP)
+			  RETURNING k_d_e_notecredito;
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_S05">
+		<content delimiterParsingDisabled="true">
+			SELECT num_notacredito + 1 AS numero
+			  FROM d_e_notecredito
+			 WHERE num_notacredito + 1 NOT IN (SELECT num_notacredito
+			 								 FROM d_e_notecredito
+			 								WHERE fl_deleted = 0 
+			 								AND fl_fatturaelettronica = ?
+			 								AND EXTRACT(year FROM data_notacredito) = CASE WHEN ?::character varying IS NULL 
+			 																	  THEN EXTRACT(year FROM CURRENT_DATE) 
+			 																	  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
+			 							   )
+			   AND fl_fatturaelettronica = ?
+			   AND EXTRACT(year FROM data_notacredito) = CASE WHEN ?::character varying IS NULL 
+			   											  THEN EXTRACT(year FROM CURRENT_DATE) 
+			   											  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
+			   AND fl_deleted = 0
+		  GROUP BY numero
+		  ORDER BY numero DESC
+		  	 LIMIT 1
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_S10">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_notecredito.k_d_e_notecredito AS id_documento,
+				   d_e_notecredito.num_notacredito AS numFattura, 
+                   d_e_notecredito.num_notacredito || CASE WHEN d_e_notecredito.particella LIKE ' %' OR d_e_notecredito.particella LIKE '/%' OR d_e_notecredito.particella LIKE '\\%' THEN d_e_notecredito.particella ELSE COALESCE(' ' || d_e_notecredito.particella, '') END AS numeroDocumento,
+                   d_e_notecredito.fl_fatturaelettronica as flFatturaElettronica,
+                   d_e_notecredito.data_notacredito AS dataFattura,
+                   TO_CHAR(d_e_notecredito.data_notacredito,'DD/MM/YYYY') AS dataDocumento,
+                   COALESCE(d_e_notecredito.particella,'') AS particella,
+			  	   d_e_clienti.denominazione AS soggetto,
+			  	   d_e_notecredito.totale AS totale,
+			  	   d_e_notecredito.totale_pagato AS totalePagato, 
+                   d_e_notecredito.totale - d_e_notecredito.totale_pagato AS totaleDaPagare,
+			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
+			  	   COALESCE(stato_fattura_elettronica, '') AS statoFatturaElettronica,
+			  	   COUNT(*) OVER() AS total
+			  FROM d_e_notecredito
+              JOIN d_e_clienti
+                ON d_e_notecredito.k_d_e_clienti = d_e_clienti.k_d_e_clienti
+         LEFT JOIN d_e_agenti
+         		ON d_e_notecredito.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+			 WHERE data_notacredito &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_notacredito)
+			   AND data_notacredito &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_notacredito)
+			   AND d_e_notecredito.k_d_e_clienti = COALESCE(?, d_e_notecredito.k_d_e_clienti)
+			   AND COALESCE(d_e_notecredito.k_d_e_agenti, 0) = COALESCE(?, d_e_notecredito.k_d_e_agenti, 0)
+			   AND d_e_notecredito.fl_deleted = 0
+	     		   ${STATO}
+		  ORDER BY ${ORDER_BY}
+		  	${LIMIT}
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_notecredito.k_d_e_notecredito as id,
+			  	   d_e_notecredito.num_notacredito as numDocumento,
+			  	   d_e_notecredito.particella,
+			  	   to_char(d_e_notecredito.data_notacredito,'DD/MM/YYYY') as dataDocumento,
+			  	   COALESCE(d_e_notecredito.k_d_e_progetti, 0) AS idProgetto,
+			  	   d_e_notecredito.k_d_e_listini as idListino,
+			  	   d_e_notecredito.k_d_e_tipipagamento AS idTipoPagamento,
+			  	   COALESCE(d_e_tipipagamento.descrizione, '') AS descTipoPagamento,
+			  	   d_e_notecredito.k_d_e_risorse AS idNsBanca,
+				   COALESCE(nsbanca.banca, '') AS descrizioneNsBanca,
+				   COALESCE(nsbanca.iban, '') as ibanNsBanca,
+				   COALESCE(nsbanca.cin, '') as cinNsBanca,
+				   COALESCE(nsbanca.abi, '') as abiNsBanca,
+				   COALESCE(nsbanca.cab, '') as cabNsBanca,
+				   COALESCE(nsbanca.conto, '') as contoNsBanca,
+				   COALESCE(nsbanca.bic, '') as bicNsBanca,
+			  	   d_e_notecredito.k_d_e_clienti as idCliente,
+			  	   d_e_clienti.denominazione as denominazioneCliente,
+			  	   COALESCE(d_e_notecredito.k_d_e_agenti, 0) as idAgente,
+			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
+			  	   COALESCE(LPAD(d_e_agenti.k_d_e_agenti::character varying, 6, '0'), '') AS codAgente,
+			  	   d_e_agenti.perc_provvigione AS percProvvigioneAgente,
+			  	   d_e_notecredito.banca AS banca,
+			  	   d_e_notecredito.iban as iban,
+			  	   d_e_notecredito.cin as cin,
+			  	   d_e_notecredito.abi as abi,
+			  	   d_e_notecredito.cab as cab,
+			  	   d_e_notecredito.conto as conto,
+			  	   d_e_notecredito.bic as bic,
+			  	   d_e_notecredito.indirizzo_intestazione as indirizzoIntestazione,
+				   d_e_notecredito.cap_intestazione as capIntestazione,
+				   d_e_notecredito.citta_intestazione as cittaIntestazione,
+				   d_e_notecredito.provincia_intestazione as provinciaIntestazione,
+				   d_e_notecredito.nazione_intestazione as nazioneIntestazione,
+				   d_e_notecredito.indirizzo_destinazione as indirizzoDestinazione,
+				   d_e_notecredito.cap_destinazione as capDestinazione,
+				   d_e_notecredito.citta_destinazione as cittaDestinazione,
+				   d_e_notecredito.provincia_destinazione as provinciaDestinazione,
+				   d_e_notecredito.nazione_destinazione as nazioneDestinazione,
+				   d_e_notecredito.codice_ufficio_destinazione as codiceUfficioDestinazione,
+				   COALESCE(fl_esigibilitadifferita, 0) AS esigibilitaDifferita,
+				   d_e_notecredito.k_d_e_causaliesigibilitadifferita AS idCausaleEsigibilitaDifferita,
+				   COALESCE(d_e_causaliesigibilitadifferita.descrizione, '') AS descCausaleEsigibilitaDifferita,
+				   d_e_notecredito.k_d_e_fatture AS idFattura,
+				   d_e_notecredito.tipo_comunicazione AS tipoComunicazione,
+				   COALESCE(TO_CHAR(dt_liquidazione_provvigione, 'DD/MM/YYYY'), '') AS dtLiquidazioneProvvigione,
+				   k_d_e_magazzini as idMagazzino,
+				   split_payment AS splitPayment,
+				   d_e_notecredito.fl_fatturaelettronica as flFatturaElettronica,
+				   d_e_notecredito.stato_fattura_elettronica AS statoFatturaElettronica,
+				   COALESCE(d_e_notecredito.causale, '') AS causale,
+				   COALESCE(numero_ordine_acquisto, '') AS numeroOrdineAcquisto,
+				   COALESCE(TO_CHAR(data_ordine_acquisto,'DD/MM/YYYY'), '') AS dataOrdineAcquisto,
+				   COALESCE(cig, '') AS cig,
+				   COALESCE(cup, '') AS cup,
+				   COALESCE(dati_commessa, '') AS datiCommessa
+			  FROM d_e_notecredito
+		 LEFT JOIN d_e_tipipagamento
+		 		ON d_e_notecredito.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
+		 LEFT JOIN d_e_clienti
+		 		ON d_e_notecredito.k_d_e_clienti = d_e_clienti.k_d_e_clienti
+		 LEFT JOIN d_e_agenti
+		 		ON d_e_notecredito.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+		 LEFT JOIN d_e_causaliesigibilitadifferita
+			   ON d_e_notecredito.k_d_e_causaliesigibilitadifferita = d_e_causaliesigibilitadifferita.k_d_e_causaliesigibilitadifferita
+		 LEFT JOIN d_e_risorse nsbanca
+			   ON d_e_notecredito.k_d_e_risorse = nsbanca.k_d_e_risorse
+			 WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_notecredito
+			   SET num_notacredito = ?,
+				   particella = ?,
+				   data_notacredito = TO_DATE(?,'DD/MM/YYYY'),
+				   k_d_e_progetti = ?,
+				   k_d_e_listini = ?,
+				   k_d_e_agenti = ?,
+				   k_d_e_clienti = ?,
+				   k_d_e_tipipagamento = ?,
+				   k_d_e_risorse = ?,
+				   banca = ?,
+				   iban = ?,
+				   cin = ?,
+				   abi = ?,
+				   cab = ?,
+				   conto = ?,
+				   bic = ?,
+				   indirizzo_intestazione = ?,
+				   cap_intestazione = ?,
+				   citta_intestazione = ?,
+				   provincia_intestazione = ?,
+				   nazione_intestazione = ?,
+				   indirizzo_destinazione = ?,
+				   cap_destinazione = ?,
+				   citta_destinazione = ?,
+				   provincia_destinazione = ?,
+				   nazione_destinazione = ?,
+				   dt_liquidazione_provvigione = ?,
+				   fl_esigibilitadifferita = ?,
+				   k_d_e_causaliesigibilitadifferita = ?,
+				   k_d_e_fatture = ?,
+				   tipo_comunicazione = ?,
+				   codice_ufficio_destinazione = ?,
+				   k_d_e_magazzini = ?,
+				   split_payment = ?,
+				   fl_fatturaelettronica = ?,
+				   causale = ?,
+				   numero_ordine_acquisto = ?,
+				   data_ordine_acquisto = TO_DATE(?,'DD/MM/YYYY'),
+				   cig = ?,
+				   cup = ?,
+				   dati_commessa = ?,
+				   stato_fattura_elettronica = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_D03">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_notecredito
+			   SET fl_deleted = 1,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_D01">
+		<content delimiterParsingDisabled="true">
+			DELETE FROM d_e_prodotti_notecredito
+				  WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_I02">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_prodotti_notecredito
+					   (k_d_e_notecredito, 
+						k_d_e_prodotti,
+						quantita,
+						k_d_e_unitamisura,
+						prezzo,
+						sconto,
+						prezzo_scontato,
+						k_d_e_aliquoteiva,
+						nota,
+						k_d_e_colori,
+						k_d_e_taglie,
+						k_d_e_scelte,
+						k_d_e_toni,
+						k_d_e_conti,
+						fm_codice,
+						fm_descrizione,
+						fm_unitamisura,
+						fm_tono,
+						fm_scelta,
+						fm_taglia,
+						fm_colore,
+						k_d_e_divisioni)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),?,?,?,?,?,?,?,NULLIF(?,0))
+		</content>
+	</query>
+
+	<query name="NOTECREDITO_S04">
+		<content delimiterParsingDisabled="true">
+			select d_e_prodotti_notecredito.k_d_e_prodotti_notecredito AS id,
+				   d_e_prodotti_notecredito.k_d_e_notecredito AS idDocumento,
+				   d_e_prodotti_notecredito.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti.descrizione AS descProdotto,
+				   d_e_prodotti.codice AS codiceProdotto,
+				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
+				   d_e_prodotti_notecredito.k_d_e_aliquoteiva AS idAliquotaIva,
+				   d_e_aliquoteiva.imposta AS percentualeIva,
+				   d_e_prodotti_notecredito.k_d_e_unitamisura AS idUnitaMisura,
+				   d_e_unitamisura.descrizione AS descUnitaMisura,
+				   d_e_prodotti_notecredito.prezzo,
+				   d_e_prodotti_notecredito.sconto,
+				   COALESCE(d_e_prodotti_notecredito.prezzo_scontato,0) AS prezzoImponibile,
+				   d_e_prodotti_notecredito.quantita,
+				   d_e_prodotti_notecredito.nota,
+				   k_d_e_colori as idColore,
+				   k_d_e_taglie as idTaglia,
+				   k_d_e_toni as idTono,
+				   k_d_e_scelte as idScelta,
+				   COALESCE(d_e_prodotti_notecredito.k_d_e_conti, 0) AS idConto,
+				   COALESCE(d_e_conti.descrizione, '') AS descConto,
+				   fm_codice as fmCodice,
+				   fm_descrizione as fmDescrizione,
+				   fm_unitamisura as fmUnitaMisura,
+				   fm_taglia as fmTaglia,
+				   fm_colore as fmColore,
+				   fm_tono as fmTono,
+				   fm_scelta as fmScelta,
+				   d_e_prodotti_notecredito.k_d_e_divisioni AS idDivisione
+			  FROM d_e_prodotti_notecredito
+		 LEFT JOIN d_e_aliquoteiva
+				ON d_e_prodotti_notecredito.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
+		 LEFT JOIN d_e_prodotti
+				ON d_e_prodotti_notecredito.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
+		 LEFT JOIN d_e_unitamisura
+				ON d_e_prodotti_notecredito.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
+		 LEFT JOIN d_e_conti
+		 		ON d_e_prodotti_notecredito.k_d_e_conti = d_e_conti.k_d_e_conti
+			 WHERE d_e_prodotti_notecredito.k_d_e_notecredito = ?
+			 ORDER BY k_d_e_prodotti_notecredito
+		</content>
+	</query>
+
 	<query name="FORNITORI_I01">
 		<content delimiterParsingDisabled="true">
 			INSERT INTO d_e_fornitori
@@ -6245,14 +6879,14 @@
 	</query>
 	<query name="NOTECREDITO_S10">
 		<content delimiterParsingDisabled="true">
-			SELECT d_e_notecredito.k_d_e_notecredito AS id_documento,
-				   d_e_notecredito.num_notacredito AS numFattura, 
+			SELECT d_e_notecredito.k_d_e_notecredito AS id,
+				   d_e_notecredito.num_notacredito AS numDocumento, 
                    d_e_notecredito.num_notacredito || CASE WHEN d_e_notecredito.particella LIKE ' %' OR d_e_notecredito.particella LIKE '/%' OR d_e_notecredito.particella LIKE '\\%' THEN d_e_notecredito.particella ELSE COALESCE(' ' || d_e_notecredito.particella, '') END AS numeroDocumento,
                    d_e_notecredito.fl_fatturaelettronica as flFatturaElettronica,
                    d_e_notecredito.data_notacredito AS dataFattura,
                    TO_CHAR(d_e_notecredito.data_notacredito,'DD/MM/YYYY') AS dataDocumento,
                    COALESCE(d_e_notecredito.particella,'') AS particella,
-			  	   d_e_clienti.denominazione AS soggetto,
+			  	   d_e_clienti.denominazione AS denominazioneCliente,
 			  	   d_e_notecredito.totale AS totale,
 			  	   d_e_notecredito.totale_pagato AS totalePagato, 
                    d_e_notecredito.totale - d_e_notecredito.totale_pagato AS totaleDaPagare,
@@ -6271,7 +6905,8 @@
 			   AND d_e_notecredito.k_d_e_clienti = COALESCE(?, d_e_notecredito.k_d_e_clienti)
 			   AND COALESCE(d_e_notecredito.k_d_e_agenti, 0) = COALESCE(?, d_e_notecredito.k_d_e_agenti, 0)
 			   AND d_e_notecredito.fl_deleted = 0
-	     		   ${STATO}
+			   ${STATO}
+			   ${NUM_DOCUMENTO}
 		  ORDER BY ${ORDER_BY}
 		  	${LIMIT}
 		</content>

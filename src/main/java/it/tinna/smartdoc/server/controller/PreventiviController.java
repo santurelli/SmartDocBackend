@@ -45,7 +45,7 @@ public class PreventiviController {
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
         Integer start = (Integer) p.getOrDefault("start", 0);
         Integer length = (Integer) p.getOrDefault("length", 10);
-        Integer orderColumn = (Integer) p.getOrDefault("orderColumn", 0);
+        String orderColumn = (String) p.getOrDefault("orderColumn", "data_preventivo");
         String orderDir = (String) p.getOrDefault("orderDir", "asc");
         
         // Filters
@@ -127,7 +127,7 @@ public class PreventiviController {
             Integer idCliente = (idClienteObj != null && !"".equals(idClienteObj.toString())) ? Integer.valueOf(idClienteObj.toString()) : null;
             Object idAgenteObj = p.get("idAgente");
             Integer idAgente = (idAgenteObj != null && !"".equals(idAgenteObj.toString())) ? Integer.valueOf(idAgenteObj.toString()) : null;
-            Integer orderColumn = (Integer) p.getOrDefault("orderColumn", 0);
+            String orderColumn = (String) p.getOrDefault("orderColumn", "data_preventivo");
             String orderDir = (String) p.getOrDefault("orderDir", "asc");
 
             List<MovimentiDocumentoDto> list = preventiviDelegate.getList(idCliente, dtFrom, dtTo, idAgente, null, null, orderColumn, orderDir).getList();

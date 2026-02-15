@@ -85,7 +85,7 @@ public class DdtDao extends BaseDao {
                                                Integer idDocumento,
                                                Integer length,
                                                Integer start,
-                                               Integer orderColumn,
+                                               String orderColumn,
                                                String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("DDT_S06");
         List<Object> params = new ArrayList<>();
@@ -95,16 +95,11 @@ public class DdtDao extends BaseDao {
         params.add(idAgente);
         params.add(idDocumento);
         Map<String, String> valuesMap = new HashMap<>();
-        if (orderColumn == null) orderColumn = 0;
         
-        if (orderColumn == 0) {
-            valuesMap.put("ORDER_BY", new StringBuilder("d_e_ddt.data_ddt ").append(orderDir).toString());
-        } else if (orderColumn == 1) {
-            valuesMap.put("ORDER_BY", new StringBuilder("d_e_ddt.num_ddt ").append(orderDir).toString());
-        } else if (orderColumn == 2) {
-            valuesMap.put("ORDER_BY", new StringBuilder("d_e_clienti.denominazione ").append(orderDir).toString());
+        if (StringUtils.isNotEmpty(orderColumn)) {
+            valuesMap.put("ORDER_BY", orderColumn + " " + orderDir);
         } else {
-            valuesMap.put("ORDER_BY", new StringBuilder("d_e_ddt.data_ddt ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", "d_e_ddt.data_ddt DESC, d_e_ddt.num_ddt DESC");
         }
 
         if (length != null && start != null) {

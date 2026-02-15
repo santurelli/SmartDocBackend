@@ -12,5 +12,21 @@ import lombok.ToString;
 @ToString(callSuper = false, onlyExplicitlyIncluded = true, includeFieldNames = true)
 public class FatturaElettronicaDto extends DocumentoDto
 {
+    @com.google.gson.annotations.Expose
+    private StatoFatturaElettronica statoFatturaElettronica;
 
+    @com.google.gson.annotations.Expose
+    private Integer splitPayment;
+
+    @com.google.gson.annotations.Expose
+    private String tipoComunicazione;
+
+    @com.google.gson.annotations.Expose
+    private Integer progInvioFatturaElettronica;
+
+    @com.google.gson.annotations.Expose
+    private Integer progFileFatturaElettronica;
+
+    @com.google.gson.annotations.Expose
+    private String dtLiquidazioneProvvigione;
 }

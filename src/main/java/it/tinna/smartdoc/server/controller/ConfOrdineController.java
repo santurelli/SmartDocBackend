@@ -39,7 +39,7 @@ public class ConfOrdineController {
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
         Integer start = (Integer) p.getOrDefault("start", 0);
         Integer length = (Integer) p.getOrDefault("length", 10);
-        Integer orderColumn = (Integer) p.getOrDefault("orderColumn", 0);
+        String orderColumn = (String) p.getOrDefault("orderColumn", "data_confordine");
         String orderDir = (String) p.getOrDefault("orderDir", "asc");
         
         // Filters

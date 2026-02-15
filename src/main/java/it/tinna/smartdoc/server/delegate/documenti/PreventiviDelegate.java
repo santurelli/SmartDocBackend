@@ -94,6 +94,12 @@ public class PreventiviDelegate {
 
             // dati azienda
             it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto daDto = datiaziendaDelegate.getDatiAzienda();
+            
+            if (dto.getIdTipoPagamento() != null) {
+                it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto tp = tipiPagamentoDelegate.getById(dto.getIdTipoPagamento());
+                if (tp != null) dto.setDescTipoPagamento(tp.getDescrizione());
+            }
+
             if (daDto != null) {
                 if (daDto.getByteLogo() != null) {
                     params.put("logopath", new java.io.ByteArrayInputStream(daDto.getByteLogo()));
@@ -278,7 +284,7 @@ public class PreventiviDelegate {
 
     // Returns formatted for Datatables
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(Integer idCliente, String dtFrom, String dtTo, Integer idAgente,
-            Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
+            Integer length, Integer start, String orderColumn, String orderDir) throws SQLException {
         
         List<MovimentiDocumentoDto> list = preventiviDao.getList(idCliente, dtFrom, dtTo, idAgente, length, start, orderColumn, orderDir);
         long total = 0;

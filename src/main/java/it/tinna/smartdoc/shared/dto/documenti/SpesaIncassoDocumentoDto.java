@@ -22,6 +22,7 @@ public class SpesaIncassoDocumentoDto extends BaseDto {
     private String importoFormattato;
     private Double percIva;
     private Integer trasporto;
+    private String tipo;
 
     @Override
     public boolean equals(Object obj) {

@@ -68,7 +68,7 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
     }
 
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(Integer idCliente, String dtFrom, String dtTo, Integer idAgente,
-            Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
+            Integer length, Integer start, String orderColumn, String orderDir) throws SQLException {
         
         List<MovimentiDocumentoDto> list = confOrdineDao.getList(idCliente, dtFrom, dtTo, idAgente, length, start, orderColumn, orderDir);
         long total = 0;

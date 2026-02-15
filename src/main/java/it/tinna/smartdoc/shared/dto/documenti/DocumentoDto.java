@@ -8,7 +8,7 @@ import it.tinna.smartdoc.shared.dto.BaseDto;
 import it.tinna.smartdoc.shared.dto.agenti.AgenteDto;
 import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
 import it.tinna.smartdoc.shared.dto.progetti.ProgettoDto;
-// import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto; // Create if needed or comment out for now
+import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -142,7 +142,8 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private String indirizzoIntestazione;
 
-    // private List<ScadenzaPagamentoDocumentoDto> listaScadenzePagamentiDocumento;
+    @Expose
+    private List<ScadenzaPagamentoDocumentoDto> listaScadenzePagamentiDocumento;
 
     private String modalitaPagamento;
 
@@ -222,4 +223,20 @@ public class DocumentoDto extends BaseDto {
 
     @Expose
     private String tipoDocAssociato;
+
+    // Reporting fields
+    @Expose
+    private String luogoDestinazione;
+    @Expose
+    private String descTipoPorto;
+    @Expose
+    private String descCausaleTrasporto;
+    @Expose
+    private String descVettore;
+    @Expose
+    private String descAspettoBeni;
+    @Expose
+    private String descPesoLordo;
+    @Expose
+    private String descTipoPagamento;
 }
