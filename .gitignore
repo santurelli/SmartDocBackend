@@ -12,6 +12,7 @@ target/maven-status/
 target/dentalfusioni.war
 .settings/
 .idea/
+logs/
 #-----------------------------
 // file
 .classpath
