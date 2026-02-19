@@ -77,6 +77,9 @@ public class NoteCreditoDelegate {
     @Autowired
     private ProgettiDelegate progettiDelegate;
 
+    @Autowired
+    private CausaliEsigibilitaDifferitaDelegate causaliEsigibilitaDifferitaDelegate;
+
     public List<NotaCreditoDto> getList(String dataInizio, String dataFine, Integer idCliente, Integer idAgente,
                                       String orderColumn, String orderDir, int start, int length,
                                       String stato, String numDocumento) throws SQLException {
@@ -142,6 +145,7 @@ public class NoteCreditoDelegate {
         map.put("agenti", agentiDelegate.getListForCombo());
         map.put("progetti", progettiDelegate.getListForCombo());
         map.put("particelle", configurazioneDelegate.getAsArray(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE));
+        map.put("causaliEsigibilitaDifferita", causaliEsigibilitaDifferitaDelegate.getListForCombo());
         
         return map;
     }

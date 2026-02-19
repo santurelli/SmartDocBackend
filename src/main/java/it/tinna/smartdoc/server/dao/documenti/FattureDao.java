@@ -72,6 +72,7 @@ public class FattureDao extends BaseDao {
                 dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(),
                 dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(),
                 dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(),
+                dto.getDtLiquidazioneProvvigione(),
                 dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(),
                 dto.getTipoComunicazione(), dto.getCodiceUfficioDestinazione(), dto.getPec(),
                 dto.getIdMagazzino(), dto.getSplitPayment(), dto.getFlFatturaElettronica(),
@@ -80,7 +81,11 @@ public class FattureDao extends BaseDao {
                 dto.getNumeroScontrino(), dto.getDataScontrino(),
                 dto.getTipoFattura() != null ? dto.getTipoFattura().name() : null,
                 dto.getStatoFatturaElettronica() != null ? dto.getStatoFatturaElettronica().name() : null,
-                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null, dto.getUserCreated()
+                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null,
+                dto.getFlRitenutaAcconto(),
+                dto.getPercRitenutaAcconto(),
+                dto.getImportoRitenutaAcconto(),
+                dto.getUserCreated()
         );
     }
 
@@ -98,6 +103,7 @@ public class FattureDao extends BaseDao {
                 dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(),
                 dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(),
                 dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(),
+                dto.getDtLiquidazioneProvvigione(),
                 dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(),
                 dto.getTipoComunicazione(), dto.getCodiceUfficioDestinazione(), dto.getPec(),
                 dto.getIdMagazzino(), dto.getSplitPayment(), dto.getFlFatturaElettronica(),
@@ -106,7 +112,11 @@ public class FattureDao extends BaseDao {
                 dto.getNumeroScontrino(), dto.getDataScontrino(),
                 dto.getTipoFattura() != null ? dto.getTipoFattura().name() : null,
                 dto.getStatoFatturaElettronica() != null ? dto.getStatoFatturaElettronica().name() : null,
-                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null, dto.getUserLastUpdate(), dto.getId()
+                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null,
+                dto.getFlRitenutaAcconto(),
+                dto.getPercRitenutaAcconto(),
+                dto.getImportoRitenutaAcconto(),
+                dto.getUserLastUpdate(), dto.getId()
         );
     }
 
@@ -135,7 +145,11 @@ public class FattureDao extends BaseDao {
     }
 
     public Integer getNextNum(String data, int flElettronica, String tipo) throws SQLException {
-        return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S07"), Integer.class,
-                flElettronica, tipo, data, data, flElettronica, tipo, data);
+        try {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S07"), Integer.class,
+                    flElettronica, tipo, data, data, flElettronica, tipo, data, data);
+        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+            return 1;
+        }
     }
 }

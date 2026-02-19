@@ -64,6 +64,9 @@ public class NumberUtils
                                                String sconto)
     {
         BigDecimal prezzoInteroBD = BigDecimal.valueOf(prezzoIntero);
+        if (StringUtils.isBlank(sconto)) {
+            return prezzoInteroBD;
+        }
         if ( sconto.indexOf("+") == -1 )
         {
             if ( sconto.endsWith("%") )

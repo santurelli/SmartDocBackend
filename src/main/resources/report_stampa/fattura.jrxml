@@ -130,6 +130,9 @@
 	<parameter name="totale_escluso_iva" class="java.lang.String" isForPrompting="false">
 		<defaultValueExpression><![CDATA["0,00"]]></defaultValueExpression>
 	</parameter>
+	<parameter name="flRitenutaAcconto" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="percRitenutaAcconto" class="java.lang.Double" isForPrompting="false"/>
+	<parameter name="importoRitenutaAcconto" class="java.lang.String" isForPrompting="false"/>
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
@@ -455,13 +458,7 @@
 					<rightPen lineWidth="0.5"/>
 				</box>
 			</frame>
-			<staticText>
-				<reportElement positionType="Float" x="0" y="242" width="555" height="20" uuid="7215d429-5fbe-488c-bbcf-06a9cdde8da2"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Contributo CONAI assolto ove dovuto]]></text>
-			</staticText>
+
 			<image onErrorType="Blank">
 				<reportElement x="0" y="2" width="276" height="58" uuid="99d4571a-dc1c-4fc1-9bda-db02f1dc2c52"/>
 				<imageExpression><![CDATA[$P{logopath}]]></imageExpression>
@@ -1287,7 +1284,7 @@
 				<textElement>
 					<font fontName="Arial"/>
 				</textElement>
-				<textFieldExpression><![CDATA[$P{documento}.getDataOraTrasporto() == null ? "" : $P{documento}.getDataOraTrasporto()]]></textFieldExpression>
+				<textFieldExpression><![CDATA[$P{documento}.getDataOraTrasporto() == null || $P{documento}.getDataOraTrasporto().startsWith("01/01/0001") ? "" : $P{documento}.getDataOraTrasporto()]]></textFieldExpression>
 			</textField>
 			<textField>
 				<reportElement positionType="FixRelativeToBottom" x="276" y="156" width="92" height="13" uuid="231998dc-0d53-4c3d-bd12-c619a9b0b248"/>
@@ -1498,6 +1495,26 @@
 					<font fontName="Arial" size="6" isBold="true"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{documento}.getSplitPayment().intValue() == 0 ? "NETTO A PAGARE:" : "TOTALE:"]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="300" y="72" width="160" height="10" uuid="6f30a473-1234-4567-8901-abcdef123456">
+					<printWhenExpression><![CDATA[$P{flRitenutaAcconto} != null && $P{flRitenutaAcconto}.intValue() == 1]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="2" leftPadding="4"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="6" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Ritenuta d'Acconto:]]></text>
+			</staticText>
+			<textField>
+				<reportElement positionType="FixRelativeToBottom" x="460" y="72" width="92" height="13" uuid="7a41b584-2345-5678-9012-bcdef0123456">
+					<printWhenExpression><![CDATA[$P{flRitenutaAcconto} != null && $P{flRitenutaAcconto}.intValue() == 1]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="1" rightPadding="5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA["- " + $P{importoRitenutaAcconto}]]></textFieldExpression>
 			</textField>
 		</band>
 	</lastPageFooter>

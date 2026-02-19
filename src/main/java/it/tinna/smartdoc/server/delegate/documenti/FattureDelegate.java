@@ -78,6 +78,9 @@ public class FattureDelegate {
     @Autowired
     private ProgettiDelegate progettiDelegate;
 
+    @Autowired
+    private CausaliEsigibilitaDifferitaDelegate causaliEsigibilitaDifferitaDelegate;
+
     public List<FatturaDto> getList(String dataInizio, String dataFine, Integer idCliente, Integer idAgente,
                                    String orderColumn, String orderDir, int start, int length,
                                    String tipo, String stato, String numDocumento) throws SQLException {
@@ -120,6 +123,16 @@ public class FattureDelegate {
 
         if (dto.getProdotti() != null) {
             for (ProdottoDocumentoDto p : dto.getProdotti()) {
+                double prezzo = p.getPrezzo() != null ? p.getPrezzo() : 0.0;
+                double quantita = p.getQuantita() != null ? p.getQuantita() : 0.0;
+                String sconto = p.getSconto();
+
+                java.math.BigDecimal prezzoScontato = NumberUtils.getPrezzoScontato(prezzo, sconto != null ? sconto : "");
+                double prezzoImponibile = prezzoScontato.doubleValue() * quantita;
+
+                p.setPrezzoImponibile(prezzoImponibile);
+                p.setTotaleSenzaIva(prezzoImponibile);
+
                 fattureDao.insertProdotto(p, id);
             }
         }
@@ -148,6 +161,7 @@ public class FattureDelegate {
         map.put("agenti", agentiDelegate.getListForCombo());
         map.put("progetti", progettiDelegate.getListForCombo());
         map.put("particelle", configurazioneDelegate.getAsArray(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE));
+        map.put("causaliEsigibilitaDifferita", causaliEsigibilitaDifferitaDelegate.getListForCombo());
         
         return map;
     }
@@ -197,6 +211,9 @@ public class FattureDelegate {
                     pdDto.setQuantitaFormattata(NumberUtils.formatAsQuantity(pdDto.getQuantita()));
                     pdDto.setPercentualeIvaFormattata(NumberUtils.formatAsPercentage(pdDto.getPercentualeIva()));
                     pdDto.setPrezzoFormattato(NumberUtils.formatAsCurrency(pdDto.getPrezzo()));
+                    if (pdDto.getTotaleSenzaIva() == null || pdDto.getTotaleSenzaIva() == 0) {
+                        pdDto.setTotaleSenzaIva(pdDto.getPrezzoImponibile());
+                    }
                     pdDto.setTotaleFormattato(NumberUtils.formatAsCurrency(pdDto.getTotaleSenzaIva()));
                     
                     if (pdDto.isFuoriMagazzino()) {
@@ -212,6 +229,19 @@ public class FattureDelegate {
                     if (pdDto.isProdotto() || pdDto.isFuoriMagazzino()) {
                         totaleMerce += pdDto.getTotaleSenzaIva();
                     }
+                }
+
+                // Add Causale as Note if present
+                if (StringUtils.isNotBlank(dto.getCausale())) {
+                    ProdottoDocumentoDto emptyRow = new ProdottoDocumentoDto();
+                    emptyRow.setProdotto(false);
+                    emptyRow.setDescrizione("");
+                    dto.getProdotti().add(emptyRow);
+
+                    ProdottoDocumentoDto causaleRow = new ProdottoDocumentoDto();
+                    causaleRow.setProdotto(false);
+                    causaleRow.setDescrizione("Causale: " + dto.getCausale());
+                    dto.getProdotti().add(causaleRow);
                 }
             }
 
@@ -278,7 +308,17 @@ public class FattureDelegate {
             
             double totFattura = totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15;
             params.put("totalefattura", NumberUtils.formatAsCurrency(totFattura));
-            params.put("totalenetto", NumberUtils.formatAsCurrency(totFattura - totAcconto));
+            
+            double importoRitenuta = 0.0;
+            if (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto() == 1) {
+                double perc = dto.getPercRitenutaAcconto() != null ? dto.getPercRitenutaAcconto() : 0.0;
+                importoRitenuta = totaleImponibile.doubleValue() * perc / 100.0;
+            }
+            params.put("flRitenutaAcconto", dto.getFlRitenutaAcconto());
+            params.put("percRitenutaAcconto", dto.getPercRitenutaAcconto());
+            params.put("importoRitenutaAcconto", NumberUtils.formatAsCurrency(importoRitenuta));
+
+            params.put("totalenetto", NumberUtils.formatAsCurrency(totFattura - totAcconto - importoRitenuta));
             
             params.put("totale_escluso_iva", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totSpeseArt15 - totAcconto));
 

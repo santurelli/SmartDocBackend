@@ -19,13 +19,19 @@ import lombok.Setter;
 @NoArgsConstructor
 public class DocumentoDto extends BaseDto {
 
+    @Expose
     private String abi;
+    @Expose
     private String abiNsBanca;
+    @Expose
     private Double acconto;
 
     @Expose
     @SerializedName("descAgente")
     private String agente;
+
+    @Expose
+    private String nomeAgente;
 
     @Expose
     @SerializedName("agente")
@@ -34,9 +40,13 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private String annotazioneEstesa;
 
+    @Expose
     private String bic;
+    @Expose
     private String bicNsBanca;
+    @Expose
     private String cab;
+    @Expose
     private String cabNsBanca;
 
     @Expose
@@ -53,7 +63,9 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private String cig;
 
+    @Expose
     private String cin;
+    @Expose
     private String cinNsBanca;
 
     @Expose
@@ -66,6 +78,7 @@ public class DocumentoDto extends BaseDto {
     @SerializedName("cliente")
     private ClienteDto clienteDto;
 
+    @Expose
     private String codAgente;
 
     @Expose
@@ -77,7 +90,9 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private Integer colli;
 
+    @Expose
     private String conto;
+    @Expose
     private String contoNsBanca;
 
     @Expose
@@ -93,30 +108,51 @@ public class DocumentoDto extends BaseDto {
     private String datiCommessa;
 
     @Expose
+    private String dtLiquidazioneProvvigione;
+
+    @Expose
     private String denominazioneCliente;
 
+    @Expose
+    private String nomeCliente;
+
+    @Expose
     private String descrizioneBanca;
 
     @Expose
     private String descrizioneListino;
 
+    @Expose
     private String descrizioneNsBanca;
 
+    @Expose
+    private String nomeProgetto;
+
+    @Expose
     private Integer esigibilitaDifferita;
+    @Expose
     private Integer flFatturaElettronica;
 
+    @Expose
     private String iban;
+    @Expose
     private String ibanNsBanca;
 
+    @Expose
     private Integer idAgente;
+    @Expose
     private Integer idAspettoBeni;
+    @Expose
     private Integer idCausaleEsigibilitaDifferita;
+    @Expose
     private Integer idCausaleTrasporto;
 
     @Expose
     private Integer idCliente;
 
+    @Expose
     private Integer idListino;
+    @Expose
     private Integer idMagazzino;
 
     @Expose
@@ -134,7 +170,14 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private Integer idVettore;
 
+    @Expose
     private BigDecimal importoRitenutaAcconto;
+
+    @Expose
+    private Integer flRitenutaAcconto;
+
+    @Expose
+    private Double percRitenutaAcconto;
 
     @Expose
     private String indirizzoDestinazione;
@@ -145,6 +188,7 @@ public class DocumentoDto extends BaseDto {
     @Expose
     private List<ScadenzaPagamentoDocumentoDto> listaScadenzePagamentiDocumento;
 
+    @Expose
     private String modalitaPagamento;
 
     @Expose
