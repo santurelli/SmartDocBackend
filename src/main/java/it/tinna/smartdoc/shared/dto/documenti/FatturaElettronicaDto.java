@@ -16,7 +16,7 @@ public class FatturaElettronicaDto extends DocumentoDto
     private StatoFatturaElettronica statoFatturaElettronica;
 
     @com.google.gson.annotations.Expose
-    private Integer splitPayment;
+    private int splitPayment;
 
     @com.google.gson.annotations.Expose
     private String tipoComunicazione;
@@ -25,8 +25,21 @@ public class FatturaElettronicaDto extends DocumentoDto
     private Integer progInvioFatturaElettronica;
 
     @com.google.gson.annotations.Expose
-    private Integer progFileFatturaElettronica;
+    private String progFileFatturaElettronica;
 
     @com.google.gson.annotations.Expose
     private String dtLiquidazioneProvvigione;
+
+    @com.google.gson.annotations.Expose
+    private Integer flRitenutaAcconto;
+
+    @com.google.gson.annotations.Expose
+    private Double percRitenutaAcconto;
+
+    @com.google.gson.annotations.Expose
+    private java.math.BigDecimal importoRitenutaAcconto;
+
+    @com.google.gson.annotations.Expose
+    private String tipoRitenuta;
 }
+

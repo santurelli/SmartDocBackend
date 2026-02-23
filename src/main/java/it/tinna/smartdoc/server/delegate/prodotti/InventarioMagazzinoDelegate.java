@@ -18,3 +18,4 @@ public class InventarioMagazzinoDelegate extends BaseDelegate {
         return dao.list(criteria);
     }
 }
+

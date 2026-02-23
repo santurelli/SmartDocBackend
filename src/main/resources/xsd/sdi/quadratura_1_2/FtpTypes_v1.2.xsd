@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:types="http://www.fatturapa.it/sdi/ftp/v1.0" targetNamespace="http://www.fatturapa.it/sdi/ftp/v1.0" version="1.2">
+	
+	<!-- =================================================================== -->
+	<!-- ELEMENTI PER CANALE FTP										 -->
+	<!-- =================================================================== -->
+	<xsd:element name="FileQuadraturaFTP" type="types:QuadraturaFTP_Type" />
+	<xsd:element name="FileEsitoFTP" type="types:EsitoFTP_Type" />
+
+	<!-- =================================================================== -->
+	<!-- TIPI																 -->
+	<!-- =================================================================== -->
+	<xsd:complexType name="QuadraturaFTP_Type">
+		<xsd:sequence>
+			<xsd:element name="IdentificativoNodo" type="types:IdentificativoNodo_Type" />
+			<xsd:element name="DataOraCreazione" type="xsd:dateTime" />
+			<xsd:element name="NomeSupporto" type="types:NomeFile_Type" />
+			<xsd:element name="NumeroFile" type="types:NumeroFile_Type" />
+		</xsd:sequence>
+		<xsd:attribute name="versione" type="types:Versione_Type" use="required" fixed="1.2"/>
+	</xsd:complexType>
+
+	<xsd:complexType name="EsitoFTP_Type">
+		<xsd:sequence>
+			<xsd:element name="IdentificativoNodo" type="types:IdentificativoNodo_Type" />
+			<xsd:element name="DataOraRicezione" type="xsd:dateTime" />
+			<xsd:element name="DataOraEsito" type="xsd:dateTime" />
+			<xsd:element name="NomeSupporto" type="types:NomeFile_Type" />
+			<xsd:element name="Esito" type="types:EsitoTrasferimentoFTP_Type" />
+		</xsd:sequence>
+		<xsd:attribute name="versione" type="types:Versione_Type" use="required" fixed="1.0"/>
+	</xsd:complexType>
+
+	<xsd:simpleType name="IdentificativoNodo_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:pattern value="[0-9]{11}"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+			
+	<xsd:complexType name="NumeroFile_Type">
+		<xsd:sequence>
+			<xsd:element name="Fatture" type="xsd:nonNegativeInteger" />
+			<xsd:element name="RicevutaConsegna" type="xsd:nonNegativeInteger" />
+			<xsd:element name="NotificaMancataConsegna" type="xsd:nonNegativeInteger" />
+			<xsd:element name="NotificaScarto" type="xsd:nonNegativeInteger" />
+			<xsd:element name="NotificaEsito" type="xsd:nonNegativeInteger" />
+			<xsd:element name="MetadatiInvioFile" type="xsd:nonNegativeInteger" />
+			<xsd:element name="NotificaEsitoCommittente" type="xsd:nonNegativeInteger" />
+			<xsd:element name="ScartoEsitoCommittente" type="xsd:nonNegativeInteger" />
+			<xsd:element name="NotificaDecorrenzaTermini" type="xsd:nonNegativeInteger" />
+			<xsd:element name="AttestazioneTrasmissioneFattura" type="xsd:nonNegativeInteger" />
+			<xsd:element name="DatiFattura" type="xsd:nonNegativeInteger" />
+			<xsd:element name="EsitoDatiFattura" type="xsd:nonNegativeInteger" />
+		</xsd:sequence>
+	</xsd:complexType>
+		
+	<xsd:simpleType name="EsitoTrasferimentoFTP_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:enumeration value="ET01">
+				<xsd:annotation>
+					<xsd:documentation>
+						ET01 = OK
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+			<xsd:enumeration value="ET02">
+				<xsd:annotation>
+					<xsd:documentation>
+						ET02 = ERRORE
+					</xsd:documentation>
+				</xsd:annotation>
+			</xsd:enumeration>
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="NomeFile_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="44" />
+		</xsd:restriction>
+	</xsd:simpleType>
+
+	<xsd:simpleType name="Versione_Type">
+		<xsd:restriction base="xsd:string">
+			<xsd:maxLength value="5"/>
+		</xsd:restriction>
+	</xsd:simpleType>
+   
+</xsd:schema>

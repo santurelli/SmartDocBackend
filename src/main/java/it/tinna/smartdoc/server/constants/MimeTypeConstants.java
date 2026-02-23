@@ -22,3 +22,4 @@ public interface MimeTypeConstants
     String DEFAULT_MIME_TYPE    = TEXT_PLAIN;
 
 }
+

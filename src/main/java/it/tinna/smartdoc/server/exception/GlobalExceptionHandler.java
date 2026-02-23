@@ -21,3 +21,4 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>("Si è verificato un errore interno. Contattare l'amministratore.", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
+

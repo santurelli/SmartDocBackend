@@ -54,3 +54,4 @@ public class CausaliMovimentoArticoliDelegate extends BaseDelegate {
         dao.update(dto);
     }
 }
+

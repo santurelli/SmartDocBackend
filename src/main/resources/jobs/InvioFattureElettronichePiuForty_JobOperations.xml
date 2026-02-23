@@ -1,0 +1,76 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	">
+	<!--################################### GENERAL SECTION ###############################################-->
+	<!-- <bean id="jobExecutionListener" class="it.tinna.smartbackup.batch.listeners.BackupJobExecutionListener">
+		<property name="reportTemplate" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_LISTENER, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILTEMPLATE)}"></property>
+		<property name="nomeAzienda" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_NOMEAZIENDA)}"></property>
+		<property name="freeMarkerConfiguration" ref="freeMarkerConfiguration"></property>
+		<property name="mailSenderService" ref="mailSenderService"></property>
+	</bean>
+	<bean id="freeMarkerConfiguration" class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+	</bean>
+	<bean id="backupService" class="it.tinna.smartbackup.server.service.drive.GoogleDriveService">
+		<property name="keyFileContent" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_KEYFILE)}"/>
+	    <property name="dataStoreBaseDir" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_DATASTOREBASEDIR)}"/>
+	</bean>
+	<bean id="mailSender" class="org.springframework.mail.javamail.JavaMailSenderImpl">
+	    <property name="host" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILHOST)}"/>
+	    <property name="port" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILPORT)}"/>
+	    <property name="username" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILUSER)}" />
+		<property name="password" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_GLOBAL, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILPASSWORD)}" />
+		<property name="javaMailProperties">
+			<props>
+				<prop key="mail.smtp.auth">true</prop>
+				<prop key="mail.smtp.starttls.enable">true</prop>
+			</props>
+		</property>
+	</bean>
+
+	<bean id="mailSenderService" class="it.tinna.smartbackup.server.service.mail.MailSenderService">
+		<property name="mailSender" ref="mailSender"></property>
+		<property name="from" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_LISTENER, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILFROM)}"/>
+	    <property name="to" value="#{configurazioneDelegate.getAsArray(T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_DOMAIN_LISTENER, T(it.tinna.smartbackup.server.constants.IConstants).CONFIG_KEY_MAILTO)}"/>
+	</bean> -->
+	
+	<!--################################### TASKLET SECTION ###############################################-->
+	<bean id="pathCreatorPiuFortyTasklet" class="it.tinna.smartdoc.batch.tasklet.InvioFattureSdiPathCreatorTasklet" scope="step">
+<!-- 		<property name="templateDir" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_WORKDIR)}"></property> -->
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_NOME_STORE]}"></property>
+	</bean>
+	
+	<bean id="invioSupportiPiuFortyTasklet" class="it.tinna.smartdoc.batch.tasklet.InviaSupportiSdiTasklet" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
+	</bean>
+	
+	<!--################################### READER SECTION ###############################################-->
+	<bean id="invioFatturePiuFortyReader" class="it.tinna.smartdoc.batch.readers.invio.InvioFattureElettronicheJustDesignReader" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
+		<property name="pathFattura" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_JSON_FATTURA_ENCODED]}"></property>
+		<property name="nomeStore" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_NOME_STORE]}"></property>
+	</bean>
+	<!--################################### PROCESSOR SECTION ###############################################-->
+	<bean id="invioFatturePiuFortyProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor" scope="step">
+		<property name="delegates">
+			<list value-type="org.springframework.batch.item.ItemProcessor">
+				<ref bean="memorizzaFatturaElettronicaPiuFortyProcessor" />
+				<ref bean="generaNomeFilePiuFortyProcessor" />
+			</list>
+		</property>
+	</bean>
+	<bean id="generaNomeFilePiuFortyProcessor" class="it.tinna.smartdoc.batch.processors.inviofatturelettroniche.GeneraNomeFileFatturaElettronicaProcessor" scope="step">
+	</bean>
+	<bean id="memorizzaFatturaElettronicaPiuFortyProcessor" class="it.tinna.smartdoc.batch.processors.inviofatturelettroniche.MemorizzaFatturaElettronicaProcessor" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_NOME_STORE]}"></property>
+	</bean>
+	<!--################################### WRITER SECTION ###############################################-->
+	<bean id="invioFatturePiuFortyWriter" class="it.tinna.smartdoc.batch.writers.invio.InvioFattureElettronicheWriter" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
+		<property name="comandoFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_INVIO_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_FIRMA)}"></property>
+		<property name="stepExecution" value="#{stepExecution}"></property>
+	</bean>
+</beans>

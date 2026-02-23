@@ -19,3 +19,4 @@ public class ScadenzaPagamentoDto extends BaseDto {
     @Expose
     private Integer fineMese;
 }
+

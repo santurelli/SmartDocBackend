@@ -90,3 +90,4 @@ public class CausaliTrasportoDao extends BaseDao {
         return count != null && count > 0;
     }
 }
+

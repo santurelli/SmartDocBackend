@@ -32,4 +32,16 @@ public class DivisioniDao extends BaseDao {
             throw new SQLException(e);
         }
     }
+
+    public DivisioneDto getById(long id) throws SQLException {
+        try {
+            BeanPropertyRowMapper<DivisioneDto> rowMapper = new BeanPropertyRowMapper<>(DivisioneDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("DIVISIONI_S02"), rowMapper, id);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            throw new SQLException(e);
+        }
+    }
 }
+

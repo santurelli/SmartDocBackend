@@ -51,3 +51,4 @@ public class CausaliEsigibilitaDifferitaDao extends BaseDao {
         jdbcTemplate.update(FileQueryReader.getQuery("CAUSALIESIGIBILITA_D01"), userId, id);
     }
 }
+

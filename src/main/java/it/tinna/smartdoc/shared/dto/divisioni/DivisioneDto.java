@@ -22,3 +22,4 @@ public class DivisioneDto extends BaseDto
     }
 
 }
+

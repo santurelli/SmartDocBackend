@@ -53,3 +53,4 @@ public class ScelteArticoloDelegate extends BaseDelegate {
         return dao.isExistent(descrizione, id);
     }
 }
+

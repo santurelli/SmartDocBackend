@@ -28,3 +28,4 @@ public class TipoPagamentoDto extends BaseDto {
     @Expose
     private List<ScadenzaPagamentoDto> scadenze;
 }
+

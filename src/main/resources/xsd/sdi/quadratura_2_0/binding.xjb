@@ -1,0 +1,40 @@
+<jxb:bindings version="2.1" 
+			  xmlns:jxb="http://java.sun.com/xml/ns/jaxb" 
+			  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+			  
+	<jxb:globalBindings>
+		<jxb:serializable uid="1"/>
+		
+		<jxb:javaType name="java.lang.String" xmlType="xsd:string"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseString"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatString" />
+		
+		<jxb:javaType name="java.util.Date" xmlType="xsd:dateTime"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDateTime"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDateTime" />
+		
+		<jxb:javaType name="java.util.Date" xmlType="xsd:date"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDateShort"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDateShort" />
+		
+		<jxb:javaType name="double" xmlType="xsd:decimal"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDouble"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDouble" />
+			
+		<jxb:javaType name="int" xmlType="xsd:nonNegativeInteger"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseInt"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatInt" />
+	</jxb:globalBindings>
+	
+	<jxb:bindings schemaLocation="FtpTypes_v2.0.xsd" node="/xs:schema">
+	
+		<!-- Binding specifici per xsd name -->
+		<jxb:bindings node="//xs:simpleType[@name='EsitoTrasferimentoFTP_Type']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.EsitoTrasferimentoFtpEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseEsitoTrasferimentoFtp"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatEsitoTrasferimentoFtp" />
+		</jxb:bindings>
+	</jxb:bindings>
+
+
+</jxb:bindings>

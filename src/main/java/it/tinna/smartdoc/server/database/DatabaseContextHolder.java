@@ -8,6 +8,10 @@ public class DatabaseContextHolder {
         contextHolder.set(clientDatabase);
     }
 
+    public static void set(String dbKey) {
+        setClientDatabase(dbKey);
+    }
+
     public static String getClientDatabase() {
         return contextHolder.get();
     }
@@ -15,4 +19,10 @@ public class DatabaseContextHolder {
     public static void clearClientDatabase() {
         contextHolder.remove();
     }
+
+    public static void clear() {
+        clearClientDatabase();
+    }
 }
+
+

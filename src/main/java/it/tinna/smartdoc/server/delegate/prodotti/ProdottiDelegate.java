@@ -59,3 +59,4 @@ public class ProdottiDelegate extends BaseDelegate {
         dao.delete(id, user);
     }
 }
+

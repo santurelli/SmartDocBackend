@@ -84,3 +84,4 @@ public class AspettoBeniDao extends BaseDao {
         return count != null && count > 0;
     }
 }
+

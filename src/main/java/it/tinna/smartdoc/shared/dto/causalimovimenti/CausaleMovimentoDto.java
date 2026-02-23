@@ -25,3 +25,4 @@ public class CausaleMovimentoDto extends BaseDto
         this.descrizione = descrizione;
     }
 }
+

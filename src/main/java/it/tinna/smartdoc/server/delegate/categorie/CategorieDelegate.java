@@ -56,3 +56,4 @@ public class CategorieDelegate extends BaseDelegate {
         return categorieDao.checkUniqueness(descrizione, id);
     }
 }
+

@@ -59,3 +59,4 @@ public class PrezzoProdottoDto extends BaseDto
     }
 
 }
+

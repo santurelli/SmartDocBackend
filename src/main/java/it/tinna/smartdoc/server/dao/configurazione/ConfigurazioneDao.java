@@ -137,3 +137,4 @@ public class ConfigurazioneDao extends BaseDao {
         }
     }
 }
+

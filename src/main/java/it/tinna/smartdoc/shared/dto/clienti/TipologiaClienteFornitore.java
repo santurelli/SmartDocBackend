@@ -7,3 +7,4 @@ public enum TipologiaClienteFornitore {
     PUBBLICA_AMMINISTRAZIONE
 
 }
+

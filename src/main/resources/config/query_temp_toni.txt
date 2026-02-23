@@ -1,0 +1,10 @@
+﻿	<query name="TONIARTICOLO_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_toniarticolo AS id,
+				   descrizione
+			  FROM d_e_toniarticolo
+		     WHERE fl_deleted = 0
+		  ORDER BY descrizione
+		</content>
+	</query>
+	<query name="TONIARTICOLO_U01">

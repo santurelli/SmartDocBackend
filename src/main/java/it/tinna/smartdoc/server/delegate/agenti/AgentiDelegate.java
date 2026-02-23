@@ -3,62 +3,83 @@ package it.tinna.smartdoc.server.delegate.agenti;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.agenti.AgentiDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.agenti.AgenteDto;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 
-@Service
-@CacheConfig(cacheNames = "agenti", cacheResolver = "companyCacheResolver")
-public class AgentiDelegate extends BaseDelegate {
+@Service(value = "agentiDelegate")
+public class AgentiDelegate extends BaseDelegate
+{
 
-    @Autowired
-    private AgentiDao agentiDao;
+    // public AgentiDelegate(JdbcTemplate jdbcTemplate)
+    // {
+    // super(jdbcTemplate);
+    // }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void delete(Integer idUser, List<Integer> ids) throws SQLException {
-        for (Integer id : ids) {
-            agentiDao.delete(idUser, id);
+    public void delete(Long idUser,
+                       List<Long> ids) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        for ( Long id : ids )
+        {
+            dao.delete(idUser, id);
         }
     }
 
-    public List<AgenteDto> getSuggestion(String query) throws SQLException {
-        return agentiDao.getSuggestion(query);
+    public List<AgenteDto> getSuggestion(String query) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.getSuggestion(query);
     }
 
-    public boolean isExistent(String descrizione, Integer id) throws SQLException {
-        return agentiDao.isExistent(descrizione, id);
+    public boolean isExistent(String descrizione,
+                              Integer id) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.isExistent(descrizione, id);
     }
 
-    public AgenteDto getById(Integer id) throws SQLException {
-        return agentiDao.getById(id);
+    public AgenteDto getById(Integer id) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.getById(id);
     }
 
-    public List<AgenteDto> getList(String denominazione, Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
-        return agentiDao.getList(denominazione, length, start, orderColumn, orderDir);
+    public AgenteDto getByDenominazione(String denominazione) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.getByDenominazione(denominazione);
     }
 
-    @Cacheable
-    public List<AgenteDto> getListForCombo() throws SQLException {
-        return agentiDao.getListForCombo();
+    public List<AgenteDto> getList(String denominazione,
+                                   Integer length,
+                                   Integer start,
+                                   Integer orderColumn,
+                                   String orderDir) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.getList(denominazione, length, start, orderColumn, orderDir);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void insert(AgenteDto dto, Integer userId) throws SQLException {
-        agentiDao.insert(dto, userId);
+    public List<AgenteDto> getListForCombo() throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        return dao.getListForCombo();
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void update(AgenteDto dto, Integer userId) throws SQLException {
-        agentiDao.update(dto, userId);
+    public void insert(AgenteDto dto) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        dao.insert(dto);
     }
+
+    public void update(AgenteDto dto) throws SQLException
+    {
+        AgentiDao dao = new AgentiDao(jdbcTemplate);
+        dao.update(dto);
+    }
+
 }
+

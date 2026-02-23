@@ -382,3 +382,4 @@ public class ScadenzaPagamentoDocumentoDto extends ScadenzaPagamentoDto implemen
     }
 
 }
+

@@ -110,7 +110,7 @@ public class AliquoteIvaController {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
         try {
             Integer userId = ((it.tinna.smartdoc.server.security.UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            aliquoteIvaDelegate.delete(id, userId);
+            aliquoteIvaDelegate.delete((long) userId, List.of(id.longValue()));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.setErrorText(ExceptionUtils.getMessage(e));
@@ -118,3 +118,4 @@ public class AliquoteIvaController {
         }
     }
 }
+

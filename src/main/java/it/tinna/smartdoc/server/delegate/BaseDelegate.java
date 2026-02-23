@@ -6,15 +6,15 @@ import java.sql.SQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.cache.ehcache.EhCacheCacheManager; // Comment out for now if dependencies missing
+import org.springframework.cache.CacheManager;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 public class BaseDelegate {
 
     protected Logger _log = LoggerFactory.getLogger(this.getClass());
 
-    // @Autowired(required = false)
-    // protected EhCacheCacheManager cacheManager; // Disable EhCache for now
+    @Autowired(required = false)
+    protected CacheManager cacheManager;
 
     @Autowired
     protected JdbcTemplate jdbcTemplate;
@@ -57,3 +57,4 @@ public class BaseDelegate {
     }
 
 }
+

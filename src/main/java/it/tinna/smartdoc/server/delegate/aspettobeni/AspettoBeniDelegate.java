@@ -55,3 +55,4 @@ public class AspettoBeniDelegate {
         return aspettoBeniDao.checkUniqueness(descrizione, id);
     }
 }
+

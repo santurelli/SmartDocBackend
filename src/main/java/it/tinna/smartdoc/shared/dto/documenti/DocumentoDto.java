@@ -1,9 +1,15 @@
 package it.tinna.smartdoc.shared.dto.documenti;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+
 import it.tinna.smartdoc.shared.dto.BaseDto;
 import it.tinna.smartdoc.shared.dto.agenti.AgenteDto;
 import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
@@ -12,275 +18,455 @@ import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @SuppressWarnings("serial")
 @Setter
 @Getter
 @NoArgsConstructor
-public class DocumentoDto extends BaseDto {
+public class DocumentoDto extends BaseDto
+{
 
-    @Expose
-    private String abi;
-    @Expose
-    private String abiNsBanca;
-    @Expose
-    private Double acconto;
+    public enum TipoDoc
+    {
+     BOLLE_CARICO("B", "Arrivo merce"),
+     CONF_ORDINE("C", "Conf. ordine"),
+     DDT("D", "Doc. trasporto"),
+     DOC_ACQUISTO("A", ""),
+     DOC_VENDITA("V", ""),
+     FATTURE("F", "Fattura"),
+     FATTURE_FORNITORE("FF", "Fattura fornitore"),
+     NOTA_CREDITO_CLIENTE("NCC", "Nota di credito"),
+     NOTA_CREDITO_FORNITORE("NCF", "Nota di credito fornitore"),
+     ORDINI_FORNITORE("O", "Ordine fornitore"),
+     PREVENTIVI("P", "Preventivo"),
+     SCONTRINI("S", "Scontrini");
+
+        private static Map<String, TipoDoc> valueToDescrMap;
+
+        public static TipoDoc getDescrizioneByValue(String value)
+        {
+            if ( valueToDescrMap == null )
+            {
+                initMapping();
+            }
+            return valueToDescrMap.get(value);
+        }
+
+        private static void initMapping()
+        {
+            valueToDescrMap = new HashMap<>();
+            for ( TipoDoc s : values() )
+            {
+                valueToDescrMap.put(s.valore, s);
+            }
+        }
+
+        private String descrizione;
+
+        private String valore;
+
+        TipoDoc(String valore,
+                String descrizione)
+        {
+            this.valore = valore;
+            this.descrizione = descrizione;
+        }
+
+        public String getDescrizione()
+        {
+            return descrizione;
+        }
+
+        public String getValore()
+        {
+            return this.valore;
+        }
+    }
+
+    private String                              abi;
+
+    private String                              abiNsBanca;
+
+    private Double                              acconto;
 
     @Expose
     @SerializedName("descAgente")
-    private String agente;
-
-    @Expose
-    private String nomeAgente;
+    private String                              agente;
 
     @Expose
     @SerializedName("agente")
-    private AgenteDto agenteDto;
+    private AgenteDto                           agenteDto;
 
     @Expose
-    private String annotazioneEstesa;
+    private String                              annotazioneEstesa;
+
+    private String                              bic;
+
+    private String                              bicNsBanca;
+
+    private String                              cab;
+
+    private String                              cabNsBanca;
 
     @Expose
-    private String bic;
-    @Expose
-    private String bicNsBanca;
-    @Expose
-    private String cab;
-    @Expose
-    private String cabNsBanca;
+    private String                              capDestinazione;
 
     @Expose
-    private String capDestinazione;
+    private String                              capIntestazione;
 
     @Expose
-    private String capIntestazione;
+    private String                              causale;
 
     @Expose
-    private String causale;
-
-    private boolean checked;
+    private String                              fatturareA;
 
     @Expose
-    private String cig;
+    private String                              luogoDestinazione;
+
+    private boolean                             checked;
 
     @Expose
-    private String cin;
-    @Expose
-    private String cinNsBanca;
+    private String                              cig;
+
+    private String                              cin;
+
+    private String                              cinNsBanca;
 
     @Expose
-    private String cittaDestinazione;
+    private String                              cittaDestinazione;
 
     @Expose
-    private String cittaIntestazione;
+    private String                              cittaIntestazione;
 
     @Expose
     @SerializedName("cliente")
-    private ClienteDto clienteDto;
+    private ClienteDto                          clienteDto;
+
+    private String                              codAgente;
 
     @Expose
-    private String codAgente;
+    private String                              codiceFiscale;
 
     @Expose
-    private String codiceFiscale;
+    private String                              codiceUfficioDestinazione;
 
     @Expose
-    private String codiceUfficioDestinazione;
+    private Integer                             colli;
+
+    private String                              conto;
+
+    private String                              contoNsBanca;
 
     @Expose
-    private Integer colli;
+    private String                              cup;
 
     @Expose
-    private String conto;
-    @Expose
-    private String contoNsBanca;
+    private String                              dataDocumento;
+
+    private String                              dataOraTrasporto;
 
     @Expose
-    private String cup;
+    private String                              dataOrdineAcquisto;
 
     @Expose
-    private String dataDocumento;
+    private String                              datiCommessa;
 
     @Expose
-    private String dataOrdineAcquisto;
+    private String                              denominazioneCliente;
+
+    private String                              descAspettoBeni;
+
+    private String                              descCausaleEsigibilitaDifferita;
+
+    private String                              descCausaleTrasporto;
+
+    private String                              descPesoLordo;
+
+    private String                              descPesoNetto;
+
+    private String                              descrContropartitaRitenutaPrevidenziale;
+
+    private String                              descrizioneBanca;
 
     @Expose
-    private String datiCommessa;
+    private String                              descrizioneListino;
+
+    private String                              descrizioneNsBanca;
+
+    private String                              descrMagazzino;
+
+    private String                              descTipoPagamento;
+
+    private String                              descTipoPorto;
+
+    private String                              descVettore;
+
+    private String                              dtLiquidazioneProvvigione;
+
+    @ToString.Include
+    private String                              erroreValidazioneXml;
 
     @Expose
-    private String dtLiquidazioneProvvigione;
+    private Integer                             esigibilitaDifferita;
 
     @Expose
-    private String denominazioneCliente;
+    private Integer                             flFatturaElettronica;
+
+    private String                              iban;
+
+    private String                              ibanNsBanca;
+
+    private Integer                             idAgente;
 
     @Expose
-    private String nomeCliente;
+    private Integer                             idAspettoBeni;
 
     @Expose
-    private String descrizioneBanca;
+    private Integer                             idCausaleEsigibilitaDifferita;
 
     @Expose
-    private String descrizioneListino;
+    private Integer                             idCausaleTrasporto;
 
     @Expose
-    private String descrizioneNsBanca;
+    private Integer                             idCliente;
+
+    private Integer                             idContropartitaRitenutaPrevidenziale;
+
+    private Integer                             idListino;
+
+    private Integer                             idMagazzino;
 
     @Expose
-    private String nomeProgetto;
+    private Integer                             idNsBanca;
 
     @Expose
-    private Integer esigibilitaDifferita;
-    @Expose
-    private Integer flFatturaElettronica;
+    private Integer                             idProgetto;
+
+    private Integer                             idRitenutaPrevidenziale;
 
     @Expose
-    private String iban;
-    @Expose
-    private String ibanNsBanca;
+    private Integer                             idTipoPagamento;
 
     @Expose
-    private Integer idAgente;
-    @Expose
-    private Integer idAspettoBeni;
-    @Expose
-    private Integer idCausaleEsigibilitaDifferita;
-    @Expose
-    private Integer idCausaleTrasporto;
+    private Integer                             idTipoPorto;
 
     @Expose
-    private Integer idCliente;
+    private Integer                             idVettore;
+
+    private BigDecimal                          importoRitenutaAcconto;
 
     @Expose
-    private Integer idListino;
-    @Expose
-    private Integer idMagazzino;
+    private String                              indirizzoDestinazione;
 
     @Expose
-    private Integer idNsBanca;
+    private String                              indirizzoIntestazione;
 
     @Expose
-    private Integer idProgetto;
-
-    @Expose
-    private Integer idTipoPagamento;
-
-    @Expose
-    private Integer idTipoPorto;
-
-    @Expose
-    private Integer idVettore;
-
-    @Expose
-    private BigDecimal importoRitenutaAcconto;
-
-    @Expose
-    private Integer flRitenutaAcconto;
-
-    @Expose
-    private Double percRitenutaAcconto;
-
-    @Expose
-    private String indirizzoDestinazione;
-
-    @Expose
-    private String indirizzoIntestazione;
-
-    @Expose
+    @SerializedName("scadenze")
     private List<ScadenzaPagamentoDocumentoDto> listaScadenzePagamentiDocumento;
 
-    @Expose
-    private String modalitaPagamento;
+    private List<SpesaIncassoDocumentoDto>      listaSpeseIncassoFattura;
+
+    private String                              modalitaPagamento;
 
     @Expose
-    private String nazioneDestinazione;
+    private String                              nazioneDestinazione;
 
     @Expose
-    private String nazioneIntestazione;
+    private String                              nazioneIntestazione;
+
+    private String                              nomeFileFattura;
 
     @Expose
-    private Integer numDocumento;
+    private Integer                             numDocumento;
 
     @Expose
-    private String numeroOrdineAcquisto;
+    private String                              numeroOrdineAcquisto;
 
     @Expose
-    private Integer pallet;
+    private Integer                             pallet;
 
     @Expose
-    private String targa;
+    private String                              particella;
 
     @Expose
-    private String dataOraTrasporto;
+    private String                              partitaIva;
 
     @Expose
-    private String particella;
+    private String                              pec;
+
+    private Double                              percProvvigioneAgente;
+
+    private Double                              percRitenutaPrevidenziale;
 
     @Expose
-    private String partitaIva;
+    private Double                              pesoLordo;
 
     @Expose
-    private String pec;
-
-    private Double percProvvigioneAgente;
-    private Double percRitenutaPrevidenziale;
+    private Double                              pesoNetto;
 
     @Expose
-    private Double pesoLordo;
-
-    @Expose
-    private Double pesoNetto;
-
-    @Expose
-    private List<ProdottoDocumentoDto> prodotti;
-
-    @Expose
-    private List<SpesaIncassoDocumentoDto> listaSpeseIncassoFattura;
+    private List<ProdottoDocumentoDto>          prodotti;
 
     @Expose
     @SerializedName("progetto")
-    private ProgettoDto progettoDto;
+    private ProgettoDto                         progettoDto;
+
+    private String                              progFileFatturaElettronica;
+
+    private Integer                             progInvioFatturaElettronica;
 
     @Expose
-    private String provinciaDestinazione;
+    private String                              provinciaDestinazione;
 
     @Expose
-    private String provinciaIntestazione;
+    private String                              provinciaIntestazione;
 
-    private String sconto;
-
-    @Expose
-    private Double totale;
+    private String                              sconto;
 
     @Expose
-    private Double totaleDaPagare;
+    private int                                 splitPayment;
 
     @Expose
-    private Double totaleIva;
-
-    private Double totalePagato;
+    private StatoFatturaElettronica             statoFatturaElettronica;
 
     @Expose
-    private String fatturareA;
+    private String                              targa;
+
+    private String                              tipoComunicazione;
+
+    private String                              tipoDocumento;
 
     @Expose
-    private Integer idDocAssociato;
+    private Double                              totale;
 
     @Expose
-    private String tipoDocAssociato;
+    private Double                              totaleDaPagare;
 
-    // Reporting fields
     @Expose
-    private String luogoDestinazione;
-    @Expose
-    private String descTipoPorto;
-    @Expose
-    private String descCausaleTrasporto;
-    @Expose
-    private String descVettore;
-    @Expose
-    private String descAspettoBeni;
-    @Expose
-    private String descPesoLordo;
-    @Expose
-    private String descTipoPagamento;
+    private Double                              totaleIva;
+
+    private Double                              totalePagato;
+
+    @ToString.Include
+    private String                              xmlFattura;
+
+    @ToString.Include
+    private String                              xmlNonValido;
+
+    @Override
+    public boolean equals(Object obj)
+    {
+        if ( obj instanceof DocumentoDto )
+        {
+            return ((DocumentoDto) obj).getId() == this.getId();
+        }
+        return false;
+    }
+
+    public String getFatturareA()
+    {
+        StringBuilder fatturareA = new StringBuilder("");
+        if ( this.clienteDto != null )
+        {
+            fatturareA.append("<b>").append(clienteDto.getDenominazione()).append("</b><br>");
+        }
+        if ( StringUtils.isNotBlank(this.indirizzoIntestazione) )
+        {
+            fatturareA.append(this.indirizzoIntestazione).append("<br>");
+        }
+        if ( StringUtils.isNotBlank(this.capIntestazione) )
+        {
+            fatturareA.append(this.capIntestazione);
+            if ( StringUtils.isNotBlank(this.cittaIntestazione) )
+            {
+                fatturareA.append(" - ");
+            }
+            else if ( StringUtils.isNotBlank(this.provinciaIntestazione) )
+            {
+                fatturareA.append(" ");
+            }
+            else
+            {
+                fatturareA.append("<br>");
+            }
+        }
+        if ( StringUtils.isNotBlank(this.cittaIntestazione) )
+        {
+            fatturareA.append(this.cittaIntestazione);
+            if ( StringUtils.isNotBlank(this.provinciaIntestazione) )
+            {
+                fatturareA.append(" ");
+            }
+            else
+            {
+                fatturareA.append("<br>");
+            }
+        }
+        if ( StringUtils.isNotBlank(this.provinciaIntestazione) )
+        {
+            fatturareA.append("(").append(this.provinciaIntestazione).append(")").append("<br>");
+        }
+        if ( StringUtils.isNotBlank(this.nazioneIntestazione) )
+        {
+            fatturareA.append(this.nazioneIntestazione);
+        }
+
+        return fatturareA.toString();
+    }
+
+    public String getLuogoDestinazione()
+    {
+        // StringBuilder luogoDestinazione = new StringBuilder("This text field element contains styled text displaying the text-only version of the <style size=\"12\" isBold=\"true\" forecolor=\"black\">^<style forecolor=\"#808080\">Jasper</style><style forecolor=\"#990000\">Reports</style></style> logo and some <font size=\"10\"><sup>superscript</sup></font> text and <font size=\"10\"><sub>subscript</sub></font> text.");
+        StringBuilder luogoDestinazione = new StringBuilder("");
+        if ( this.clienteDto != null )
+        {
+            luogoDestinazione.append("<b>").append(clienteDto.getDenominazione()).append("</b><br>");
+        }
+        if ( StringUtils.isNotBlank(this.indirizzoDestinazione) )
+        {
+            luogoDestinazione.append(this.indirizzoDestinazione).append("<br>");
+        }
+        if ( StringUtils.isNotBlank(this.capDestinazione) )
+        {
+            luogoDestinazione.append(this.capDestinazione);
+            if ( StringUtils.isNotBlank(this.cittaDestinazione) )
+            {
+                luogoDestinazione.append(" - ");
+            }
+            else if ( StringUtils.isNotBlank(this.provinciaDestinazione) )
+            {
+                luogoDestinazione.append(" ");
+            }
+            else
+            {
+                luogoDestinazione.append("<br>");
+            }
+        }
+        if ( StringUtils.isNotBlank(this.cittaDestinazione) )
+        {
+            luogoDestinazione.append(this.cittaDestinazione);
+            if ( StringUtils.isNotBlank(this.provinciaDestinazione) )
+            {
+                luogoDestinazione.append(" ");
+            }
+            else
+            {
+                luogoDestinazione.append("<br>");
+            }
+        }
+        if ( StringUtils.isNotBlank(this.provinciaDestinazione) )
+        {
+            luogoDestinazione.append("(").append(this.provinciaDestinazione).append(")").append("<br>");
+        }
+        if ( StringUtils.isNotBlank(this.nazioneDestinazione) )
+        {
+            luogoDestinazione.append(this.nazioneDestinazione);
+        }
+
+        return luogoDestinazione.append("").toString();
+    }
+
 }
+

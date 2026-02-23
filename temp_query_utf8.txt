@@ -1,0 +1,264 @@
+﻿
+  src\main\resources\config\query.xml:5597:			
+		    desc_causale,
+  src\main\resources\config\query.xml:5598:			
+		    user_created,
+  src\main\resources\config\query.xml:5599:			
+		    dt_created)
+  src\main\resources\config\query.xml:5600:			
+	VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?
+,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+  src\main\resources\config\query.xml:5601:			
+ RETURNING k_d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:5602:		
+</content>
+  src\main\resources\config\query.xml:5603:	
+</query>
+  src\main\resources\config\query.xml:5604:	
+<query name="MOVIMENTIMAGAZZINO_I02">
+  src\main\resources\config\query.xml:5605:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:5606:			
+INSERT INTO d_e_movimenti_magazzino 
+  src\main\resources\config\query.xml:5607:			
+		   (k_d_e_prodotti, 
+  src\main\resources\config\query.xml:5608:			
+		    tipo_movimento, 
+  src\main\resources\config\query.xml:5609:			
+		    quantita, 
+  src\main\resources\config\query.xml:5610:			
+		    k_d_e_unitamisura, 
+  src\main\resources\config\query.xml:5611:			
+		    prezzo_unitario,
+  src\main\resources\config\query.xml:5612:			
+		    k_d_e_aliquoteiva,
+  src\main\resources\config\query.xml:5613:			
+		    data, 
+  src\main\resources\config\query.xml:5614:			
+		    k_d_e_scelte,
+  src\main\resources\config\query.xml:5615:			
+		    k_d_e_toni,
+  src\main\resources\config\query.xml:5616:			
+		    k_d_e_taglie,
+  src\main\resources\config\query.xml:5617:			
+		    k_d_e_colori,
+  src\main\resources\config\query.xml:5618:			
+		    k_d_e_magazzini,
+  src\main\resources\config\query.xml:5619:			
+		    k_d_e_clienti,
+  src\main\resources\config\query.xml:5620:			
+		    desc_causale,
+  src\main\resources\config\query.xml:5621:			
+		    user_created,
+  src\main\resources\config\query.xml:5622:			
+		    dt_created)
+  src\main\resources\config\query.xml:5623:			
+	VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?
+,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+  src\main\resources\config\query.xml:5624:			
+ RETURNING k_d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:5625:		
+</content>
+  src\main\resources\config\query.xml:5626:	
+</query>
+> src\main\resources\config\query.xml:5627:	
+<query name="MOVIMENTIMAGAZZINO_S01">
+  src\main\resources\config\query.xml:5628:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:5629:			
+SELECT k_d_e_movimenti_magazzino as id,
+  src\main\resources\config\query.xml:5630:			
+	   d_e_movimenti_magazzino.k_d_e_prodotti as 
+idProdotto,
+  src\main\resources\config\query.xml:5631:			
+	   tipo_movimento as tipoMovimento,
+  src\main\resources\config\query.xml:5632:			
+	   d_e_causalimovimentiprodotti.descrizione 
+as causale,
+  src\main\resources\config\query.xml:5633:			
+	   d_e_causalimovimentiprodotti.k_d_e_causali
+movimentiprodotti as idCausale,
+  src\main\resources\config\query.xml:5634:			
+	   quantita,
+  src\main\resources\config\query.xml:5635:			
+	   k_d_e_unitamisura as idUnitaMisura,
+  src\main\resources\config\query.xml:5636:			
+	   TO_CHAR(data,'DD/MM/YYYY') as 
+dataMovimento,
+  src\main\resources\config\query.xml:5637:			
+	   d_e_aliquoteiva.k_d_e_aliquoteiva as 
+idAliquotaIva,
+  src\main\resources\config\query.xml:5638:			
+	   d_e_aliquoteiva.descrizione as 
+descrAliquotaIva,
+  src\main\resources\config\query.xml:5639:			
+	   prezzo_unitario as prezzoUnitario,
+  src\main\resources\config\query.xml:5640:			
+	   d_e_taglie.k_d_e_taglie as idTaglia,
+  src\main\resources\config\query.xml:5641:			
+	   d_e_taglie.descrizione as descrTaglia,
+  src\main\resources\config\query.xml:5642:			
+	   d_e_colori.k_d_e_colori as idColore,
+  src\main\resources\config\query.xml:5643:			
+	   d_e_colori.descrizione as descrColore,
+  src\main\resources\config\query.xml:5644:			
+	   d_e_toni.k_d_e_toni as idTono,
+  src\main\resources\config\query.xml:5645:			
+	   d_e_toni.descrizione as descrTono,
+  src\main\resources\config\query.xml:5646:			
+	   d_e_scelte.k_d_e_scelte as idScelta,
+  src\main\resources\config\query.xml:5647:			
+	   d_e_scelte.descrizione as descrScelta
+  src\main\resources\config\query.xml:5648:			
+  FROM d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:5649:			
+  LEFT JOIN d_e_causalimovimentiprodotti
+  src\main\resources\config\query.xml:5650:			
+    ON d_e_causalimovimentiprodotti.k_d_e_caus
+alimovimentiprodotti = d_e_movimenti_magazzino
+.k_d_e_causalimovimentiprodotti
+  src\main\resources\config\query.xml:5651:			
+   AND 
+d_e_causalimovimentiprodotti.fl_deleted = 0
+  src\main\resources\config\query.xml:5652:			
+ LEFT JOIN d_e_aliquoteiva
+  src\main\resources\config\query.xml:5653:			
+    ON d_e_aliquoteiva.k_d_e_aliquoteiva = 
+d_e_movimenti_magazzino.k_d_e_aliquoteiva
+  src\main\resources\config\query.xml:5654:			
+   AND d_e_aliquoteiva.fl_deleted = 0
+  src\main\resources\config\query.xml:5655:			
+ LEFT JOIN d_e_taglie
+  src\main\resources\config\query.xml:5656:			
+    ON d_e_taglie.k_d_e_taglie = 
+d_e_movimenti_magazzino.k_d_e_taglie
+  src\main\resources\config\query.xml:5657:			
+   AND d_e_taglie.fl_deleted = 0
+  src\main\resources\config\query.xml:11376:		
+			    desc_causale,
+  src\main\resources\config\query.xml:11377:		
+			    user_created,
+  src\main\resources\config\query.xml:11378:		
+			    dt_created)
+  src\main\resources\config\query.xml:11379:		
+		 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),
+?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+  src\main\resources\config\query.xml:11380:		
+	 returning k_d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:11381:		
+</content>
+  src\main\resources\config\query.xml:11382:	
+</query>
+  src\main\resources\config\query.xml:11383:	
+<query name="MOVIMENTIMAGAZZINO_I02">
+  src\main\resources\config\query.xml:11384:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:11385:		
+	INSERT INTO d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:11386:		
+			   (k_d_e_prodotti,
+  src\main\resources\config\query.xml:11387:		
+			    tipo_movimento,
+  src\main\resources\config\query.xml:11388:		
+			    quantita, 
+  src\main\resources\config\query.xml:11389:		
+			    k_d_e_unitamisura,
+  src\main\resources\config\query.xml:11390:		
+			    prezzo_unitario,
+  src\main\resources\config\query.xml:11391:		
+			    k_d_e_aliquoteiva,
+  src\main\resources\config\query.xml:11392:		
+			    data,
+  src\main\resources\config\query.xml:11393:		
+			    k_d_e_scelte,
+  src\main\resources\config\query.xml:11394:		
+			    k_d_e_toni,
+  src\main\resources\config\query.xml:11395:		
+			    k_d_e_taglie,
+  src\main\resources\config\query.xml:11396:		
+			    k_d_e_colori,
+  src\main\resources\config\query.xml:11397:		
+			    k_d_e_magazzini,
+  src\main\resources\config\query.xml:11398:		
+			    k_d_e_clienti,
+  src\main\resources\config\query.xml:11399:		
+			    desc_causale,
+  src\main\resources\config\query.xml:11400:		
+			    user_created,
+  src\main\resources\config\query.xml:11401:		
+			    dt_created)
+  src\main\resources\config\query.xml:11402:		
+		 VALUES(?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),
+?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+  src\main\resources\config\query.xml:11403:		
+	 returning k_d_e_movimenti_magazzino
+  src\main\resources\config\query.xml:11404:		
+</content>
+  src\main\resources\config\query.xml:11405:	
+</query>
+> src\main\resources\config\query.xml:11406:	
+<query name="MOVIMENTIMAGAZZINO_S01">
+  src\main\resources\config\query.xml:11407:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:11408:		
+	SELECT m.k_d_e_movimenti_magazzino AS id,
+  src\main\resources\config\query.xml:11409:		
+		   TO_CHAR(m.data, 'DD/MM/YYYY') AS 
+dataMovimento,
+  src\main\resources\config\query.xml:11410:		
+		   COALESCE(p.codice, '') || ' - ' || 
+COALESCE(p.descrizione, '') AS 
+descrizioneProdotto,
+  src\main\resources\config\query.xml:11411:		
+		   COALESCE(c.denominazione, 
+f.denominazione, '') AS clienteFornitore,
+  src\main\resources\config\query.xml:11412:		
+		   m.quantita,
+  src\main\resources\config\query.xml:11413:		
+		   m.quantita AS quantitaBase,
+  src\main\resources\config\query.xml:11414:		
+		   m.tipo_movimento AS tipoMovimento,
+  src\main\resources\config\query.xml:11415:		
+		   CASE WHEN m.tipo_movimento = 'I' THEN 
+m.quantita ELSE 0 END AS quantitaCarico,
+  src\main\resources\config\query.xml:11416:		
+		   CASE WHEN m.tipo_movimento = 'U' THEN 
+m.quantita ELSE 0 END AS quantitaScarico,
+  src\main\resources\config\query.xml:11417:		
+		   COALESCE(m.desc_causale, '') AS causale,
+  src\main\resources\config\query.xml:11418:		
+		   m.k_d_e_prodotti AS idProdotto
+  src\main\resources\config\query.xml:11419:		
+	  FROM d_e_movimenti_magazzino m
+  src\main\resources\config\query.xml:11420:		
+	  JOIN d_e_prodotti p ON m.k_d_e_prodotti = 
+p.k_d_e_prodotti
+  src\main\resources\config\query.xml:11421:		
+ LEFT JOIN d_e_clienti c ON m.k_d_e_clienti = 
+c.k_d_e_clienti
+  src\main\resources\config\query.xml:11422:		
+ LEFT JOIN d_e_fornitori f ON 
+m.k_d_e_fornitori = f.k_d_e_fornitori
+  src\main\resources\config\query.xml:11423:		
+	 WHERE m.data &gt;= TO_DATE(?, 'DD/MM/YYYY')
+  src\main\resources\config\query.xml:11424:		
+	   AND m.data &lt;= TO_DATE(?, 'DD/MM/YYYY')
+  src\main\resources\config\query.xml:11425:		
+	   AND (CAST(? AS BIGINT) IS NULL OR 
+m.k_d_e_prodotti = ?)
+  src\main\resources\config\query.xml:11426:		
+	   AND m.fl_deleted = 0
+  src\main\resources\config\query.xml:11427:		
+	   AND p.fl_deleted = 0
+  src\main\resources\config\query.xml:11428:		
+  ORDER BY m.data DESC
+  src\main\resources\config\query.xml:11429:		
+     LIMIT ? OFFSET ?
+  src\main\resources\config\query.xml:11430:		
+</content>
+  src\main\resources\config\query.xml:11431:	
+</query>
+  src\main\resources\config\query.xml:11432:</
+root>
+
+

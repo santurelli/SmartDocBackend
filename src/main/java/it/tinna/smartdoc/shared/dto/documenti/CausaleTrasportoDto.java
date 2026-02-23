@@ -29,3 +29,4 @@ public class CausaleTrasportoDto extends BaseDto {
         this.predefinita = predefinita;
     }
 }
+

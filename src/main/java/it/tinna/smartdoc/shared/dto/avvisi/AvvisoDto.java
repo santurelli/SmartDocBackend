@@ -13,3 +13,4 @@ public class AvvisoDto extends BaseDto {
         this.descrizione = descrizione;
     }
 }
+

@@ -19,3 +19,4 @@ public class GenericResponseDto<T> implements Serializable {
     private String errorText;
 
 }
+

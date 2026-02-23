@@ -100,9 +100,9 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
 
         // Gestione collegamento documento (es. da Preventivo)
         if (dto.getIdDocAssociato() != null && dto.getIdDocAssociato() > 0 && StringUtils.isNotEmpty(dto.getTipoDocAssociato())) {
-            if (!confOrdineDao.existsDocumentoCollegato(dto.getIdDocAssociato(), dto.getTipoDocAssociato(), id, "CONF_ORDINE")) {
+            if (!confOrdineDao.existsDocumentoCollegato(dto.getIdDocAssociato().intValue(), dto.getTipoDocAssociato(), id, "CONF_ORDINE")) {
                 _log.info("Inserimento collegamento documento {} ({}) -> {} (CONF_ORDINE)", dto.getIdDocAssociato(), dto.getTipoDocAssociato(), id);
-                confOrdineDao.insertDocumentoCollegato(dto.getIdDocAssociato(), dto.getTipoDocAssociato(), id, "CONF_ORDINE");
+                confOrdineDao.insertDocumentoCollegato(dto.getIdDocAssociato().intValue(), dto.getTipoDocAssociato(), id, "CONF_ORDINE");
             }
         }
 
@@ -305,7 +305,7 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
         map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPAGAMENTO, tipiPagamentoDelegate.getListForCombo());
         map.put(ISharedConstants.COMBOSMAP_KEY_LISTINI, listiniDelegate.getListForCombo());
         map.put(ISharedConstants.COMBOSMAP_KEY_RISORSE, risorseDelegate.getListForCombo("BA"));
-        map.put(ISharedConstants.COMBOSMAP_KEY_AGENTI, agentiDelegate.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_AGENTI, agentiDelegate.getList(null, null, null, 0, "asc"));
         
         String particelleAsString = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
         if (StringUtils.isNotEmpty(particelleAsString)) {
@@ -317,3 +317,4 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
         return map;
     }
 }
+

@@ -1,0 +1,165 @@
+﻿
+> src\main\resources\config\query.xml:4922:	
+<query name="INVENTARIOMAGAZZINO_S01">
+  src\main\resources\config\query.xml:4923:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:4924:		 
+   SELECT x.*,
+  src\main\resources\config\query.xml:4925:		 
+   	   get_totale_disponibile(d_e_prodotti.k_d
+_e_prodotti,NULLIF(?,0),?) AS quantita,
+  src\main\resources\config\query.xml:4926:		 
+   	   d_e_prodotti.codice AS codiceProdotto,
+  src\main\resources\config\query.xml:4927:			
+	   d_e_prodotti.descrizione AS 
+descrizioneProdotto,
+  src\main\resources\config\query.xml:4928:			
+	   COALESCE(d_e_fornitori.denominazione, '') 
+AS descrizioneFornitore,
+  src\main\resources\config\query.xml:4929:		 
+   	   COALESCE(get_valore_prodotto(d_e_prodot
+ti.k_d_e_prodotti,?,NULLIF(?,0),NULLIF(?,0),?)
+, 0) AS valoreUnitario,
+  src\main\resources\config\query.xml:4930:			
+	   COALESCE(d_e_unitamisura.descrizione, '') 
+AS descUnitaMisuraBase,
+  src\main\resources\config\query.xml:4931:			
+	   COALESCE(d_e_formatiarticolo.descrizione, 
+'') AS descrFormato,
+  src\main\resources\config\query.xml:4932:			
+	   COALESCE(d_e_sceltearticolo.descrizione, 
+'') AS descrScelta,
+  src\main\resources\config\query.xml:4933:			
+	   COALESCE(d_e_toniarticolo.descrizione, 
+'') AS descrTono,
+  src\main\resources\config\query.xml:4934:			
+	   COALESCE(d_e_calibriarticolo.descrizione, 
+'') AS descrCalibro
+  src\main\resources\config\query.xml:4935:		 
+     FROM (
+  src\main\resources\config\query.xml:4936:			
+    	SELECT d_e_prodotti.k_d_e_prodotti,
+  src\main\resources\config\query.xml:4937:			
+    		   COALESCE(d_e_categorie.descrizione, 
+'') AS descCategoria,
+  src\main\resources\config\query.xml:4938:			
+	   		   
+COALESCE(d_e_sottocategorie.descrizione, '') 
+AS descSottoCategoria,
+  src\main\resources\config\query.xml:4939:			
+	   		   COUNT(*) OVER() AS total
+  src\main\resources\config\query.xml:4940:			
+	  	  FROM d_e_prodotti
+  src\main\resources\config\query.xml:4941:			
+	 LEFT JOIN d_e_categorie
+  src\main\resources\config\query.xml:4942:			
+			ON d_e_prodotti.k_d_e_categorie = 
+d_e_categorie.k_d_e_categorie
+  src\main\resources\config\query.xml:4943:		 
+		LEFT JOIN d_e_sottocategorie
+  src\main\resources\config\query.xml:4944:			
+			ON d_e_prodotti.k_d_e_sottocategorie = 
+d_e_sottocategorie.k_d_e_sottocategorie
+  src\main\resources\config\query.xml:4945:			
+ 		 WHERE d_e_prodotti.fl_deleted = 0
+  src\main\resources\config\query.xml:4946:			
+   		   AND tipologia IN ('AM', 'AMSC')
+  src\main\resources\config\query.xml:4947:			
+   		   AND get_totale_disponibile(d_e_prodott
+i.k_d_e_prodotti,NULLIF(?,0),?) &gt; 0
+  src\main\resources\config\query.xml:4948:			
+   		   AND 
+COALESCE(d_e_prodotti.k_d_e_fornitori, 0) = 
+COALESCE(NULLIF(?,0), 
+d_e_prodotti.k_d_e_fornitori, 0)
+  src\main\resources\config\query.xml:4949:			
+   		   AND d_e_prodotti.k_d_e_prodotti = 
+COALESCE(NULLIF(?,0), 
+d_e_prodotti.k_d_e_prodotti)
+  src\main\resources\config\query.xml:4950:			
+  	  ORDER BY ${ORDER_BY}
+  src\main\resources\config\query.xml:4951:			
+	 	   	   ${LIMIT}
+  src\main\resources\config\query.xml:4952:			
+  	   ) AS x
+  src\main\resources\config\query.xml:4953:		 
+	  JOIN d_e_prodotti
+  src\main\resources\config\query.xml:4954:		 
+		ON x.k_d_e_prodotti = 
+d_e_prodotti.k_d_e_prodotti
+  src\main\resources\config\query.xml:4955:		 
+LEFT JOIN d_e_unitamisura
+  src\main\resources\config\query.xml:4956:			
+ 	ON d_e_prodotti.k_d_e_unitamisura1 = 
+d_e_unitamisura.k_d_e_unitamisura
+  src\main\resources\config\query.xml:4957:		 
+LEFT JOIN d_e_fornitori
+  src\main\resources\config\query.xml:4958:		 
+		ON d_e_prodotti.k_d_e_fornitori = 
+d_e_fornitori.k_d_e_fornitori
+  src\main\resources\config\query.xml:4959:		 
+LEFT JOIN d_e_formatiarticolo
+  src\main\resources\config\query.xml:4960:			
+	   ON 
+d_e_formatiarticolo.k_d_e_formatiarticolo = 
+d_e_prodotti.k_d_e_formatiarticolo
+  src\main\resources\config\query.xml:4961:			
+LEFT JOIN d_e_sceltearticolo
+  src\main\resources\config\query.xml:4962:			
+	   ON 
+d_e_sceltearticolo.k_d_e_sceltearticolo = 
+d_e_prodotti.k_d_e_sceltearticolo
+  src\main\resources\config\query.xml:4963:			
+LEFT JOIN d_e_toniarticolo
+  src\main\resources\config\query.xml:4964:			
+	   ON d_e_toniarticolo.k_d_e_toniarticolo = 
+d_e_prodotti.k_d_e_toniarticolo
+  src\main\resources\config\query.xml:4965:			
+LEFT JOIN d_e_calibriarticolo
+  src\main\resources\config\query.xml:4966:			
+	   ON 
+d_e_calibriarticolo.k_d_e_calibriarticolo = 
+d_e_prodotti.k_d_e_calibriarticolo
+  src\main\resources\config\query.xml:4967:		
+</content>
+  src\main\resources\config\query.xml:4968:	
+</query>
+  src\main\resources\config\query.xml:4969:	
+<query name="INVENTARIOMAGAZZINO_S02">
+  src\main\resources\config\query.xml:4970:		
+<content delimiterParsingDisabled="true">
+  src\main\resources\config\query.xml:4971:		 
+   SELECT SUM(get_totale_disponibile(d_e_prodo
+tti.k_d_e_prodotti,NULLIF(?,0),?) * COALESCE(g
+et_valore_prodotto(d_e_prodotti.k_d_e_prodotti
+,?,NULLIF(?,0),NULLIF(?,0),?), 0))
+  src\main\resources\config\query.xml:4972:		 
+     FROM (
+  src\main\resources\config\query.xml:4973:			
+    	SELECT d_e_prodotti.k_d_e_prodotti
+  src\main\resources\config\query.xml:4974:			
+	  	  FROM d_e_prodotti
+  src\main\resources\config\query.xml:4975:			
+	 LEFT JOIN d_e_categorie
+  src\main\resources\config\query.xml:4976:			
+			ON d_e_prodotti.k_d_e_categorie = 
+d_e_categorie.k_d_e_categorie
+  src\main\resources\config\query.xml:4977:		 
+		LEFT JOIN d_e_sottocategorie
+  src\main\resources\config\query.xml:4978:			
+			ON d_e_prodotti.k_d_e_sottocategorie = 
+d_e_sottocategorie.k_d_e_sottocategorie
+  src\main\resources\config\query.xml:4979:			
+ 		 WHERE d_e_prodotti.fl_deleted = 0
+  src\main\resources\config\query.xml:4980:			
+   		   AND tipologia IN ('AM', 'AMSC')
+  src\main\resources\config\query.xml:4981:			
+   		   AND get_totale_disponibile(d_e_prodott
+i.k_d_e_prodotti,NULLIF(?,0),?) &gt; 0
+  src\main\resources\config\query.xml:4982:			
+   		   AND 
+COALESCE(d_e_prodotti.k_d_e_fornitori, 0) = 
+COALESCE(NULLIF(?,0), 
+d_e_prodotti.k_d_e_fornitori, 0)
+
+

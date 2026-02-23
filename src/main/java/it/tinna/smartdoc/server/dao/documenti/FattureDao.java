@@ -1,155 +1,810 @@
 package it.tinna.smartdoc.server.dao.documenti;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import it.tinna.smartdoc.server.database.FileQueryReader;
+import org.apache.commons.lang.text.StrSubstitutor;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
+import org.springframework.jdbc.core.ResultSetExtractor;
 
+import java.util.ArrayList;
+import java.util.List;
 import it.tinna.smartdoc.server.dao.BaseDao;
+import it.tinna.smartdoc.server.database.FileQueryReader;
+import it.tinna.smartdoc.server.util.DateUtility;
+import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
+import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
-import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.SpesaIncassoDocumentoDto;
+import it.tinna.smartdoc.shared.dto.documenti.StatoPagamentoFattura;
+import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
+import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 
-@Repository
-public class FattureDao extends BaseDao {
+public class FattureDao extends BaseDao
+{
 
-    @Autowired
-    public FattureDao(JdbcTemplate jdbcTemplate) {
+    public FattureDao(JdbcTemplate jdbcTemplate)
+    {
         super(jdbcTemplate);
     }
 
-    public List<FatturaDto> getList(String dataInizio, String dataFine, Integer idCliente, Integer idAgente, String statoFatturaElettronica,
-                                   String orderColumn, String orderDir, int start, int length,
-                                   String tipoFatturaSql, String statoFatturaSql, String numDocumentoSql) throws SQLException {
-        String query = FileQueryReader.getQuery("FATTURE_S16");
-        query = query.replace("${ORDER_BY}", orderColumn + " " + orderDir);
-        query = query.replace("${LIMIT}", " LIMIT " + length + " OFFSET " + start);
-        query = query.replace("${TIPO_FATTURA}", tipoFatturaSql);
-        query = query.replace("${STATO}", statoFatturaSql);
-        query = query.replace("${NUM_DOCUMENTO}", numDocumentoSql);
-
-        return jdbcTemplate.query(query, new BeanPropertyRowMapper<>(FatturaDto.class),
-                dataInizio, dataFine, idCliente, idAgente, statoFatturaElettronica);
-    }
-
-    public FatturaDto getById(long id) throws SQLException {
-        FatturaDto dto = jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S03"),
-                new BeanPropertyRowMapper<>(FatturaDto.class), id);
-        if (dto != null) {
-            dto.setProdotti(getProdotti(id));
-            dto.setListaSpeseIncassoFattura(getSpeseIncasso(id));
-            dto.setListaScadenzePagamentiDocumento(getScadenze(id));
+    public void aggiornaTotaliFattura(double totale,
+                                      double totalePagato,
+                                      long idFattura) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U06"), totale, totalePagato, idFattura);
         }
-        return dto;
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'aggiornamento dei totali per la fattura {}", idFattura, e);
+        }
     }
 
-    public List<ProdottoDocumentoDto> getProdotti(long idFattura) throws SQLException {
-        return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S04"),
-                new BeanPropertyRowMapper<>(ProdottoDocumentoDto.class), idFattura);
+    public void associaDoc(Integer idDocPadre,
+                           String tipoDocPadre,
+                           Integer idFattura) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("DOCUMENTI_I01"), idDocPadre, tipoDocPadre, idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'associazione del documento {} di tipo {} alla fattura {}", idDocPadre, tipoDocPadre, idFattura);
+            throw new SQLException(e);
+        }
     }
 
-    public List<SpesaIncassoDocumentoDto> getSpeseIncasso(long idFattura) throws SQLException {
-        return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S05"),
-                new BeanPropertyRowMapper<>(SpesaIncassoDocumentoDto.class), idFattura);
+    public void delete(FatturaDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D04"), dto.getUserLastUpdate(), dto.getId());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione della fattura {}", dto.getId(), e);
+            throw new SQLException(e);
+        }
     }
 
-    public long insert(FatturaDto dto) throws SQLException {
-        return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_I01"), Long.class,
-                dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(),
-                dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
-                dto.getIdCausaleTrasporto(), dto.getDataOraTrasporto(), dto.getTarga(),
-                dto.getIdTipoPorto(), dto.getIdVettore(), dto.getIdAspettoBeni(),
-                dto.getColli(), dto.getPallet(), dto.getPesoNetto(), dto.getPesoLordo(),
-                dto.getIdCliente(), dto.getIdTipoPagamento(), dto.getIdNsBanca(),
-                dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(),
-                dto.getConto(), dto.getBic(),
-                dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(),
-                dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(),
-                dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(),
-                dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(),
-                dto.getDtLiquidazioneProvvigione(),
-                dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(),
-                dto.getTipoComunicazione(), dto.getCodiceUfficioDestinazione(), dto.getPec(),
-                dto.getIdMagazzino(), dto.getSplitPayment(), dto.getFlFatturaElettronica(),
-                dto.getCausale(), dto.getNumeroOrdineAcquisto(), dto.getDataOrdineAcquisto(),
-                dto.getCig(), dto.getCup(), dto.getDatiCommessa(),
-                dto.getNumeroScontrino(), dto.getDataScontrino(),
-                dto.getTipoFattura() != null ? dto.getTipoFattura().name() : null,
-                dto.getStatoFatturaElettronica() != null ? dto.getStatoFatturaElettronica().name() : null,
-                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null,
-                dto.getFlRitenutaAcconto(),
-                dto.getPercRitenutaAcconto(),
-                dto.getImportoRitenutaAcconto(),
-                dto.getUserCreated()
-        );
+    public void deleteProdottiById(long id) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D01"), id);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione degli articoli dalla fattura {}", id, e);
+            throw new SQLException(e);
+        }
     }
 
-    public void update(FatturaDto dto) throws SQLException {
-        jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U01"),
-                dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(),
-                dto.getIdListino(), dto.getIdAgente(), dto.getIdProgetto(),
-                dto.getIdCausaleTrasporto(), dto.getDataOraTrasporto(), dto.getTarga(),
-                dto.getIdTipoPorto(), dto.getIdVettore(), dto.getIdAspettoBeni(),
-                dto.getColli(), dto.getPallet(), dto.getPesoNetto(), dto.getPesoLordo(),
-                dto.getIdCliente(), dto.getIdTipoPagamento(), dto.getIdNsBanca(),
-                dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(),
-                dto.getConto(), dto.getBic(),
-                dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(),
-                dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(),
-                dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(),
-                dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(),
-                dto.getDtLiquidazioneProvvigione(),
-                dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(),
-                dto.getTipoComunicazione(), dto.getCodiceUfficioDestinazione(), dto.getPec(),
-                dto.getIdMagazzino(), dto.getSplitPayment(), dto.getFlFatturaElettronica(),
-                dto.getCausale(), dto.getNumeroOrdineAcquisto(), dto.getDataOrdineAcquisto(),
-                dto.getCig(), dto.getCup(), dto.getDatiCommessa(),
-                dto.getNumeroScontrino(), dto.getDataScontrino(),
-                dto.getTipoFattura() != null ? dto.getTipoFattura().name() : null,
-                dto.getStatoFatturaElettronica() != null ? dto.getStatoFatturaElettronica().name() : null,
-                dto.getIdFatturaCollegata() > 0 ? dto.getIdFatturaCollegata() : null,
-                dto.getFlRitenutaAcconto(),
-                dto.getPercRitenutaAcconto(),
-                dto.getImportoRitenutaAcconto(),
-                dto.getUserLastUpdate(), dto.getId()
-        );
+    public void deleteScadenzaPagamento(Integer id) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D05"), id);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione della scadenza di pagamento con id {}", id, e);
+            throw new SQLException(e);
+        }
     }
 
-    public void delete(long id, Long user) throws SQLException {
-        jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D04"), user, id);
+    public void deleteScadenzePagamento(long id) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D03"), id);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione delle scadenze di pagamento della fattura {}", id, e);
+            throw new SQLException(e);
+        }
     }
 
-    public void deleteProdotti(long idFattura) throws SQLException {
-        jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D01"), idFattura);
+    public void deleteSpeseIncassoById(long id) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_D02"), id);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione delle spese di incasso della fattura {}", id, e);
+            throw new SQLException(e);
+        }
     }
 
-    public void insertProdotto(ProdottoDocumentoDto p, long idFattura) throws SQLException {
-        jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_I02"),
-                idFattura, p.getIdProdotto(), p.getQuantita(), p.getIdUnitaMisura(),
-                p.getPrezzo(), p.getSconto(), p.getPrezzoImponibile(), p.getProvvigione(),
-                p.getIdAliquotaIva(), p.getScarica(), p.getNota(),
-                p.getIdColore(), p.getIdTaglia(), p.getIdScelta(), p.getIdTono(),
-                p.getIdConto(), p.getFmCodice(), p.getFmDescrizione(), p.getFmUnitaMisura(),
-                p.getFmTono(), p.getFmScelta(), p.getFmTaglia(), p.getFmColore(), p.getIdDivisione()
-        );
+    public FatturaDto getById(long id) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<FatturaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(FatturaDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S03"), rowMapper, id);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessuna fattura trovata con id {}", id);
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero della fattura con id {}", id, e);
+            throw new SQLException(e);
+        }
     }
 
-    public List<ScadenzaPagamentoDocumentoDto> getScadenze(long idFattura) throws SQLException {
-        return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S06"),
-                new BeanPropertyRowMapper<>(ScadenzaPagamentoDocumentoDto.class), idFattura);
+    public List<FatturaDto> getByProgetto(long idProgetto,
+                                          int length,
+                                          int start,
+                                          int orderColumn,
+                                          String orderDir) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<FatturaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(FatturaDto.class);
+            String query = FileQueryReader.getQuery("FATTURE_S20");
+            List<Object> params = new ArrayList<>();
+            Map<String, String> valuesMap = new HashMap<>();
+            params.add(idProgetto);
+            if ( orderColumn == 1 )
+            {
+                // data fattura
+                valuesMap.put("ORDER_BY", new StringBuilder("5 ").append(orderDir).toString());
+            }
+            else if ( orderColumn == 2 )
+            {
+                // numero e particella fattura
+                valuesMap.put("ORDER_BY", new StringBuilder("1 ").append(orderDir).append("7 ").append(orderDir).toString());
+            }
+            else if ( orderColumn == 3 )
+            {
+                // cliente
+                valuesMap.put("ORDER_BY", new StringBuilder("8 ").append(orderDir).toString());
+            }
+            else if ( orderColumn == 4 )
+            {
+                // agente
+                valuesMap.put("ORDER_BY", new StringBuilder("12 ").append(orderDir).toString());
+            }
+            else if ( orderColumn == 5 )
+            {
+                // totale
+                valuesMap.put("ORDER_BY", new StringBuilder("9 ").append(orderDir).toString());
+            }
+            else if ( orderColumn == 6 )
+            {
+                // totale da pagare
+                valuesMap.put("ORDER_BY", new StringBuilder("11 ").append(orderDir).toString());
+            }
+            else
+            {
+                // data fattura
+                valuesMap.put("ORDER_BY", new StringBuilder("5 ").append(orderDir).toString());
+            }
+            if ( length != -1 && start != -1 )
+            {
+                valuesMap.put("LIMIT", "LIMIT ? OFFSET ?");
+                params.add(length);
+                params.add(start);
+            }
+            else
+            {
+                valuesMap.put("LIMIT", "");
+            }
+            query = StrSubstitutor.replace(query, valuesMap);
+            return jdbcTemplate.query(query, rowMapper, params.toArray());
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella ricerca delle fatture associate al progetto {}", idProgetto, e);
+            throw new SQLException(e);
+        }
     }
 
-    public Integer getNextNum(String data, int flElettronica, String tipo) throws SQLException {
-        try {
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S07"), Integer.class,
-                    flElettronica, tipo, data, data, flElettronica, tipo, data, data);
-        } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+    /**
+     * Usato quando si crea una nota debito per restituire tutte le fatture a cui è associabile il documento
+     * 
+     * @param idCliente
+     * @param dataNotadebito
+     * @return
+     * @throws SQLException
+     */
+    public List<MovimentiDocumentoDto> getFattureAssociabili(long idCliente,
+                                                             String dataNotadebito) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<MovimentiDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(MovimentiDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S23"), rowMapper, idCliente, dataNotadebito);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero delle fatture associabili alla nota debito per il cliente {} e la data {}", idCliente, dataNotadebito, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<Long> getFattureElettronicheDaInviare(long[] idFatture) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S24"), new ResultSetExtractor<List<Long>>()
+            {
+                @Override
+                public List<Long> extractData(ResultSet rs) throws SQLException, DataAccessException
+                {
+                    List<Long> l = null;
+                    if ( idFatture != null && idFatture.length > 0 )
+                    {
+                        l = new ArrayList<Long>();
+                        for (long id : idFatture) l.add(id);
+                    }
+                    List<Long> result = new ArrayList<>();
+                    while (rs.next())
+                    {
+                        if ( l == null || (l != null && l.contains(rs.getLong(1))) )
+                        {
+                            result.add(rs.getLong(1));
+                        }
+                    }
+                    return result;
+                }
+            });
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco delle fatture elettroniche da inviare", e);
+            throw new SQLException(e);
+        }
+    }
+
+    public long getInsolute() throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery(""), Long.class);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del numero di fatture insolute", e);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<MovimentiDocumentoDto> getList(String tipoDocumento,
+                                               Integer idCliente,
+                                               String dtFrom,
+                                               String dtTo,
+                                               Integer idAgente,
+                                               String stato,
+                                               String statoFatturaElettronica,
+                                               Integer length,
+                                               Integer start,
+                                               Integer orderColumn,
+                                               String orderDir) throws SQLException
+    {
+        String query = FileQueryReader.getQuery("FATTURE_S16");
+        List<Object> params = new ArrayList<>();
+        params.add(StringUtils.isEmpty(dtFrom) ? null : dtFrom);
+        params.add(StringUtils.isEmpty(dtTo) ? null : dtTo);
+        params.add(idCliente);
+        params.add(idAgente);
+        params.add(StringUtils.defaultIfBlank(statoFatturaElettronica, null));
+        Map<String, String> valuesMap = new HashMap<>();
+        if ( StringUtils.isNotBlank(tipoDocumento) )
+        {
+            valuesMap.put("TIPO_FATTURA", "AND tipo_fattura = ?");
+            params.add(tipoDocumento);
+        }
+        else
+        {
+            valuesMap.put("TIPO_FATTURA", "");
+        }
+        if ( StringUtils.isNotBlank(stato) )
+        {
+            if ( stato.equals(StatoPagamentoFattura.NON_PAGATA.getValue()) )
+            {
+                valuesMap.put("STATO", "AND (totale - totale_pagato) > 0 AND totale_pagato = 0");
+            }
+            else if ( stato.equals(StatoPagamentoFattura.PARZIALMENTE_PAGATA.getValue()) )
+            {
+                valuesMap.put("STATO", "AND (totale - totale_pagato) > 0 AND totale_pagato > 0");
+            }
+            else
+            {
+                valuesMap.put("STATO", "AND (totale - totale_pagato) = 0");
+            }
+        }
+        else
+        {
+            valuesMap.put("STATO", "");
+        }
+        if ( orderColumn == 1 )
+        {
+            // data fattura
+            valuesMap.put("ORDER_BY", new StringBuilder("6 ").append(orderDir).toString());
+        }
+        else if ( orderColumn == 2 )
+        {
+            // numero e particella fattura
+            valuesMap.put("ORDER_BY", new StringBuilder("3 ").append(orderDir).append(", 7 ").append(orderDir).toString());
+        }
+        else if ( orderColumn == 3 )
+        {
+            // cliente
+            valuesMap.put("ORDER_BY", new StringBuilder("9 ").append(orderDir).toString());
+        }
+        else
+        {
+            // ordinamento predefinito per data fattura
+            valuesMap.put("ORDER_BY", new StringBuilder("6 ").append(orderDir).toString());
+        }
+        if ( length != null && start != null )
+        {
+            valuesMap.put("LIMIT", "LIMIT ? OFFSET ?");
+            params.add(length);
+            params.add(start);
+        }
+        else
+        {
+            valuesMap.put("LIMIT", "");
+        }
+        query = StrSubstitutor.replace(query, valuesMap);
+        try
+        {
+            BeanPropertyRowMapper<MovimentiDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(MovimentiDocumentoDto.class);
+            return jdbcTemplate.query(query, rowMapper, params.toArray());
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella ricerca delle fatture", e);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<SpesaIncassoDocumentoDto> getListSpeseIncassoById(long id) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<SpesaIncassoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(SpesaIncassoDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S05"), rowMapper, id);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco spese incasso per la fattura {}", id);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<ProdottoDocumentoDto> getListProdottiById(long id) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<ProdottoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ProdottoDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S04"), rowMapper, id);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco degli articoli nella fattura {}", id);
+            throw new SQLException(e);
+        }
+    }
+
+    public Integer getNextNum(String data,
+                              int flFatturaElettronica,
+                              TipoFattura tipoFattura) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S07"), Integer.class, flFatturaElettronica, tipoFattura.name(), StringUtils.defaultIfEmpty(data, null), StringUtils.defaultIfEmpty(data, null), flFatturaElettronica, tipoFattura.name(), StringUtils.defaultIfEmpty(data, null), StringUtils.defaultIfEmpty(data, null));
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
             return 1;
         }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella determinazione del prossimo numero fattura", e);
+            throw new SQLException(e);
+        }
     }
+
+    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(long idScadenza) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<ScadenzaPagamentoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ScadenzaPagamentoDocumentoDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S17"), rowMapper, idScadenza);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessuna scadenza di pagamento fattura trovata con id {}", idScadenza);
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero della scadenza pagamento con id {}", idScadenza);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<ScadenzaPagamentoDocumentoDto> getScadenzePagamento(long id) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<ScadenzaPagamentoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ScadenzaPagamentoDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S06"), rowMapper, id);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco scadenze pagamento per la fattura {}", id);
+            throw new SQLException(e);
+        }
+    }
+
+    public double getTotale(long idFattura) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S21"), Double.class, idFattura);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessun valore restituito dal calcolo del totale della fattura {}", idFattura);
+            throw new SQLException();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel calcolo del totale della fattura {}", idFattura, e);
+            throw new SQLException(e);
+        }
+
+    }
+
+    public double getTotalePagato(long idFattura) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S22"), Double.class, idFattura);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessun valore restituito dal calcolo del totale pagato per la fattura {}", idFattura);
+            throw new SQLException();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel calcolo del totale pagato per la fattura {}", idFattura, e);
+            throw new SQLException(e);
+        }
+
+    }
+
+    public List<MovimentiDocumentoDto> getUltimeFatture() throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<MovimentiDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(MovimentiDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("DOCUMENTI_S04"), rowMapper);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero delle ultime fatture", e);
+            throw new SQLException(e);
+        }
+    }
+
+    public String getXmlFatturaElettronica(long idFattura) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S18"), String.class, idFattura);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessuna fattura trovata con id {}. Xml fattura elettronica impostato a null", idFattura);
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'xml della fattura elettronica per la fattura {}", idFattura, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public long insert(FatturaDto dto) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_I01"),
+                                               Long.class,
+                                               dto.getNumDocumento(),
+                                               StringUtils.defaultIfBlank(dto.getParticella(), null),
+                                               StringUtils.defaultIfEmpty(dto.getDataDocumento(), null),
+                                               dto.getIdListino(),
+                                               dto.getIdAgente(),
+                                               dto.getIdProgetto(),
+                                               dto.getIdCausaleTrasporto(),
+                                               StringUtils.defaultIfEmpty(dto.getDataOraTrasporto(), null),
+                                               StringUtils.defaultIfEmpty(dto.getTarga(), null),
+                                               dto.getIdTipoPorto(),
+                                               dto.getIdVettore(),
+                                               dto.getIdAspettoBeni(),
+                                               dto.getColli(),
+                                               dto.getPallet(),
+                                               dto.getPesoNetto(),
+                                               dto.getPesoLordo(),
+                                               dto.getIdCliente(),
+                                               dto.getIdTipoPagamento(),
+                                               dto.getIdNsBanca(),
+                                               dto.getDescrizioneBanca(),
+                                               dto.getIban(),
+                                               dto.getCin(),
+                                               dto.getAbi(),
+                                               dto.getCab(),
+                                               dto.getConto(),
+                                               dto.getBic(),
+                                               dto.getIndirizzoIntestazione(),
+                                               dto.getCapIntestazione(),
+                                               dto.getCittaIntestazione(),
+                                               dto.getProvinciaIntestazione(),
+                                               dto.getNazioneIntestazione(),
+                                               dto.getIndirizzoDestinazione(),
+                                               dto.getCapDestinazione(),
+                                               dto.getCittaDestinazione(),
+                                               dto.getProvinciaDestinazione(),
+                                               dto.getNazioneDestinazione(),
+                                               StringUtils.isEmpty(dto.getDtLiquidazioneProvvigione()) ? null : DateUtility.toTimestamp(dto.getDtLiquidazioneProvvigione()),
+                                               dto.getEsigibilitaDifferita() == null ? 0 : dto.getEsigibilitaDifferita(),
+                                               dto.getIdCausaleEsigibilitaDifferita(),
+                                               dto.getTipoComunicazione(),
+                                               dto.getCodiceUfficioDestinazione(),
+                                               dto.getPec(),
+                                               dto.getIdMagazzino(),
+                                               dto.getSplitPayment(),
+                                               dto.getFlFatturaElettronica(),
+                                               StringUtils.defaultIfEmpty(dto.getCausale(), null),
+                                               StringUtils.defaultIfEmpty(dto.getNumeroOrdineAcquisto(), null),
+                                               StringUtils.defaultIfEmpty(dto.getDataOrdineAcquisto(), null),
+                                               StringUtils.defaultIfEmpty(dto.getCig(), null),
+                                               StringUtils.defaultIfEmpty(dto.getCup(), null),
+                                               StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
+                                               dto.getNumeroScontrino(),
+                                               StringUtils.defaultIfEmpty(dto.getDataScontrino(), null),
+                                               dto.getTipoFattura().name(),
+                                               dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
+                                               dto.getIdFatturaCollegata() == 0L ? null : dto.getIdFatturaCollegata(),
+                                               dto.getFlRitenutaAcconto(),
+                                               dto.getPercRitenutaAcconto(),
+                                               dto.getImportoRitenutaAcconto(),
+                                               dto.getTipoRitenuta(),
+                                               dto.getUserCreated());
+        }
+        catch ( DataAccessException | ParseException e )
+        {
+            _log.error("Errore nell'inserimento della fattura", e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void insertProdotto(ProdottoDocumentoDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_I02"), dto.getIdDocumento(), dto.getIdProdotto(), dto.getQuantita(), dto.getIdUnitaMisura(), dto.getPrezzo(), dto.getSconto(), dto.getPrezzoImponibile(), dto.getProvvigione(), dto.getIdAliquotaIva(), dto.getScarica(), dto.getNota(), dto.getIdColore(), dto.getIdTaglia(), dto.getIdScelta(), dto.getIdTono(), dto.getIdConto(), dto.getFmCodice(), dto.getFmDescrizione(), dto.getFmUnitaMisura(), dto.getFmTono(), dto.getFmScelta(), dto.getFmTaglia(), dto.getFmColore(), dto.getIdDivisione(), dto.getFlRitenuta());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'inserimento dell'articolo nella fattura {}", dto.getIdDocumento(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public Integer insertScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_I04"), Integer.class, dto.getIdDocumento(), dto.getDtScadenza(), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), StringUtils.isEmpty(dto.getDtPagamento()) ? null : dto.getDtPagamento());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'inserimento della scadenza di pagamento per la fattura {}", dto.getIdDocumento(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void insertSpesaIncasso(SpesaIncassoDocumentoDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_I03"), dto.getIdFattura(), dto.getIdSpesaIncasso(), dto.getIdAliquotaIva(), dto.getImporto());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nll'inserimento della spesa di incasso per la fattura {}", dto.getIdFattura(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public boolean isExistentNumero(Integer numero,
+                                    String particella,
+                                    String data,
+                                    int flFatturaElettronica,
+                                    TipoFattura tipoFattura,
+                                    Integer id) throws SQLException
+    {
+        try
+        {
+            long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S02"), Long.class, numero, StringUtils.defaultIfEmpty(particella, null), StringUtils.defaultIfEmpty(particella, null), id, StringUtils.defaultIfEmpty(data, null), StringUtils.defaultIfEmpty(data, null), flFatturaElettronica, tipoFattura.name());
+            return l > 0;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella determinazione dell'esistenza del numero documento {}, particella {} e tipo {}", numero, StringUtils.defaultIfBlank(particella, "<vuoto>"), tipoFattura.name(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void salvaXmlFatturaElettronica(long idFattura,
+                                           String xml) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U05"), xml, idFattura);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel salvataggio dell'xml della fattura elettronica per la fattura {}", idFattura, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void update(FatturaDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U01"),
+                                dto.getNumDocumento(),
+                                StringUtils.defaultIfBlank(dto.getParticella(), null),
+                                StringUtils.defaultIfEmpty(dto.getDataDocumento(), null),
+                                dto.getIdListino(),
+                                dto.getIdAgente(),
+                                dto.getIdProgetto(),
+                                dto.getIdCausaleTrasporto(),
+                                StringUtils.defaultIfEmpty(dto.getDataOraTrasporto(), null),
+                                StringUtils.defaultIfEmpty(dto.getTarga(), null),
+                                dto.getIdTipoPorto(),
+                                dto.getIdVettore(),
+                                dto.getIdAspettoBeni(),
+                                dto.getColli(),
+                                dto.getPallet(),
+                                dto.getPesoNetto(),
+                                dto.getPesoLordo(),
+                                dto.getIdCliente(),
+                                dto.getIdTipoPagamento(),
+                                dto.getIdNsBanca(),
+                                dto.getDescrizioneBanca(),
+                                dto.getIban(),
+                                dto.getCin(),
+                                dto.getAbi(),
+                                dto.getCab(),
+                                dto.getConto(),
+                                dto.getBic(),
+                                dto.getIndirizzoIntestazione(),
+                                dto.getCapIntestazione(),
+                                dto.getCittaIntestazione(),
+                                dto.getProvinciaIntestazione(),
+                                dto.getNazioneIntestazione(),
+                                dto.getIndirizzoDestinazione(),
+                                dto.getCapDestinazione(),
+                                dto.getCittaDestinazione(),
+                                dto.getProvinciaDestinazione(),
+                                dto.getNazioneDestinazione(),
+                                StringUtils.isEmpty(dto.getDtLiquidazioneProvvigione()) ? null : DateUtility.toTimestamp(dto.getDtLiquidazioneProvvigione()),
+                                dto.getEsigibilitaDifferita() == null ? 0 : dto.getEsigibilitaDifferita(),
+                                dto.getIdCausaleEsigibilitaDifferita(),
+                                dto.getTipoComunicazione(),
+                                dto.getCodiceUfficioDestinazione(),
+                                dto.getPec(),
+                                dto.getIdMagazzino(),
+                                dto.getSplitPayment(),
+                                dto.getFlFatturaElettronica(),
+                                StringUtils.defaultIfEmpty(dto.getCausale(), null),
+                                StringUtils.defaultIfEmpty(dto.getNumeroOrdineAcquisto(), null),
+                                StringUtils.defaultIfEmpty(dto.getDataOrdineAcquisto(), null),
+                                StringUtils.defaultIfEmpty(dto.getCig(), null),
+                                StringUtils.defaultIfEmpty(dto.getCup(), null),
+                                StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
+                                dto.getNumeroScontrino(),
+                                StringUtils.defaultIfEmpty(dto.getDataScontrino(), null),
+                                dto.getTipoFattura().name(),
+                                dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
+                                dto.getIdFatturaCollegata() == 0L ? null : dto.getIdFatturaCollegata(),
+                                dto.getFlRitenutaAcconto(),
+                                dto.getPercRitenutaAcconto(),
+                                dto.getImportoRitenutaAcconto(),
+                                dto.getTipoRitenuta(),
+                                dto.getUserLastUpdate(),
+                                dto.getId());
+        }
+        catch ( DataAccessException | ParseException e )
+        {
+            _log.error("Errore nell'aggiornamento della fattura {}", dto.getId(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void updateScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U02"), dto.getDtScadenza(), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), StringUtils.isEmpty(dto.getDtPagamento()) ? null : dto.getDtPagamento(), dto.getId());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'aggiornamento della scadenza di pagamento {}", dto.getId(), e);
+            throw new SQLException(e);
+        }
+    }
+
 }
+

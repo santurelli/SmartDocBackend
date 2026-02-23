@@ -89,6 +89,9 @@ public class ProdottoDocumentoDto extends BaseDto {
     private Double prezzo;
 
     @Expose
+    private Double prezzoVenditaIvato;
+
+    @Expose
     private double prezzoImponibile;
 
     private boolean prodotto;
@@ -129,4 +132,8 @@ public class ProdottoDocumentoDto extends BaseDto {
 
     // Field expected by report for description
     private String descrizione;
+
+    @Expose
+    private Integer flRitenuta;
 }
+

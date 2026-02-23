@@ -1,173 +1,295 @@
 package it.tinna.smartdoc.server.delegate.fornitori;
 
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.collections.ListUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import it.tinna.smartdoc.server.dao.avvisi.AvvisiDao;
+import it.tinna.smartdoc.server.dao.categoriespesa.CategorieSpesaDao;
 import it.tinna.smartdoc.server.dao.contatti.ContattiDao;
 import it.tinna.smartdoc.server.dao.fornitori.FornitoriDao;
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
+import it.tinna.smartdoc.server.dao.notedocumenti.NoteDocumentiDao;
+import it.tinna.smartdoc.server.dao.risorse.RisorseDao;
+import it.tinna.smartdoc.server.dao.tipiporto.TipiPortoDao;
+import it.tinna.smartdoc.server.dao.vettori.VettoriDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
+import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
 import it.tinna.smartdoc.shared.dto.fornitori.FornitoreDto;
 import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
+import it.tinna.smartdoc.shared.dto.risorse.RisorsaDto;
 
 @Service(value = "fornitoriDelegate")
-public class FornitoriDelegate extends BaseDelegate {
+public class FornitoriDelegate extends BaseDelegate
+{
+
+//	public FornitoriDelegate(JdbcTemplate jdbcTemplate) {
+//		super(jdbcTemplate);
+//	}
 
     @Transactional(rollbackFor = SQLException.class)
-    public void delete(List<FornitoreDto> listaFornitori) throws SQLException {
+    public void delete(List<FornitoreDto> listaFornitori) throws SQLException
+    {
         FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
-        for (FornitoreDto fornitoreDto : listaFornitori) {
+        for ( FornitoreDto fornitoreDto : listaFornitori )
+        {
             fornitoriDao.delete(fornitoreDto);
         }
     }
 
-    public String generaCodice() throws SQLException {
+    public String generaCodice() throws SQLException
+    {
         FornitoriDao dao = new FornitoriDao(jdbcTemplate);
         return dao.generaCodice();
     }
 
-    public FornitoreDto getByDenominazione(String denominazione) throws SQLException {
-        FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
-        FornitoreDto dto = fornitoriDao.getByDenominazione(denominazione);
-        if (dto != null) {
-            IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
-            ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
-            dto.setElencoIndirizzi(
-                    indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
-            dto.setElencoContatti(
-                    contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
-        }
-        return dto;
-    }
-
-    public FornitoreDto getById(Integer id) throws SQLException {
-        FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
-        FornitoreDto dto = fornitoriDao.getById(id);
-        if (dto != null) {
-            IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
-            ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
-            dto.setElencoIndirizzi(
-                    indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
-            dto.setElencoContatti(
-                    contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
-        }
-        return dto;
-    }
-
-    public List<FornitoreDto> getList(String strToSearch,
-            Integer length,
-            Integer start,
-            Integer orderColumn,
-            String orderDir) throws SQLException {
-        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
-        List<FornitoreDto> list = dao.getList(strToSearch, length, start, orderColumn, orderDir);
-        return list;
-    }
-
-    public List<FornitoreDto> getListForCombo() throws SQLException {
-        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
-        return dao.getListForCombo();
-    }
-
-    public List<FornitoreDto> getSuggestion(String q) throws SQLException {
-        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
-        return dao.getSuggestion(q);
-    }
-
-    @Transactional(rollbackFor = Throwable.class)
-    public Integer insert(FornitoreDto dto) throws SQLException {
+    public FornitoreDto getByDenominazione(String denominazione) throws SQLException
+    {
         FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
         IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
         ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
-        long idFornitoreLong = fornitoriDao.insert(dto); // DAO returns long
-        Integer idFornitore = (int) idFornitoreLong;
-
-        if (dto.getElencoIndirizzi() != null) {
-            for (IndirizzoDto indirizzoDto : dto.getElencoIndirizzi()) {
-                indirizzoDto.setIdRichiedente(idFornitore);
-                indirizzoDto.setUserCreated(dto.getUserCreated());
-                indirizziDao.insert(IndirizzoDto.Richiedente.FORNITORI.getValore(), indirizzoDto);
-            }
+        FornitoreDto dto = fornitoriDao.getByDenominazione(denominazione);
+        if ( dto != null )
+        {
+            dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
+            dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
         }
+        return dto;
+    }
 
-        if (dto.getElencoContatti() != null) {
-            for (ContattoDto contattoDto : dto.getElencoContatti()) {
-                contattoDto.setIdRichiedente(idFornitore);
-                contattoDto.setUserCreated(dto.getUserCreated());
-                contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(), contattoDto);
-            }
+    public FornitoreDto getById(Integer id) throws SQLException
+    {
+        FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
+        IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+        ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+        FornitoreDto dto = fornitoriDao.getById(id);
+        dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), id));
+        dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), id));
+        return dto;
+    }
+
+    public FornitoreDto getByPartitaIva(String partitaIva) throws SQLException
+    {
+        FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
+        IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+        ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+        FornitoreDto dto = fornitoriDao.getByPartitaIva(partitaIva);
+        if ( dto != null )
+        {
+            dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
+            dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
         }
+        return dto;
+    }
+
+    // public List<BaseClienteFornitoreJsonDto> getSuggestion(String query)
+    // throws Exception {
+    // Connection conn = null;
+    // try {
+    // conn = PooledCnn.getSingleton(dbKey);
+    // FornitoriDao dao = new FornitoriDao(conn);
+    // return dao.getSuggestion(query);
+    // } finally {
+    // PooledCnn.close(conn);
+    // }
+    // }
+
+    public Map<String, Object> getCombosMap() throws SQLException
+    {
+        RisorseDao risorseDao = new RisorseDao(jdbcTemplate);
+        CategorieSpesaDao categorieSpesaDao = new CategorieSpesaDao(jdbcTemplate);
+        AvvisiDao avvisiDao = new AvvisiDao(jdbcTemplate);
+        VettoriDao vettoriDao = new VettoriDao(jdbcTemplate);
+        NoteDocumentiDao noteDocumentiDao = new NoteDocumentiDao(jdbcTemplate);
+        TipiPortoDao tipiPortoDao = new TipiPortoDao(jdbcTemplate);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put(ISharedConstants.COMBOSMAP_KEY_RISORSE, risorseDao.getListForCombo(RisorsaDto.Tipologia.BANCA.getValore()));
+        map.put(ISharedConstants.COMBOSMAP_KEY_CATEGORIESPESA, categorieSpesaDao.getList(null));
+        map.put(ISharedConstants.COMBOSMAP_KEY_VETTORI, vettoriDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPORTO, tipiPortoDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_AVVISIDOCUMENTI, avvisiDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_NOTEDOCUMENTI, noteDocumentiDao.getList(null, null, null, null, null));
+        return map;
+    }
+
+    public List<FornitoreDto> getList(String strToSearch,
+                                      Integer length,
+                                      Integer start,
+                                      Integer orderColumn,
+                                      String orderDir) throws SQLException
+    {
+        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
+        List<FornitoreDto> listaFornitori = dao.getList(strToSearch, length, start, orderColumn, orderDir);
+        return listaFornitori;
+    }
+
+    public List<FornitoreDto> getListForCombo() throws SQLException
+    {
+        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
+        List<FornitoreDto> listaFornitori = dao.getListForCombo();
+        return listaFornitori;
+    }
+
+    public List<FornitoreDto> getSuggestion(String query) throws SQLException
+    {
+        FornitoriDao dao = new FornitoriDao(jdbcTemplate);
+        IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+        List<FornitoreDto> list = dao.getSuggestion(query);
+        for ( FornitoreDto dto : list )
+        {
+            dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId()));
+        }
+        return list;
+    }
+
+    @Transactional(rollbackFor = SQLException.class)
+    public long insert(FornitoreDto dto,
+                       List<IndirizzoDto> indirizziToAdd,
+                       List<IndirizzoDto> indirizziToEdit,
+                       List<ContattoDto> contattiToAdd,
+                       List<ContattoDto> contattiToEdit) throws SQLException
+    {
+        // indirizziToAdd = ListUtils.subtract(indirizziToAdd,
+        // indirizziToDelete);
+        // indirizziToEdit = ListUtils.subtract(indirizziToEdit,
+        // indirizziToDelete);
+        // contattiToAdd = ListUtils.subtract(contattiToAdd,
+        // contattiToDelete);
+        FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
+        IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+        ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+        long idFornitore = fornitoriDao.insert(dto);
+        for ( IndirizzoDto indirizzoDto : indirizziToAdd )
+        {
+            indirizzoDto.setIdRichiedente(idFornitore);
+            indirizzoDto.setUserCreated(dto.getUserCreated());
+            indirizziDao.insert(IndirizzoDto.Richiedente.FORNITORI.getValore(), indirizzoDto);
+        }
+        for ( ContattoDto contattoDto : contattiToAdd )
+        {
+            contattoDto.setIdRichiedente(idFornitore);
+            contattoDto.setUserCreated(dto.getUserCreated());
+            contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(), contattoDto);
+        }
+        // for (ContattoDto contattoDto: listaContatti){
+        // contattoDto.setIdRichiedente(idFornitore);
+        // contattoDto.setUserCreated(dto.getUserCreated());
+        // contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(),
+        // contattoDto);
+        // }
         return idFornitore;
     }
 
-    public boolean isExistentCodice(String codice, Integer id) throws SQLException {
+    public boolean isExistentCodice(String codice,
+                                    Integer id) throws SQLException
+    {
         FornitoriDao dao = new FornitoriDao(jdbcTemplate);
         return dao.isExistentCodice(codice, id);
     }
 
-    public boolean isExistentDenominazione(String denominazione, Integer id) throws SQLException {
+    public boolean isExistentDenominazione(String denominazione,
+                                           Integer id) throws SQLException
+    {
         FornitoriDao dao = new FornitoriDao(jdbcTemplate);
         return dao.isExistentDenominazione(denominazione, id);
     }
 
+    @SuppressWarnings("unchecked")
     @Transactional(rollbackFor = SQLException.class)
-    public void update(FornitoreDto dto) throws SQLException {
+    public void update(FornitoreDto dto,
+                       List<IndirizzoDto> indirizziToAdd,
+                       /* List<IndirizzoDto> indirizziToDelete, */ List<IndirizzoDto> indirizziToEdit,
+                       List<ContattoDto> contattiToAdd,
+                       /* List<ContattoDto> contattiToDelete, */ List<ContattoDto> contattiToEdit) throws SQLException
+    {
         FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);
         IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
         ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
 
-        // Update main Client entity
+        List<IndirizzoDto> indirizzi = indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId());
+        List<IndirizzoDto> indirizziToDelete = ListUtils.subtract(indirizzi, dto.getElencoIndirizzi());
+        // indirizziToAdd = ListUtils.subtract(indirizziToAdd,
+        // indirizziToDelete);
+        // indirizziToEdit = ListUtils.subtract(indirizziToEdit,
+        // indirizziToDelete);
+        List<ContattoDto> contatti = contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId());
+        List<ContattoDto> contattiToDelete = ListUtils.subtract(contatti, dto.getElencoContatti());
+        // contattiToAdd = ListUtils.subtract(contattiToAdd,
+        // contattiToDelete);
+        // contattiToEdit = ListUtils.subtract(contattiToEdit,
+        // contattiToDelete);
+
         fornitoriDao.update(dto);
-
-        // Handle Indirizzi
-        List<IndirizzoDto> currentIndirizzi = indirizziDao
-                .getListByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId());
-        List<IndirizzoDto> newIndirizzi = dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi()
-                : List.of();
-
-        List<IndirizzoDto> addressesToDelete = ListUtils.subtract(currentIndirizzi, newIndirizzi);
-        for (IndirizzoDto addr : addressesToDelete) {
-            indirizziDao.deleteByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId(), addr.getId());
+        for ( IndirizzoDto indirizzoDto : indirizziToDelete )
+        {
+            indirizziDao.deleteByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(), dto.getId(), indirizzoDto.getId());
         }
-
-        for (IndirizzoDto addr : newIndirizzi) {
-            if (addr.getId() <= 0) {
-                addr.setIdRichiedente(dto.getId());
-                addr.setUserCreated(dto.getUserLastUpdate()); 
-                indirizziDao.insert(IndirizzoDto.Richiedente.FORNITORI.getValore(), addr);
-            } else {
-                addr.setIdRichiedente(dto.getId());
-                addr.setUserLastUpdate(dto.getUserLastUpdate());
-                indirizziDao.update(IndirizzoDto.Richiedente.FORNITORI.getValore(), addr);
-            }
+        // indirizziDao.deleteByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(),
+        // dto.getId());
+        for ( IndirizzoDto indirizzoDto : indirizziToEdit )
+        {
+            indirizzoDto.setIdRichiedente(dto.getId());
+            indirizzoDto.setUserLastUpdate(dto.getUserLastUpdate());
+            indirizziDao.update(IndirizzoDto.Richiedente.FORNITORI.getValore(), indirizzoDto);
         }
-
-        // Handle Contatti
-        List<ContattoDto> currentContatti = contattiDao
-                .getListByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId());
-        List<ContattoDto> newContatti = dto.getElencoContatti() != null ? dto.getElencoContatti() : List.of();
-
-        List<ContattoDto> contactsToDelete = ListUtils.subtract(currentContatti, newContatti);
-        for (ContattoDto contact : contactsToDelete) {
-            contattiDao.deleteByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId(),
-                    contact.getId());
+        for ( IndirizzoDto indirizzoDto : indirizziToAdd )
+        {
+            indirizzoDto.setIdRichiedente(dto.getId());
+            indirizzoDto.setUserCreated(dto.getUserLastUpdate());
+            indirizziDao.insert(IndirizzoDto.Richiedente.FORNITORI.getValore(), indirizzoDto);
         }
-
-        for (ContattoDto contact : newContatti) {
-            if (contact.getId() <= 0) {
-                contact.setIdRichiedente(dto.getId());
-                contact.setUserCreated(dto.getUserLastUpdate());
-                contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(), contact);
-            } else {
-                contact.setIdRichiedente(dto.getId());
-                contact.setUserLastUpdate(dto.getUserLastUpdate());
-                contattiDao.update(ContattoDto.Richiedente.FORNITORI.getValore(), contact);
-            }
+        // for (IndirizzoDto indirizzoDto: listaIndirizzi){
+        // if (indirizzoDto.getId() != null){
+        // indirizzoDto.setUserLastUpdate(dto.getUserLastUpdate());
+        // indirizziDao.update(IndirizzoDto.Richiedente.FORNITORI.getValore(),
+        // indirizzoDto);
+        // }
+        // else{
+        // indirizzoDto.setIdRichiedente(dto.getId());
+        // indirizzoDto.setUserCreated(dto.getUserLastUpdate());
+        // indirizziDao.insert(IndirizzoDto.Richiedente.FORNITORI.getValore(),
+        // indirizzoDto);
+        // }
+        // }
+        for ( ContattoDto contattoDto : contattiToDelete )
+        {
+            contattiDao.deleteByIdRichiedente(ContattoDto.Richiedente.FORNITORI.getValore(), dto.getId(), contattoDto.getId());
         }
+        for ( ContattoDto contattoDto : contattiToEdit )
+        {
+            contattoDto.setIdRichiedente(dto.getId());
+            contattoDto.setUserLastUpdate(dto.getUserLastUpdate());
+            contattiDao.update(ContattoDto.Richiedente.FORNITORI.getValore(), contattoDto);
+        }
+        for ( ContattoDto contattoDto : contattiToAdd )
+        {
+            contattoDto.setIdRichiedente(dto.getId());
+            contattoDto.setUserCreated(dto.getUserLastUpdate());
+            contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(), contattoDto);
+        }
+        // contattiDao.deleteByIdRichiedente(IndirizzoDto.Richiedente.FORNITORI.getValore(),
+        // dto.getId());
+        // for (ContattoDto contattoDto: listaContatti){
+        // if (contattoDto.getId() != null){
+        // contattoDto.setUserLastUpdate(dto.getUserLastUpdate());
+        // contattiDao.update(ContattoDto.Richiedente.FORNITORI.getValore(),
+        // contattoDto);
+        // }
+        // else{
+        // contattoDto.setIdRichiedente(dto.getId());
+        // contattoDto.setUserCreated(dto.getUserLastUpdate());
+        // contattiDao.insert(ContattoDto.Richiedente.FORNITORI.getValore(),
+        // contattoDto);
+        // }
+        // }
     }
+
 }
+

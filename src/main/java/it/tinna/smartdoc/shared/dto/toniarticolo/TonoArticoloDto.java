@@ -19,3 +19,4 @@ public class TonoArticoloDto extends BaseDto {
 	}
 	
 }
+

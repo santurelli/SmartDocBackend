@@ -28,8 +28,6 @@ public class MunicipalityDao extends BaseDao {
         try {
             // Ensure search string is formatted for LIKE
             String searchParam = "%" + q.trim().toLowerCase() + "%"; // Simple wildcard wrapper
-            // Note: Legacy used StringUtility.formatForLike, assuming simpler approach here or migrate StringUtility if needed.
-            // But wait, BaseDao imports StringUtility?
              return jdbcTemplate.query(FileQueryReader.getQuery("COMUNI_S01"), rowMapper, searchParam);
         } catch (EmptyResultDataAccessException e) {
             return new ArrayList<>();
@@ -38,4 +36,31 @@ public class MunicipalityDao extends BaseDao {
             throw new SQLException(e);
         }
     }
+
+    public MunicipalityDto getByPartitaIva(String partitaIva) throws SQLException {
+        BeanPropertyRowMapper<MunicipalityDto> rowMapper = new BeanPropertyRowMapper<>();
+        rowMapper.setMappedClass(MunicipalityDto.class);
+        try {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("COMUNI_S07"), rowMapper, partitaIva);
+        } catch (EmptyResultDataAccessException e) {
+            _log.error("Nessuna azienda trovata con partita IVA {}", partitaIva);
+            return null;
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero dell'azienda con partita IVA {}", partitaIva, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public List<MunicipalityDto> getAziendeConFatturazioneElettronica() throws SQLException {
+        BeanPropertyRowMapper<MunicipalityDto> rowMapper = new BeanPropertyRowMapper<>(MunicipalityDto.class);
+        try {
+            return jdbcTemplate.query(FileQueryReader.getQuery("COMUNI_S06"), rowMapper);
+        } catch (EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero delle aziende con fatturazione elettronica", e);
+            throw new SQLException(e);
+        }
+    }
 }
+

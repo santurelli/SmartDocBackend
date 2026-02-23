@@ -1,55 +1,68 @@
 package it.tinna.smartdoc.server.delegate.toniarticolo;
 
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import java.sql.SQLException;
+import java.util.List;
+
 import org.springframework.stereotype.Service;
 
 import it.tinna.smartdoc.server.dao.toniarticolo.ToniArticoloDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.toniarticolo.TonoArticoloDto;
 
-import java.sql.SQLException;
-import java.util.List;
+@Service(value = "toniArticoloDelegate")
+public class ToniArticoloDelegate extends BaseDelegate
+{
 
-@Service
-public class ToniArticoloDelegate extends BaseDelegate {
-
-    public List<TonoArticoloDto> getList(String search, Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
+    public void delete(long idUser,
+                       List<Long> ids) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        return dao.getList(search, length, start, orderColumn, orderDir);
+        for ( Long id : ids )
+        {
+            dao.delete(idUser, id);
+        }
     }
 
-    @Cacheable(value = "toniArticoloCombo", cacheResolver = "companyCacheResolver")
-    public List<TonoArticoloDto> getListForCombo() throws SQLException {
+    public boolean isExistent(String descrizione,
+                              Integer id) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        return dao.getListForCombo();
+        return dao.isExistent(descrizione, id);
     }
 
-    public TonoArticoloDto getById(Integer id) throws SQLException {
+    public TonoArticoloDto getById(Integer id) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
         return dao.getById(id);
     }
 
-    @CacheEvict(value = "toniArticoloCombo", allEntries = true)
-    public void insert(TonoArticoloDto dto, Integer userId) throws SQLException {
+    public List<TonoArticoloDto> getList(String strToSearch,
+                                         Integer length,
+                                         Integer start,
+                                         Integer orderColumn,
+                                         String orderDir) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        dao.insert(dto, userId);
+        return dao.getList(strToSearch, length, start, orderColumn, orderDir);
     }
 
-    @CacheEvict(value = "toniArticoloCombo", allEntries = true)
-    public void update(TonoArticoloDto dto, Integer userId) throws SQLException {
+    public List<TonoArticoloDto> getListForCombo() throws Exception
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        dao.update(dto, userId);
+        return dao.getListForCombo();
     }
 
-    @CacheEvict(value = "toniArticoloCombo", allEntries = true)
-    public void delete(Integer id, Integer userId) throws SQLException {
+    public void insert(TonoArticoloDto dto) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        dao.delete(id, userId);
+        dao.insert(dto);
     }
 
-    public boolean isExistent(String descrizione, Integer id) throws SQLException {
+    public void update(TonoArticoloDto dto) throws SQLException
+    {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
-        return dao.isExistent(descrizione, id);
+        dao.update(dto);
     }
+
 }
+

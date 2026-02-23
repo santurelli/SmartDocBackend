@@ -94,7 +94,7 @@ public class UnitaMisuraController {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
         try {
             Integer userId = ((it.tinna.smartdoc.server.security.UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            unitaMisuraDelegate.delete(id, userId);
+            unitaMisuraDelegate.delete(userId.longValue(), java.util.Collections.singletonList(id.longValue()));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.setErrorText(ExceptionUtils.getMessage(e));
@@ -102,3 +102,4 @@ public class UnitaMisuraController {
         }
     }
 }
+

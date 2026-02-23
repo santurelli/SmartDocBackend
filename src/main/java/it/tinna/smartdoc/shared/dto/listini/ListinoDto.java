@@ -18,3 +18,4 @@ public class ListinoDto extends BaseDto {
     private BigDecimal sottrazione;
     private BigDecimal importoFisso;
 }
+

@@ -10,3 +10,4 @@ public enum TipoFattura
  NOTA_DEBITO
 
 }
+

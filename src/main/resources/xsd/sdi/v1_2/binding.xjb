@@ -1,0 +1,165 @@
+<jxb:bindings version="2.1" 
+			  xmlns:jxb="http://java.sun.com/xml/ns/jaxb" 
+			  xmlns:xs="http://www.w3.org/2001/XMLSchema">
+			  
+	<jxb:globalBindings>
+		<jxb:serializable uid="1"/>
+		
+		<jxb:javaType name="java.lang.String" xmlType="xs:string"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseString"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatString" />
+		
+		<jxb:javaType name="java.util.Date" xmlType="xs:dateTime"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDateTime"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDateTime" />
+		
+		<jxb:javaType name="java.util.Date" xmlType="xs:date"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDateShort"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDateShort" />
+		
+		<jxb:javaType name="double" xmlType="xs:decimal"
+			parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseDouble"
+			printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatDouble" />
+		
+	</jxb:globalBindings>
+
+
+	<jxb:bindings schemaLocation="http://www.w3.org/TR/2002/REC-xmldsig-core-20020212/xmldsig-core-schema.xsd" node="/xs:schema">
+	
+		<!-- Binding specifici per xsd name -->
+		<jxb:bindings node="//xs:element[@name='X509SerialNumber']">
+			<jxb:javaType name="int"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseInt"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatInt" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='HMACOutputLengthType']">
+			<jxb:javaType name="int"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseInt"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatInt" />
+		</jxb:bindings>
+		
+	</jxb:bindings>
+	
+	<jxb:bindings schemaLocation="Schema_del_file_xml_FatturaPA_versione_1.2.xsd" node="/xs:schema">
+	
+		<!-- Binding specifici per xsd name -->
+		<jxb:bindings node="//xs:simpleType[@name='FormatoTrasmissioneType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.FormatoTrasmissioneEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseFormatoTrasmissione"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatFormatoTrasmissione" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='CausalePagamentoType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.CausalePagamentoEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseCausalePagamento"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatCausalePagamento" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='TipoScontoMaggiorazioneType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoScontoDocumentoEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoSconto"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoSconto" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='Art73Type']">
+			<jxb:javaType name="boolean"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseBooleanSi"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatBooleanSi" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='TipoCassaType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoCassaEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoCassa"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoCassa" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='TipoDocumentoType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoDocumentoEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoDocumento"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoDocumento" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='TipoRitenutaType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoRitenutaEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoRitenuta"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoRitenuta" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='SoggettoEmittenteType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.SoggettoEmittenteEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseSoggettoEmittente"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatSoggettoEmittente" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='RegimeFiscaleType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.RegimeFiscaleEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseRegimeFiscale"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatRegimeFiscale" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='CondizioniPagamentoType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoPagamentoEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoPagamento"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoPagamento" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='ModalitaPagamentoType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseModalitaPagamento"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatModalitaPagamento" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='RitenutaType']">
+			<jxb:javaType name="boolean"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseBooleanSi"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatBooleanSi" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='EsigibilitaIVAType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.EsigibilitaIvaEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoEsigibilitaIva"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoEsigibilitaIva" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='NaturaType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.NaturaEsenzioneEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseNaturaEsenzione"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatNaturaEsenzione" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='SocioUnicoType']">
+			<jxb:javaType name="boolean"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseBooleanSocioUnico"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatBooleanSocioUnico" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='StatoLiquidazioneType']">
+			<jxb:javaType name="boolean"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseBooleanLiquidazione"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatBooleanLiquidazione" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='TipoCessionePrestazioneType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoCessazionePrestazioneEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoCessazionePrestazione"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoCessazionePrestazione" />
+		</jxb:bindings>
+		
+		<jxb:bindings node="//xs:simpleType[@name='BolloVirtualeType']">
+			<jxb:javaType name="boolean"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseBooleanSi"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatBooleanSi" />
+		</jxb:bindings>	
+		
+	
+		<jxb:bindings node="//xs:simpleType[@name='TipoResaType']">
+			<jxb:javaType name="it.tinna.smartdoc.server.constants.TipoResaEnum"
+				parseMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.parseTipoResa"
+				printMethod="it.tinna.smartdoc.server.xml.sdi.SdiFormatter.formatTipoResa" />
+		</jxb:bindings>
+	</jxb:bindings>
+	
+	
+	
+</jxb:bindings>

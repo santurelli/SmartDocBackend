@@ -22,4 +22,14 @@ public class MunicipalityDelegate extends BaseDelegate {
         return dao.getSuggestion(q);
     }
 
+    public MunicipalityDto getByPartitaIva(String partitaIva) throws SQLException {
+        MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
+        return dao.getByPartitaIva(partitaIva);
+    }
+
+    public List<MunicipalityDto> getAziendeConFatturazioneElettronica() throws SQLException {
+        MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
+        return dao.getAziendeConFatturazioneElettronica();
+    }
 }
+

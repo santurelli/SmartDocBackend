@@ -101,3 +101,4 @@ public class NoteDocumentiDao extends BaseDao {
         return count != null && count > 0;
     }
 }
+

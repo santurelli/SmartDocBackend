@@ -16,3 +16,4 @@ public class MovimentiSearchCriteriaDto extends BaseDto {
     private int start;
     private int length;
 }
+

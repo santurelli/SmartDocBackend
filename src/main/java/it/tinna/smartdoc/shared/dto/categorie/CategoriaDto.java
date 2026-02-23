@@ -19,3 +19,4 @@ public class CategoriaDto extends BaseDto {
 	}
 	
 }
+

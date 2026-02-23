@@ -22,3 +22,4 @@ public class InventarioSearchCriteriaDto extends BaseDto {
     private Integer orderColumn;
     private String orderDir;
 }
+

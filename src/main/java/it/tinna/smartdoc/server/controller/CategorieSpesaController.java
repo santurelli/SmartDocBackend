@@ -45,3 +45,4 @@ public class CategorieSpesaController {
     
     // Add other methods if full CRUD is needed later. For FornitoriDetail, getList for combo is sufficient.
 }
+

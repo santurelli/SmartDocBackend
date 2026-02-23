@@ -1830,6 +1830,21 @@
 		  ORDER BY label	 
 		</content>
 	</query>
+	<query name="COMUNI_S07">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_enti AS id,
+				   label,
+				   nome_db AS dbName,
+				   tipo_account AS tipoAccount,
+				   TO_CHAR(dt_attivazione, 'DD/MM/YYYY') AS dtAcquistoFattureElettroniche,
+				   CASE WHEN CURRENT_DATE &lt;= (dt_attivazione + 365) THEN 1 ELSE 0 END AS clienteAttivo,
+				   max_fatture AS maxFatture,
+				   fl_fattura_elettronica AS fatturaElettronica
+			  FROM d_e_enti
+			 WHERE fl_deleted = 0
+			   AND partita_iva = ?
+		</content>
+	</query>
 	<query name="CONFIGURAZIONE_D01">
 		<content delimiterParsingDisabled="true">
 			DELETE FROM d_e_configurazione
@@ -3406,13 +3421,14 @@
 						fl_ritenuta_acconto,
 						perc_ritenuta_acconto,
 						importo_ritenuta_acconto,
+						tipo_ritenuta,
 						user_created,
 						dt_created)
 				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
 				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- 28 placeholders for line 2
 				 	    ?,?,?,?,?,?,?,?,?,?,?, -- 11 placeholders for line 3
 				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?, -- 5 placeholders for line 4
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?, -- 8 placeholders for line 5
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?, -- 9 placeholders for line 5 (added tipo_ritenuta)
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3443,8 +3459,9 @@
 						fm_scelta,
 						fm_taglia,
 						fm_colore,
-						k_d_e_divisioni)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0))
+						k_d_e_divisioni,
+						fl_ritenuta)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0),?)
 		</content>
 	</query>
 	<query name="FATTURE_I03">
@@ -3572,7 +3589,8 @@
 				   COALESCE(d_e_fatture.id_fatturacollegata, 0) AS idFatturaCollegata,
 				   d_e_fatture.fl_ritenuta_acconto AS flRitenutaAcconto,
 				   d_e_fatture.perc_ritenuta_acconto AS percRitenutaAcconto,
-				   d_e_fatture.importo_ritenuta_acconto AS importoRitenutaAcconto
+				   d_e_fatture.importo_ritenuta_acconto AS importoRitenutaAcconto,
+				   d_e_fatture.tipo_ritenuta AS tipoRitenuta
 			  FROM d_e_fatture
 		 LEFT JOIN d_e_tipipagamento
 				ON d_e_fatture.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -3640,6 +3658,7 @@
 				   fm_colore as fmColore,
 				   fm_tono as fmTono,
 				   fm_scelta as fmScelta,
+				   d_e_prodotti_fatture.fl_ritenuta as flRitenuta,
 				   d_e_prodotti_fatture.k_d_e_divisioni AS idDivisione
 			  FROM d_e_prodotti_fatture
 		 LEFT JOIN d_e_prodotti
@@ -4088,6 +4107,7 @@
 				   fl_ritenuta_acconto = ?,
 				   perc_ritenuta_acconto = ?,
 				   importo_ritenuta_acconto = ?,
+				   tipo_ritenuta = ?,
 				   dt_sent = NULL,
 				   xml_fatturaelettronica = NULL,
 				   -- tipo_fattura = CASE WHEN ? = 1 THEN 'FATTURA' ELSE tipo_fattura END,

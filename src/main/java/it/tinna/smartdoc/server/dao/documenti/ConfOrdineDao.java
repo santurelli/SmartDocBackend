@@ -225,3 +225,4 @@ public class ConfOrdineDao extends BaseDao {
         }
     }
 }
+

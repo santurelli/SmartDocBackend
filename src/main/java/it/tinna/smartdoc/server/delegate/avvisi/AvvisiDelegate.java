@@ -55,3 +55,4 @@ public class AvvisiDelegate {
         return avvisiDao.checkUniqueness(descrizione, id);
     }
 }
+

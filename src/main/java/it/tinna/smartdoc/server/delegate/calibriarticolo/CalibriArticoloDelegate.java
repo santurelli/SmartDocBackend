@@ -53,3 +53,4 @@ public class CalibriArticoloDelegate extends BaseDelegate {
         return dao.isExistent(descrizione, id);
     }
 }
+

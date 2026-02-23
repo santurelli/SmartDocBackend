@@ -78,7 +78,7 @@ public class FornitoriController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            Integer id = fornitoriDelegate.insert(dto);
+            Integer id = (int) fornitoriDelegate.insert(dto, new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>());
             response.setPayload(id);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
@@ -102,7 +102,7 @@ public class FornitoriController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            fornitoriDelegate.update(dto);
+            fornitoriDelegate.update(dto, new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>());
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
             response.setErrorText(e.getMessage());
@@ -206,3 +206,4 @@ public class FornitoriController {
         }
     }
 }
+

@@ -56,3 +56,4 @@ public class InventarioMagazzinoDto extends BaseDto {
         return strB.toString();
     }
 }
+

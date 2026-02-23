@@ -70,3 +70,4 @@ public interface IConstants {
     String FATTURAELETTRONICA_TIPODOCUMENTO_KEY = "FatturaElettronicaBody.DatiGenerali.DatiGeneraliDocumento.TipoDocumento";
 
 }
+

@@ -20,3 +20,4 @@ public class DdtDto extends DocumentoDto {
     private String oraTrasporto;
 
 }
+

@@ -49,3 +49,4 @@ public class DatatablesResponseDto<T> implements Serializable {
         this.error = error;
     }
 }
+

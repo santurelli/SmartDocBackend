@@ -56,3 +56,4 @@ public class SottoCategorieDelegate extends BaseDelegate {
         return sottoCategorieDao.checkUniqueness(parentId, descrizione, id);
     }
 }
+

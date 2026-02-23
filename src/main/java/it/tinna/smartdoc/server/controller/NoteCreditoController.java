@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import it.tinna.smartdoc.server.delegate.documenti.NoteCreditoDelegate;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
+import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.NotaCreditoDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 
@@ -28,19 +29,19 @@ public class NoteCreditoController {
     }
 
     @GetMapping
-    public ResponseEntity<GenericResponseDto<List<NotaCreditoDto>>> getList(
+    public ResponseEntity<GenericResponseDto<FattureListResponse>> getList(
             @RequestParam(required = false) String dataInizio,
             @RequestParam(required = false) String dataFine,
             @RequestParam(required = false) Integer idCliente,
             @RequestParam(required = false) Integer idAgente,
-            @RequestParam(required = false, defaultValue = "id_documento") String orderColumn,
-            @RequestParam(required = false, defaultValue = "DESC") String orderDir,
+            @RequestParam(required = false, defaultValue = "1") Integer orderColumn,
+            @RequestParam(required = false, defaultValue = "asc") String orderDir,
             @RequestParam(required = false, defaultValue = "0") int start,
             @RequestParam(required = false, defaultValue = "10") int length,
             @RequestParam(required = false) String numDocumento,
             @RequestParam(required = false) String stato) throws SQLException {
         
-        List<NotaCreditoDto> list = noteCreditoDelegate.getList(dataInizio, dataFine, idCliente, idAgente, orderColumn, orderDir, start, length, stato, numDocumento);
+        FattureListResponse list = noteCreditoDelegate.getList(idCliente, dataInizio, dataFine, idAgente, stato, length, start, orderColumn, orderDir);
         return ResponseEntity.ok(new GenericResponseDto<>(list, null));
     }
 
@@ -52,7 +53,7 @@ public class NoteCreditoController {
 
     @PostMapping
     public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody NotaCreditoDto dto) throws SQLException {
-        long id = noteCreditoDelegate.save(dto);
+        long id = noteCreditoDelegate.insert(dto);
         return ResponseEntity.ok(new GenericResponseDto<>(id, null));
     }
 
@@ -61,7 +62,7 @@ public class NoteCreditoController {
         NotaCreditoDto dto = new NotaCreditoDto();
         dto.setId(id);
         dto.setUserLastUpdate(user);
-        noteCreditoDelegate.delete(dto);
+        noteCreditoDelegate.delete(java.util.Collections.singletonList(dto));
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }
 
@@ -69,7 +70,7 @@ public class NoteCreditoController {
     public ResponseEntity<GenericResponseDto<Integer>> getNextNum(
             @RequestParam String data,
             @RequestParam int flElettronica) throws SQLException {
-        Integer nextNum = noteCreditoDelegate.getNextNum(data, flElettronica);
+        Integer nextNum = noteCreditoDelegate.getNextNumNotaCredito(data, flElettronica);
         return ResponseEntity.ok(new GenericResponseDto<>(nextNum, null));
     }
 
@@ -82,7 +83,7 @@ public class NoteCreditoController {
     @GetMapping("/print/{id}")
     public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
         try {
-            DocumentoWrapperDto doc = noteCreditoDelegate.esportaNotaCreditoPdf(id);
+            DocumentoWrapperDto doc = noteCreditoDelegate.esportaNotaCreditoPdf(it.tinna.smartdoc.server.database.DatabaseContextHolder.getClientDatabase(), id);
             if (doc == null || doc.getFlusso() == null) return ResponseEntity.notFound().build();
             
             HttpHeaders headers = new HttpHeaders();
@@ -96,3 +97,4 @@ public class NoteCreditoController {
         }
     }
 }
+

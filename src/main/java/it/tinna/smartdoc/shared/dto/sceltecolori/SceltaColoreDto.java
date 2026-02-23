@@ -38,3 +38,4 @@ public class SceltaColoreDto<T extends SceltaColoreDto> extends BaseDto implemen
         this.idProdotto = idProdotto;
     }
 }
+

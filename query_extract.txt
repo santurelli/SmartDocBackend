@@ -1,0 +1,36 @@
+﻿INVENTARIOMAGAZZINO_S01">
+		<content delimiterParsingDisabled="true">
+		    SELECT x.*,
+		    	   get_totale_disponibile(d_e_prodotti.k_d_e_prodotti,NULLIF(?,0),?) AS quantita,
+		    	   d_e_prodotti.codice AS codiceProdotto,
+				   d_e_prodotti.descrizione AS descrizioneProdotto,
+				   COALESCE(d_e_fornitori.denominazione, '') AS descrizioneFornitore,
+		    	   COALESCE(get_valore_prodotto(d_e_prodotti.k_d_e_prodotti,?,NULLIF(?,0),NULLIF(?,0),?), 0) AS valoreUnitario,
+				   COALESCE(d_e_unitamisura.descrizione, '') AS descUnitaMisuraBase,
+				   COALESCE(d_e_formatiarticolo.descrizione, '') AS descrFormato,
+				   COALESCE(d_e_sceltearticolo.descrizione, '') AS descrScelta,
+				   COALESCE(d_e_toniarticolo.descrizione, '') AS descrTono,
+				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro
+		      FROM (
+			    	SELECT d_e_prodotti.k_d_e_prodotti,
+			    		   COALESCE(d_e_categorie.descrizione, '') AS descCategoria,
+				   		   COALESCE(d_e_sottocategorie.descrizione, '') AS descSottoCategoria,
+				   		   COUNT(*) OVER() AS total
+				  	  FROM d_e_prodotti
+				 LEFT JOIN d_e_categorie
+						ON d_e_prodotti.k_d_e_categorie = d_e_categorie.k_d_e_categorie
+		 		LEFT JOIN d_e_sottocategorie
+						ON d_e_prodotti.k_d_e_sottocategorie = d_e_sottocategorie.k_d_e_sottocategorie
+			 		 WHERE d_e_prodotti.fl_deleted = 0
+			   		   AND tipologia IN ('AM', 'AMSC')
+			   		   AND get_totale_disponibile(d_e_prodotti.k_d_e_prodotti,NULLIF(?,0),?) &gt; 0
+			   		   AND COALESCE(d_e_prodotti.k_d_e_fornitori, 0) = COALESCE(NULLIF(?,0), d_e_prodotti.k_d_e_fornitori, 0)
+			   		   AND d_e_prodotti.k_d_e_prodotti = COALESCE(NULLIF(?,0), d_e_prodotti.k_d_e_prodotti)
+			  	  ORDER BY ${ORDER_BY}
+				 	   	   ${LIMIT}
+			  	   ) AS x
+		 	  JOIN d_e_prodotti
+		 		ON x.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
+		 LEFT JOIN d_e_unitamisura
+			 	ON d_e_prodotti.k_d_e_unitamisura1 = d_e_unitamisura.k_d_e_unitamisura
+		 LEFT JOIN d_e_forni

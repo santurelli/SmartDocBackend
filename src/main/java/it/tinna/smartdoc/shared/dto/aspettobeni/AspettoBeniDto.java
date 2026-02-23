@@ -20,3 +20,4 @@ public class AspettoBeniDto extends BaseDto {
         this.descrizione = descrizione;
     }
 }
+

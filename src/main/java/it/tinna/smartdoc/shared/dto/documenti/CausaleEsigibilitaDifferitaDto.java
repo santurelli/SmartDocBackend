@@ -13,3 +13,4 @@ public class CausaleEsigibilitaDifferitaDto extends BaseDto {
     private String descrizione;
     private Long totalCount;
 }
+

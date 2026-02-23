@@ -97,3 +97,4 @@ public class FormatiArticoloDao extends BaseDao {
         }
     }
 }
+

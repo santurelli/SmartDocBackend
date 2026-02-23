@@ -16,3 +16,4 @@ public interface HasContabilita extends Serializable{
 	void setTotaleContabilita(BigDecimal totaleContabilita);
 
 }
+

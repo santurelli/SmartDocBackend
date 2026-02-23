@@ -3,9 +3,6 @@ package it.tinna.smartdoc.server.delegate.aliquoteiva;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,55 +10,81 @@ import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 
-@Service
-@CacheConfig(cacheNames = "aliquoteiva", cacheResolver = "companyCacheResolver")
-public class AliquoteIvaDelegate extends BaseDelegate {
+@Service(value = "aliquoteivaDelegate")
+public class AliquoteIvaDelegate extends BaseDelegate
+{
 
-    public List<AliquotaIvaDto> getList(String search, Integer length, Integer start, Integer orderColumn, String orderDir) throws SQLException {
+    // public AliquoteIvaDelegate(JdbcTemplate jdbcTemplate)
+    // {
+    // super(jdbcTemplate);
+    // }
+
+    public void delete(long idUser,
+                       List<Long> ids) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        return dao.getList(search, start, length, orderColumn, orderDir);
+        for ( Long id : ids )
+        {
+            dao.delete(idUser, id);
+        }
     }
 
-    @Cacheable
-    public List<AliquotaIvaDto> getListForCombo() throws SQLException {
+    public boolean isExistent(String codice,
+                              Integer id) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        return dao.getListForCombo();
+        return dao.isExistent(codice, id);
     }
 
-    public AliquotaIvaDto getById(long id) throws SQLException {
+    public AliquotaIvaDto getById(Integer id) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
         return dao.getById(id);
     }
 
-    public boolean isExistent(String descrizione, Integer id) throws SQLException {
+    public List<AliquotaIvaDto> getList(String strToSearch,
+                                        Integer length,
+                                        Integer start,
+                                        Integer orderColumn,
+                                        String orderDir) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        return dao.checkUniqueness(descrizione, id != null ? id.longValue() : null);
+        return dao.getList(strToSearch, length, start, orderColumn, orderDir);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void insert(AliquotaIvaDto dto) throws SQLException {
+    public List<AliquotaIvaDto> getByAliquota(double aliquota) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
-            dao.resetPredefinita(dto.getUserCreated().intValue());
+        return dao.getByAliquota(aliquota);
+    }
+
+    public List<AliquotaIvaDto> getListForCombo() throws SQLException
+    {
+        AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
+        return dao.getListForCombo();
+    }
+
+    @Transactional(rollbackFor = SQLException.class)
+    public void insert(AliquotaIvaDto dto) throws SQLException
+    {
+        AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
+        if ( dto.getPredefinita().intValue() == 1 )
+        {
+            dao.resetPredefinite(dto.getUserCreated());
         }
-        dao.insert(dto, dto.getUserCreated().intValue());
+        dao.insert(dto);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void update(AliquotaIvaDto dto) throws SQLException {
+    @Transactional(rollbackFor = SQLException.class)
+    public void update(AliquotaIvaDto dto) throws SQLException
+    {
         AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
-            dao.resetPredefinita(dto.getUserLastUpdate().intValue());
+        if ( dto.getPredefinita().intValue() == 1 )
+        {
+            dao.resetPredefinite(dto.getUserCreated());
         }
-        dao.update(dto, dto.getUserLastUpdate().intValue());
+        dao.update(dto);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void delete(long id, long userId) throws SQLException {
-        AliquoteIvaDao dao = new AliquoteIvaDao(jdbcTemplate);
-        dao.delete(id, (int) userId);
-    }
 }
+

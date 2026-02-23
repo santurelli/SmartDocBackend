@@ -61,3 +61,4 @@ public class CausaliTrasportoDelegate {
         return causaliTrasportoDao.checkUniqueness(descrizione, id);
     }
 }
+

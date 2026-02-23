@@ -65,3 +65,4 @@ public class UtenteDto extends BaseDto implements Serializable {
         return getNome() + " " + getCognome();
     }
 }
+

@@ -2,150 +2,210 @@ package it.tinna.smartdoc.server.dao.aliquoteiva;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Repository;
 
-import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.database.FileQueryReader;
 import it.tinna.smartdoc.server.util.StringUtility;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 
-@Repository
-public class AliquoteIvaDao extends BaseDao {
+public class AliquoteIvaDao extends BaseDao
+{
 
-    public AliquoteIvaDao(JdbcTemplate jdbcTemplate) {
+    public AliquoteIvaDao(JdbcTemplate jdbcTemplate)
+    {
         super(jdbcTemplate);
     }
 
-    public List<AliquotaIvaDto> getList(String search, Integer start, Integer length, Integer orderColumn, String orderDir) throws SQLException {
-        try {
-            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>(AliquotaIvaDto.class);
-            String query = FileQueryReader.getQuery("ALIQUOTEIVA_S01");
-            query = query.replace("${ORDER_BY}", getOrderBy(orderColumn, orderDir));
-            query = query.replace("${LIMIT}", getLimit(start, length));
-            String searchLike = StringUtility.formatForLikeHelper(search);
-            // S01 expects: LOWER(codice) LIKE ? OR LOWER(descrizione) LIKE ?
-            return jdbcTemplate.query(query, rowMapper, searchLike, searchLike);
-        } catch (EmptyResultDataAccessException e) {
-            return new ArrayList<>();
-        } catch (DataAccessException e) {
+    public void delete(long idUser,
+                       Long idAliquota) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_D01"), idUser, idAliquota);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione dell'aliquota iva {}", idAliquota, e);
+        }
+    }
+
+    public List<AliquotaIvaDto> getByAliquota(double aliquota) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(AliquotaIvaDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("ALIQUOTEIVA_S05"), rowMapper, aliquota);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessuna aliquota iva trovata con aliquota {}", aliquota);
+            return new ArrayList<AliquotaIvaDto>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'aliquota iva con aliquota {}", aliquota, e);
             throw new SQLException(e);
         }
     }
 
-    public List<AliquotaIvaDto> getListForCombo() throws SQLException {
-        try {
-            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>(AliquotaIvaDto.class);
-            return jdbcTemplate.query(FileQueryReader.getQuery("ALIQUOTEIVA_S04"), rowMapper);
-        } catch (EmptyResultDataAccessException e) {
-            return new ArrayList<>();
-        } catch (DataAccessException e) {
-            throw new SQLException(e);
-        }
-    }
-
-    public AliquotaIvaDto getById(long id) throws SQLException {
-        try {
-            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>(AliquotaIvaDto.class);
+    public AliquotaIvaDto getById(Integer id) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(AliquotaIvaDto.class);
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("ALIQUOTEIVA_S02"), rowMapper, id);
-        } catch (EmptyResultDataAccessException e) {
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.error("Nessuna aliquota iva trovata con id {}", id);
             return null;
-        } catch (DataAccessException e) {
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'aliquota iva {}", id, e);
             throw new SQLException(e);
         }
     }
 
-    public boolean checkUniqueness(String descrizione, Long id) throws SQLException {
-        try {
-            Integer count = jdbcTemplate.queryForObject(FileQueryReader.getQuery("ALIQUOTEIVA_S03"), Integer.class, descrizione, id);
-            return count != null && count > 0;
-        } catch (DataAccessException e) {
+    public List<AliquotaIvaDto> getList(String strToSearch,
+                                        Integer length,
+                                        Integer start,
+                                        Integer orderColumn,
+                                        String orderDir) throws SQLException
+    {
+        String query = FileQueryReader.getQuery("ALIQUOTEIVA_S01");
+        List<Object> params = new ArrayList<>();
+        params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
+        params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
+        Map<String, String> valuesMap = new HashMap<>();
+        if ( orderColumn == 1 )
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(orderDir).toString());
+        }
+        else if ( orderColumn == 2 )
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("imposta ").append(orderDir).toString());
+        }
+        else if ( orderColumn == 3 )
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("indetraibilita ").append(orderDir).toString());
+        }
+        else
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(orderDir).toString());
+        }
+        if ( length != null && start != null )
+        {
+            valuesMap.put("LIMIT", "LIMIT ? OFFSET ?");
+            params.add(length);
+            params.add(start);
+        }
+        else
+        {
+            valuesMap.put("LIMIT", "");
+        }
+        query = StrSubstitutor.replace(query, valuesMap);
+        try
+        {
+            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(AliquotaIvaDto.class);
+            return jdbcTemplate.query(query, rowMapper, params.toArray());
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco aliquote iva", e);
             throw new SQLException(e);
         }
     }
 
-    public void insert(AliquotaIvaDto dto, Integer userId) throws SQLException {
-        try {
-            // I01: codice, imposta, indetraibilita, classe, descrizione, note, fl_predefinita, user_created
-            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_I01"), 
-                dto.getCodice(), 
-                dto.getImposta(), 
-                dto.getIndetraibilita() != null ? dto.getIndetraibilita() : 0.0, 
-                dto.getClasse(), 
-                dto.getDescrizione(), 
-                dto.getNote(), 
-                dto.getPredefinita() != null ? dto.getPredefinita() : 0, 
-                userId);
-        } catch (DataAccessException e) {
+    public List<AliquotaIvaDto> getListForCombo() throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(AliquotaIvaDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("ALIQUOTEIVA_S04"), rowMapper);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero dell'elenco aliquote iva per il popolamento della combo", e);
             throw new SQLException(e);
         }
     }
 
-    public void update(AliquotaIvaDto dto, Integer userId) throws SQLException {
-        try {
-            // U01: codice, imposta, indetraibilita, classe, descrizione, note, fl_predefinita, user_last_update, id
-            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_U01"), 
-                dto.getCodice(), 
-                dto.getImposta(), 
-                dto.getIndetraibilita() != null ? dto.getIndetraibilita() : 0.0, 
-                dto.getClasse(), 
-                dto.getDescrizione(), 
-                dto.getNote(), 
-                dto.getPredefinita() != null ? dto.getPredefinita() : 0, 
-                userId, 
-                dto.getId());
-        } catch (DataAccessException e) {
+    public void insert(AliquotaIvaDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_I01"), dto.getCodice(), dto.getImposta(), dto.getIndetraibilita(), dto.getClasse(), StringUtils.isEmpty(dto.getDescrizione()) ? null : dto.getDescrizione(), StringUtils.isEmpty(dto.getNote()) ? null : dto.getNote(), dto.getPredefinita(), dto.getUserCreated());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'inserimento dell'aliquota iva", e);
             throw new SQLException(e);
         }
     }
 
-    public void delete(long id, Integer userId) throws SQLException {
-        try {
-            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_D01"), userId, id);
-        } catch (DataAccessException e) {
+    public boolean isExistent(String codice,
+                              Integer id) throws SQLException
+    {
+        try
+        {
+            long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("ALIQUOTEIVA_S03"), Long.class, codice, id);
+            return l > 0;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella determinazione dell'esistenza dell'aliquota iva con codice {}", codice, e);
             throw new SQLException(e);
         }
     }
 
-    public void resetPredefinita(Integer userId) throws SQLException {
-        try {
-            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_U02"), userId);
-        } catch (DataAccessException e) {
+    public void resetPredefinite(long idUser) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_U02"), idUser);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel reset dell'qliquota iva predefinita", e);
             throw new SQLException(e);
         }
     }
 
-    private String getOrderBy(Integer orderColumn, String orderDir) {
-        String col = "codice"; // Default to codice
-        if (orderColumn != null) {
-            switch (orderColumn) {
-                case 0:
-                    col = "codice";
-                    break;
-                case 1:
-                    col = "descrizione";
-                    break;
-                case 2:
-                    col = "imposta";
-                    break;
-                default:
-                    col = "codice";
-                    break;
-            }
+    public void update(AliquotaIvaDto dto) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("ALIQUOTEIVA_U01"), dto.getCodice(), dto.getImposta(), dto.getIndetraibilita(), dto.getClasse(), StringUtils.isEmpty(dto.getDescrizione()) ? null : dto.getDescrizione(), StringUtils.isEmpty(dto.getNote()) ? null : dto.getNote(), dto.getPredefinita(), dto.getUserLastUpdate(), dto.getId());
         }
-        return col + " " + (orderDir != null ? orderDir : "ASC");
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'aggiornamento dell'aliquota iva {}", dto.getId(), e);
+            throw new SQLException(e);
+        }
     }
 
-    private String getLimit(Integer start, Integer length) {
-        if (start != null && length != null) {
-            return "LIMIT " + length + " OFFSET " + start;
-        }
-        return "";
-    }
 }
+

@@ -86,3 +86,4 @@ public class VettoriDao extends BaseDao {
         return count != null && count > 0;
     }
 }
+

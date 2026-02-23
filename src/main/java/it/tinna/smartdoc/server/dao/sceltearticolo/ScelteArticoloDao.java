@@ -97,3 +97,4 @@ public class ScelteArticoloDao extends BaseDao {
         }
     }
 }
+

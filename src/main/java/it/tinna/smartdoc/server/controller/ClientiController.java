@@ -78,7 +78,11 @@ public class ClientiController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            Integer id = clientiDelegate.insert(dto);
+            Integer id = clientiDelegate.insert(dto,
+                dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new java.util.ArrayList<>(),
+                new java.util.ArrayList<>(),
+                dto.getElencoContatti() != null ? dto.getElencoContatti() : new java.util.ArrayList<>(),
+                new java.util.ArrayList<>());
             response.setPayload(id);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
@@ -102,7 +106,11 @@ public class ClientiController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            clientiDelegate.update(dto);
+            clientiDelegate.update(dto,
+                new java.util.ArrayList<>(),
+                dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new java.util.ArrayList<>(),
+                new java.util.ArrayList<>(),
+                dto.getElencoContatti() != null ? dto.getElencoContatti() : new java.util.ArrayList<>());
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
             response.setErrorText(e.getMessage());
@@ -196,3 +204,4 @@ public class ClientiController {
         }
     }
 }
+

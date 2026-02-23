@@ -15,3 +15,4 @@ public class TipoPortoDto extends BaseDto {
     }
 
 }
+

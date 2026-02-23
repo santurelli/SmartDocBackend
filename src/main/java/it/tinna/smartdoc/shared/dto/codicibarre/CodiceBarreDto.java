@@ -136,3 +136,4 @@ public class CodiceBarreDto extends BaseDto
     }
 
 }
+

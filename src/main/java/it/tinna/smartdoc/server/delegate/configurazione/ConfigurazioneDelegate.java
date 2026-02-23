@@ -41,3 +41,4 @@ public class ConfigurazioneDelegate extends BaseDelegate {
     }
 
 }
+

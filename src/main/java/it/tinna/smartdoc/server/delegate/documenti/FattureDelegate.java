@@ -1,362 +1,1148 @@
 package it.tinna.smartdoc.server.delegate.documenti;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.servlet.http.HttpServletRequest;
+
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import freemarker.template.Configuration;
+import freemarker.template.Template;
+import java.util.ArrayList;
+import java.util.List;
+
+import it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum;
+import it.tinna.smartdoc.server.dao.agenti.AgentiDao;
+import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
+import it.tinna.smartdoc.server.dao.aspettobeni.AspettoBeniDao;
+import it.tinna.smartdoc.server.dao.causaliesigibilitadifferita.CausaliEsigibilitaDifferitaDao;
+import it.tinna.smartdoc.server.dao.causalitrasporto.CausaliTrasportoDao;
+import it.tinna.smartdoc.server.dao.clienti.ClientiDao;
+import it.tinna.smartdoc.server.dao.configurazione.ConfigurazioneDao;
+import it.tinna.smartdoc.server.dao.contatti.ContattiDao;
+import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
+import it.tinna.smartdoc.server.dao.divisioni.DivisioniDao;
+import it.tinna.smartdoc.server.dao.documenti.DocumentiDao;
 import it.tinna.smartdoc.server.dao.documenti.FattureDao;
-import it.tinna.smartdoc.server.delegate.aliquoteiva.AliquoteIvaDelegate;
-import it.tinna.smartdoc.server.delegate.clienti.ClientiDelegate;
+import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
+import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
+import it.tinna.smartdoc.server.dao.progetti.ProgettiDao;
+import it.tinna.smartdoc.server.dao.risorse.RisorseDao;
+import it.tinna.smartdoc.server.dao.speseincasso.SpeseIncassoDao;
+import it.tinna.smartdoc.server.dao.tipipagamento.TipiPagamentoDao;
+import it.tinna.smartdoc.server.dao.tipiporto.TipiPortoDao;
+import it.tinna.smartdoc.server.dao.unitamisura.UnitaMisuraDao;
+import it.tinna.smartdoc.server.dao.vettori.VettoriDao;
+import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
 import it.tinna.smartdoc.server.delegate.datiazienda.DatiAziendaDelegate;
+import it.tinna.smartdoc.server.util.IOUtility;
 import it.tinna.smartdoc.server.util.NumberUtils;
-import it.tinna.smartdoc.server.util.ReportLoader;
-import it.tinna.smartdoc.server.delegate.agenti.AgentiDelegate;
-import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
-import it.tinna.smartdoc.server.delegate.progetti.ProgettiDelegate;
-import it.tinna.smartdoc.server.delegate.risorse.RisorseDelegate;
-import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
-import it.tinna.smartdoc.server.delegate.unitamisura.UnitaMisuraDelegate;
-import it.tinna.smartdoc.server.util.ReportLoader;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
+import it.tinna.smartdoc.shared.dto.agenti.AgenteDto;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
+import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
+import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
 import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
+import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
+import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
+import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.SpesaIncassoDocumentoDto;
+import it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica;
+import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
+import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
+import it.tinna.smartdoc.shared.dto.login.UtenteDto;
+import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
+import it.tinna.smartdoc.shared.dto.risorse.RisorsaDto;
+import it.tinna.smartdoc.shared.dto.speseincasso.SpesaIncassoDto;
 import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
+import it.tinna.smartdoc.shared.dto.template.TemplateData;
 import it.tinna.smartdoc.shared.dto.template.fatture.FatturaTemplate;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
-import net.sf.jasperreports.engine.JasperExportManager;
-import net.sf.jasperreports.engine.JasperFillManager;
-import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperReport;
+import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
+import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
-@Service
-public class FattureDelegate {
+@Service(value = "fattureDelegate")
+public class FattureDelegate extends BaseDelegate
+{
 
     @Autowired
-    private FattureDao fattureDao;
+    private FatturaElettronicaDelegate fatturaelettronicaDelegate;
 
     @Autowired
-    private DatiAziendaDelegate datiAziendaDelegate;
+    private DatiAziendaDelegate        datiaziendaDelegate;
 
     @Autowired
-    private AliquoteIvaDelegate aliquoteIvaDelegate;
+    private ConfigurazioneDelegate     configurazioneDelegate;
 
-    @Autowired
-    private ConfigurazioneDelegate configurazioneDelegate;
+    // public FattureDelegate(JdbcTemplate jdbcTemplate)
+    // {
+    // super(jdbcTemplate);
+    // }
 
-    @Autowired
-    private ClientiDelegate clientiDelegate;
-
-    @Autowired
-    private UnitaMisuraDelegate unitaMisuraDelegate;
-
-    @Autowired
-    private ListiniDelegate listiniDelegate;
-
-    @Autowired
-    private TipiPagamentoDelegate tipiPagamentoDelegate;
-
-    @Autowired
-    private RisorseDelegate risorseDelegate;
-
-    @Autowired
-    private AgentiDelegate agentiDelegate;
-
-    @Autowired
-    private ProgettiDelegate progettiDelegate;
-
-    @Autowired
-    private CausaliEsigibilitaDifferitaDelegate causaliEsigibilitaDifferitaDelegate;
-
-    public List<FatturaDto> getList(String dataInizio, String dataFine, Integer idCliente, Integer idAgente,
-                                   String orderColumn, String orderDir, int start, int length,
-                                   String tipo, String stato, String numDocumento) throws SQLException {
-        
-        if (StringUtils.isEmpty(dataInizio)) dataInizio = null;
-        if (StringUtils.isEmpty(dataFine)) dataFine = null;
-
-        String tipoFatturaSql = "";
-        if (tipo != null && !tipo.isEmpty()) {
-            tipoFatturaSql = " AND tipo_fattura = '" + tipo + "' ";
-        }
-        
-        String statoFatturaSql = "";
-        if (stato != null && !stato.isEmpty()) {
-            statoFatturaSql = " AND stato_fattura_elettronica = '" + stato + "' ";
-        }
-        
-        String numDocumentoSql = "";
-        if (numDocumento != null && !numDocumento.isEmpty()) {
-            numDocumentoSql = " AND num_fattura = '" + numDocumento + "' ";
-        }
-
-        return fattureDao.getList(dataInizio, dataFine, idCliente, idAgente, stato, orderColumn, orderDir, start, length, tipoFatturaSql, statoFatturaSql, numDocumentoSql);
-    }
-
-    public FatturaDto getById(long id) throws SQLException {
-        return fattureDao.getById(id);
-    }
-
-    @Transactional(rollbackFor = Exception.class)
-    public long save(FatturaDto dto) throws SQLException {
-        long id;
-        if (dto.getId() == 0) {
-            id = fattureDao.insert(dto);
-        } else {
-            id = dto.getId();
-            fattureDao.update(dto);
-            fattureDao.deleteProdotti(id);
-        }
-
-        if (dto.getProdotti() != null) {
-            for (ProdottoDocumentoDto p : dto.getProdotti()) {
-                double prezzo = p.getPrezzo() != null ? p.getPrezzo() : 0.0;
-                double quantita = p.getQuantita() != null ? p.getQuantita() : 0.0;
-                String sconto = p.getSconto();
-
-                java.math.BigDecimal prezzoScontato = NumberUtils.getPrezzoScontato(prezzo, sconto != null ? sconto : "");
-                double prezzoImponibile = prezzoScontato.doubleValue() * quantita;
-
-                p.setPrezzoImponibile(prezzoImponibile);
-                p.setTotaleSenzaIva(prezzoImponibile);
-
-                fattureDao.insertProdotto(p, id);
+    /**
+     * Genera il pdf relativo all'elenco delle fatture (viene usato per esportare la lista in pdf oppure per la stampa diretta)
+     * 
+     * @param dbKey
+     * @param idFornitore
+     * @param dtDocumentoFrom
+     * @param dtDocumentoTo
+     * @param numeroDocumento
+     * @param dtRegistrazioneFrom
+     * @param dtRegistrazioneTo
+     * @param numeroRegistrazione
+     * @param stato
+     * @return
+     * @throws Exception
+     */
+    public byte[] createListPdf(String dbKey,
+                                String tipoDocumento,
+                                Integer idCliente,
+                                String dtFrom,
+                                String dtTo,
+                                Integer idAgente,
+                                String stato,
+                                String statoFatturaElettronica) throws Exception
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        List<MovimentiDocumentoDto> list = new ArrayList<>();
+        Map<String, Object> params = new HashMap<>();
+        // dati azienda
+        DatiAziendaDao daDao = new DatiAziendaDao(jdbcTemplate);
+        DatiAziendaDto daDto = daDao.getDatiAzienda();
+        if ( daDto != null )
+        {
+            if ( daDto.getByteLogo() != null )
+            {
+                params.put("logopath", new ByteArrayInputStream(daDto.getByteLogo()));
             }
         }
-
-        return id;
+        byte[] bytes = null;
+        ConfigurazioneDao configurazioneDao = new ConfigurazioneDao(jdbcTemplate);
+        String baseDirTemplate = configurazioneDao.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_BASEDIR);
+        if ( StringUtils.isEmpty(baseDirTemplate) )
+        {
+            _log.error("Il parametro basedir per i template è vuoto o nullo");
+            throw new Exception("Il parametro basedir per i template è vuoto o nullo");
+        }
+        Template t = new Template("name", new StringReader(baseDirTemplate), new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS));
+        Map<String, Object> model = new HashMap<>();
+        model.put("DB_KEY", dbKey);
+        String baseDir = FreeMarkerTemplateUtils.processTemplateIntoString(t, model);
+        InputStream reportIs = null;
+        try
+        {
+            reportIs = FileUtils.openInputStream(new File(new StringBuilder(baseDir).append(ISharedConstants.ELENCOFATTURE_TEMPLATE_NAME).toString()));
+        }
+        catch ( IOException e )
+        {
+            _log.error("Errore nell'apertura dello stream per il template dell'elenco fatture", e);
+            throw e;
+        }
+        list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc");
+        try
+        {
+            bytes = JasperRunManager.runReportToPdf(reportIs, params, new JRBeanCollectionDataSource(list));
+        }
+        catch ( JRException e )
+        {
+            _log.error("Errore nella generazione dell'elenco fatture in formato pdf", e);
+            throw e;
+        }
+        return bytes;
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public void delete(FatturaDto dto) throws SQLException {
-        fattureDao.delete(dto.getId(), dto.getUserLastUpdate());
+    @Transactional(rollbackFor = SQLException.class)
+    public void delete(List<FatturaDto> lista) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        for ( FatturaDto dto : lista )
+        {
+            dao.delete(dto);
+        }
     }
 
-    public Integer getNextNum(String data, int flElettronica, String tipo) throws SQLException {
-        return fattureDao.getNextNum(data, flElettronica, tipo);
+    public void deleteScadenzaPagamento(Integer id) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        dao.deleteScadenzaPagamento(id);
     }
 
-    @Transactional(readOnly = true)
-    public Map<String, Object> getCombosMap() throws SQLException {
-        Map<String, Object> map = new HashMap<>();
-        
-        map.put("listini", listiniDelegate.getListForCombo());
-        map.put("tipiPagamento", tipiPagamentoDelegate.getListForCombo());
-        map.put("risorse", risorseDelegate.getListForCombo("BA")); // Banche
-        map.put("aliquoteIva", aliquoteIvaDelegate.getListForCombo());
-        map.put("unitaMisura", unitaMisuraDelegate.getListForCombo());
-        map.put("agenti", agentiDelegate.getListForCombo());
-        map.put("progetti", progettiDelegate.getListForCombo());
-        map.put("particelle", configurazioneDelegate.getAsArray(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE));
-        map.put("causaliEsigibilitaDifferita", causaliEsigibilitaDifferitaDelegate.getListForCombo());
-        
-        return map;
-    }
-
-    public DocumentoWrapperDto esportaFatturaPdf(long id) {
-        try {
-            FatturaDto dto = this.getById(id);
-            if (dto == null) return null;
-
-            if (dto.getClienteDto() == null && dto.getIdCliente() != null) {
-                dto.setClienteDto(clientiDelegate.getById(dto.getIdCliente()));
-            }
-
-            DatiAziendaDto daDto = datiAziendaDelegate.getDatiAzienda();
-            
+    public DocumentoWrapperDto esportaFatturaPdf(String dbKey,
+                                                 long id)
+    {
+        try
+        {
+            TemplateData td = new TemplateData();
             Map<String, Object> params = new HashMap<>();
-            params.put("documento", dto);
-            params.put("datiazienda", daDto);
-            
-            if (daDto != null && daDto.getByteLogo() != null) {
-                params.put("logopath", new java.io.ByteArrayInputStream(daDto.getByteLogo()));
-            }
+            td.setParameters(params);
+            FatturaTemplate ft = new FatturaTemplate();
+            AliquoteIvaDao aiDao = new AliquoteIvaDao(jdbcTemplate);
+            // DatiAziendaDao daDao = new DatiAziendaDao(jdbcTemplate);
 
-            if (dto.getIdTipoPagamento() != null) {
-                it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto tp = tipiPagamentoDelegate.getById(dto.getIdTipoPagamento());
-                if (tp != null) dto.setDescTipoPagamento(tp.getDescrizione());
-            }
+            FatturaDto dto = this.getById(id);
+            String outputName = new StringBuilder(IOUtility.getValidFilename(new StringBuilder("fattura_").append(dto.getNumDocumento()).append(StringUtils.isEmpty(dto.getParticella()) ? "" : dto.getParticella()).toString())).append(".pdf").toString();
 
-            if (dto.getDataDocumento() != null) {
-                String dStr = dto.getDataDocumento();
-                if (dStr.contains("/")) {
-                    String[] parts = dStr.split("/");
-                    if (parts.length >= 3) params.put("anno", parts[2]);
-                } else if (dStr.contains("-")) {
-                    String[] parts = dStr.split("-");
-                    if (parts.length >= 1) params.put("anno", parts[0]);
+            // //dati azienda
+            DatiAziendaDto daDto = datiaziendaDelegate.getDatiAzienda();
+            if ( daDto != null )
+            {
+                if ( daDto.getByteLogo() != null )
+                {
+                    params.put("logopath", new ByteArrayInputStream(daDto.getByteLogo()));
                 }
             }
-            if (!params.containsKey("anno")) params.put("anno", "");
+            params.put("datiazienda", daDto);
 
-            String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
-            params.put("print_codagente", "1".equals(stampaAgente) || "true".equalsIgnoreCase(stampaAgente));
+            params.put("documento", dto);
+            if ( !StringUtils.isEmpty(dto.getDataDocumento()) )
+            {
+                String[] str = dto.getDataDocumento().split("/");
+                if ( str.length >= 3 )
+                {
+                    params.put("anno", str[2]);
+                }
+            }
 
             double totaleMerce = 0;
-            if (dto.getProdotti() != null) {
-                for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
+            for ( ProdottoDocumentoDto pdDto : dto.getProdotti() )
+            {
+                if ( pdDto.isProdotto() || pdDto.isFuoriMagazzino() )
+                {
                     pdDto.setQuantitaFormattata(NumberUtils.formatAsQuantity(pdDto.getQuantita()));
-                    pdDto.setPercentualeIvaFormattata(NumberUtils.formatAsPercentage(pdDto.getPercentualeIva()));
+                    pdDto.setPercentualeIvaFormattata(pdDto.getPercentualeIva() == null ? "" : NumberUtils.formatAsPercentage(pdDto.getPercentualeIva()));
                     pdDto.setPrezzoFormattato(NumberUtils.formatAsCurrency(pdDto.getPrezzo()));
-                    if (pdDto.getTotaleSenzaIva() == null || pdDto.getTotaleSenzaIva() == 0) {
-                        pdDto.setTotaleSenzaIva(pdDto.getPrezzoImponibile());
-                    }
                     pdDto.setTotaleFormattato(NumberUtils.formatAsCurrency(pdDto.getTotaleSenzaIva()));
-                    
-                    if (pdDto.isFuoriMagazzino()) {
-                        pdDto.setCodiceProdotto(StringUtils.defaultString(pdDto.getFmCodice()));
-                        pdDto.setDescrizione(StringUtils.defaultString(pdDto.getFmDescrizione()));
-                        pdDto.setDescrScelta(StringUtils.defaultString(pdDto.getFmScelta()));
-                        pdDto.setDescrTono(StringUtils.defaultString(pdDto.getFmTono()));
-                        pdDto.setDescrCalibro(StringUtils.defaultString(pdDto.getFmTaglia()));
-                    } else {
-                        pdDto.setDescrizione(StringUtils.defaultString(pdDto.getDescProdotto()));
-                        if (pdDto.getCodiceProdotto() == null) pdDto.setCodiceProdotto("");
+                    totaleMerce += pdDto.getTotaleSenzaIva();
+                    if ( pdDto.isFuoriMagazzino() )
+                    {
+                        pdDto.setProdottoDto(new ProdottoDto());
+                        pdDto.getProdottoDto().setCodice(StringUtils.isEmpty(pdDto.getFmCodice()) ? "" : pdDto.getFmCodice());
+                        pdDto.getProdottoDto().setDescrizione(pdDto.getFmDescrizione());
+                        // pdDto.setDescUnitaMisura(pdDto.getFmUnitaMisura());
                     }
-                    if (pdDto.isProdotto() || pdDto.isFuoriMagazzino()) {
-                        totaleMerce += pdDto.getTotaleSenzaIva();
-                    }
+                    pdDto.getProdottoDto().setDescrizioneDocumento();
                 }
-
-                // Add Causale as Note if present
-                if (StringUtils.isNotBlank(dto.getCausale())) {
-                    ProdottoDocumentoDto emptyRow = new ProdottoDocumentoDto();
-                    emptyRow.setProdotto(false);
-                    emptyRow.setDescrizione("");
-                    dto.getProdotti().add(emptyRow);
-
-                    ProdottoDocumentoDto causaleRow = new ProdottoDocumentoDto();
-                    causaleRow.setProdotto(false);
-                    causaleRow.setDescrizione("Causale: " + dto.getCausale());
-                    dto.getProdotti().add(causaleRow);
+            }
+            ft.setProdotti(dto.getProdotti());
+            List<RiepilogoIvaDto> riepilogoIva = new ArrayList<>();
+            for ( ProdottoDocumentoDto pdDto : dto.getProdotti() )
+            {
+                if ( pdDto.isProdotto() || pdDto.isFuoriMagazzino() )
+                {
+                    RiepilogoIvaDto riDto = new RiepilogoIvaDto();
+                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
+                    if ( riepilogoIva.contains(riDto) )
+                    {
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileMerce(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileMerce() + pdDto.getTotaleSenzaIva());
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileMerceFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileMerce()));
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibile(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile() + pdDto.getTotaleSenzaIva());
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile()));
+                        BigDecimal val = BigDecimal.valueOf(pdDto.getTotaleSenzaIva());
+                        val = val.multiply(BigDecimal.valueOf(aiDto.getImposta()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP));
+                        val = val.setScale(2, RoundingMode.HALF_UP);
+//                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIva(BigDecimal.valueOf(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva()).add(val).doubleValue());
+//                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIvaFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva()));
+                    }
+                    else
+                    {
+                        riepilogoIva.add(riDto);
+                        riDto.setAliquotaIva(aiDto.getImposta());
+                        riDto.setAliquotaIvaFormattata(new StringBuilder(aiDto.getCodice()).append(" ").append(aiDto.getDescrizione()).toString());
+                        riDto.setImponibileMerce(pdDto.getTotaleSenzaIva());
+                        riDto.setImponibileMerceFormattato(NumberUtils.formatAsCurrency(riDto.getImponibileMerce()));
+                        riDto.setTotaleImponibile(pdDto.getTotaleSenzaIva());
+                        riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
+//                        BigDecimal val = BigDecimal.valueOf(pdDto.getTotaleSenzaIva());
+//                        val = val.multiply(BigDecimal.valueOf(aiDto.getImposta()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP));
+//                        val = val.setScale(2, RoundingMode.HALF_UP);
+//                        riDto.setImportoIva(val.doubleValue());
+//                        riDto.setImportoIvaFormattato(NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+                    }
                 }
             }
 
-            List<RiepilogoIvaDto> riepilogoIva = new ArrayList<>();
-            if (dto.getProdotti() != null) {
-                for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
-                    if (pdDto.isProdotto() || pdDto.isFuoriMagazzino()) {
-                        RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                        riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
-                        AliquotaIvaDto aiDto = aliquoteIvaDelegate.getById(pdDto.getIdAliquotaIva());
-                        if (riepilogoIva.contains(riDto)) {
-                            int idx = riepilogoIva.indexOf(riDto);
-                            RiepilogoIvaDto existing = riepilogoIva.get(idx);
-                            existing.setImponibileMerce(existing.getImponibileMerce() + pdDto.getTotaleSenzaIva());
-                            existing.setImponibileMerceFormattato(NumberUtils.formatAsCurrency(existing.getImponibileMerce()));
-                            existing.setTotaleImponibile(existing.getTotaleImponibile() + pdDto.getTotaleSenzaIva());
-                            existing.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(existing.getTotaleImponibile()));
-                            existing.setImportoIva(existing.getImportoIva() + (pdDto.getTotaleSenzaIva() * aiDto.getImposta() / 100));
-                            existing.setImportoIvaFormattato(NumberUtils.formatAsCurrency(existing.getImportoIva()));
-                        } else {
-                            riepilogoIva.add(riDto);
-                            riDto.setAliquotaIva(aiDto.getImposta());
-                            riDto.setAliquotaIvaFormattata(aiDto.getCodice() + " " + aiDto.getDescrizione());
-                            riDto.setImponibileMerce(pdDto.getTotaleSenzaIva());
-                            riDto.setImponibileMerceFormattato(NumberUtils.formatAsCurrency(riDto.getImponibileMerce()));
-                            riDto.setTotaleImponibile(pdDto.getTotaleSenzaIva());
-                            riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
-                            riDto.setImportoIva(pdDto.getTotaleSenzaIva() * aiDto.getImposta() / 100);
-                            riDto.setImportoIvaFormattato(NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+            List<ScadenzaPagamentoDocumentoDto> scadenze = new ArrayList<>();
+            double totAcconto = 0;
+            if ( dto.getListaScadenzePagamentiDocumento() != null )
+            {
+                for ( ScadenzaPagamentoDocumentoDto spDto : dto.getListaScadenzePagamentiDocumento() )
+                {
+                    if ( spDto.getAcconto() == null || spDto.getAcconto().intValue() == 0 )
+                    {
+                        scadenze.add(spDto);
+                        spDto.setImporto(spDto.getImporto() + (spDto.getImportoSpeseIncasso() == null ? 0 : spDto.getImportoSpeseIncasso()));
+                        spDto.setImportoFormattato(NumberUtils.formatAsCurrency(spDto.getImporto()));
+                    }
+                    else
+                    {
+                        totAcconto += spDto.getImporto() == null ? 0.0 : spDto.getImporto();
+                    }
+                }
+            }
+            ft.setScadenze(scadenze);
+            for ( SpesaIncassoDocumentoDto siDto : dto.getListaSpeseIncassoFattura() )
+            {
+                siDto.setImportoFormattato(NumberUtils.formatAsCurrency(siDto.getImporto()));
+            }
+            TipiPagamentoDao tpDao = new TipiPagamentoDao(jdbcTemplate);
+            TipoPagamentoDto tpDto = null;
+            if ( dto.getIdTipoPagamento() != null )
+            {
+                tpDto = tpDao.getById(dto.getIdTipoPagamento());
+                if ( tpDto != null )
+                {
+                    if ( tpDto.getIdSpeseIncasso() != null && tpDto.getIdSpeseIncasso().intValue() != 0 )
+                    {
+                        double importoSpesaIncassoScadenze = (scadenze != null && !scadenze.isEmpty()) ? scadenze.get(0).getImportoSpeseIncasso() * scadenze.size() : 0;
+                        SpesaIncassoDocumentoDto spesaDto = new SpesaIncassoDocumentoDto();
+                        spesaDto.setIdSpesaIncasso(tpDto.getIdSpeseIncasso());
+                        boolean trovata = false;
+                        for ( SpesaIncassoDocumentoDto siDto : dto.getListaSpeseIncassoFattura() )
+                        {
+                            if ( siDto.getIdSpesaIncasso().equals(tpDto.getIdSpeseIncasso()) )
+                            {
+                                siDto.setImporto(siDto.getImporto() + importoSpesaIncassoScadenze);
+                                siDto.setImportoFormattato(NumberUtils.formatAsCurrency(siDto.getImporto()));
+                                trovata = true;
+                                break;
+                            }
+                            AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                            if ( aiDto == null )
+                            {
+                                aiDto = new AliquotaIvaDto();
+                                aiDto.setImpostaFormattata("");
+                            }
+                            else
+                            {
+                                siDto.setAliquotaIvaDto(aiDto);
+                                aiDto.setImpostaFormattata(NumberUtils.formatAsPercentage(aiDto.getImposta()));
+                            }
+                        }
+                        if ( !trovata )
+                        {
+                            SpeseIncassoDao siDao = new SpeseIncassoDao(jdbcTemplate);
+                            SpesaIncassoDto siDto = siDao.getById(tpDto.getIdSpeseIncasso());
+                            AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                            spesaDto.setImporto(importoSpesaIncassoScadenze);
+                            spesaDto.setImportoFormattato(NumberUtils.formatAsCurrency(spesaDto.getImporto()));
+                            spesaDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
+                            spesaDto.setDescrizione(siDto.getDescrizione());
+                            spesaDto.setPercIva(aiDto == null ? 0 : aiDto.getImposta());
+                            if ( aiDto == null )
+                            {
+                                aiDto = new AliquotaIvaDto();
+                                aiDto.setImpostaFormattata("");
+                            }
+                            else
+                            {
+                                aiDto.setImpostaFormattata(NumberUtils.formatAsPercentage(aiDto.getImposta()));
+                            }
+                            spesaDto.setAliquotaIvaDto(aiDto);
+                            dto.getListaSpeseIncassoFattura().add(spesaDto);
                         }
                     }
                 }
             }
-
             double totSpeseArt15 = 0;
+            int progrSpesa = 1;
             double totTrasporto = 0;
             double totAltreSpese = 0;
-            if (dto.getListaSpeseIncassoFattura() != null) {
-                for (SpesaIncassoDocumentoDto spesa : dto.getListaSpeseIncassoFattura()) {
-                    if ("T".equals(spesa.getTipo())) totTrasporto += spesa.getImporto();
-                    else if ("A".equals(spesa.getTipo())) totAltreSpese += spesa.getImporto();
-                    else if ("15".equals(spesa.getTipo())) totSpeseArt15 += spesa.getImporto();
+            for ( SpesaIncassoDocumentoDto siDto : dto.getListaSpeseIncassoFattura() )
+            {
+                ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
+                ProdottoDto pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(true);
+                pDto.setCodice(new StringBuilder("/S").append(progrSpesa).toString());
+                pDto.setDescrizione(siDto.getDescrizione());
+                pdDto.setDescUnitaMisura("N");
+                pdDto.setQuantitaFormattata("1");
+                pdDto.setPrezzoFormattato(NumberUtils.formatAsCurrency(siDto.getImporto()));
+                pdDto.setSconto("");
+                pdDto.setTotaleFormattato(pdDto.getPrezzoFormattato());
+                progrSpesa++;
+                if ( siDto.getTrasporto() != null && siDto.getTrasporto().intValue() == 1 )
+                {
+                    totTrasporto += (siDto.getImporto() == null ? 0 : siDto.getImporto());
+                }
+                else
+                {
+                    totAltreSpese += (siDto.getImporto() == null ? 0 : siDto.getImporto());
+                }
+                if ( siDto.getPercIva().intValue() == 0 )
+                {
+                    pdDto.setPercentualeIvaFormattata("");
+                    totSpeseArt15 += siDto.getImporto();
+                }
+                else
+                {
+                    RiepilogoIvaDto riDto = new RiepilogoIvaDto();
+                    riDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                    pdDto.setPercentualeIvaFormattata(NumberUtils.formatAsPercentage(aiDto.getImposta()));
+                    if ( riepilogoIva.contains(riDto) )
+                    {
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileSpese(siDto.getImporto());
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileSpeseFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileSpese()));
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibile(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile() + siDto.getImporto());
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile()));
+//                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIva(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva() + (siDto.getImporto() * aiDto.getImposta() / 100));
+//                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIvaFormattato(NumberUtils.formatAsCurrency(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva()));
+                    }
+                    else
+                    {
+                        riepilogoIva.add(riDto);
+                        riDto.setAliquotaIva(aiDto.getImposta());
+                        riDto.setAliquotaIvaFormattata(new StringBuilder(aiDto.getCodice()).append(" ").append(aiDto.getDescrizione()).toString());
+                        riDto.setImponibileSpese(siDto.getImporto());
+                        riDto.setImponibileSpeseFormattato(NumberUtils.formatAsCurrency(riDto.getImponibileSpese()));
+                        riDto.setTotaleImponibile(siDto.getImporto());
+                        riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
+//                        riDto.setImportoIva(siDto.getImporto() * aiDto.getImposta() / 100);
+//                        riDto.setImportoIvaFormattato(NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+                    }
                 }
             }
-
-            java.math.BigDecimal totaleImponibile = java.math.BigDecimal.valueOf(totaleMerce + totTrasporto + totAltreSpese);
-            java.math.BigDecimal totaleIva = java.math.BigDecimal.ZERO;
-            for (RiepilogoIvaDto riDto : riepilogoIva) {
-                totaleIva = totaleIva.add(java.math.BigDecimal.valueOf(riDto.getImportoIva()));
+            // verifico se la fattura è ad esigibilità differita e, se lo è,
+            // inserisco una riga con l'indicazione e l'eventuale motivo
+            if ( dto.getEsigibilitaDifferita().intValue() == 1 )
+            {
+                ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
+                ProdottoDto pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota("");
+                //
+                pdDto = new ProdottoDocumentoDto();
+                pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                StringBuilder sb = new StringBuilder();
+                sb.append("IVA AD ESIGIBILITA' DIFFERITA");
+                if ( !dto.getDescCausaleEsigibilitaDifferita().equals("") )
+                {
+                    sb.append(" - ").append(dto.getDescCausaleEsigibilitaDifferita());
+                }
+                pdDto.setNota(sb.toString());
             }
-
-            totaleIva = totaleIva.setScale(2, java.math.RoundingMode.HALF_UP);
-            totaleImponibile = totaleImponibile.setScale(2, java.math.RoundingMode.HALF_UP);
-            
-            params.put("totalemerce", NumberUtils.formatAsCurrency(totaleMerce));
-            params.put("totaleimponibile", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
-            params.put("totaleiva", NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
-            double totAcconto = dto.getAcconto() != null ? dto.getAcconto() : 0;
-            params.put("acconto", NumberUtils.formatAsCurrency(totAcconto));
-
-            params.put("speseart15", NumberUtils.formatAsCurrency(totSpeseArt15));
-            params.put("spesetrasporto", NumberUtils.formatAsCurrency(totTrasporto));
-            params.put("spesealtre", NumberUtils.formatAsCurrency(totAltreSpese));
-            
-            double totFattura = totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15;
-            params.put("totalefattura", NumberUtils.formatAsCurrency(totFattura));
-            
-            double importoRitenuta = 0.0;
-            if (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto() == 1) {
-                double perc = dto.getPercRitenutaAcconto() != null ? dto.getPercRitenutaAcconto() : 0.0;
-                importoRitenuta = totaleImponibile.doubleValue() * perc / 100.0;
+            // verifico se la fattura è con split payment e, se lo è, inserisco
+            // una riga con l'indicazione
+            if ( dto.getSplitPayment() == 1 )
+            {
+                ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
+                ProdottoDto pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota("");
+                //
+                pdDto = new ProdottoDocumentoDto();
+                pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota("Operazione assoggettata a split payment con IVA non incassata dal cedente ai sensi dell' art.17-ter DPR 633/1972 e successive modifiche");
             }
-            params.put("flRitenutaAcconto", dto.getFlRitenutaAcconto());
-            params.put("percRitenutaAcconto", dto.getPercRitenutaAcconto());
-            params.put("importoRitenutaAcconto", NumberUtils.formatAsCurrency(importoRitenuta));
-
-            params.put("totalenetto", NumberUtils.formatAsCurrency(totFattura - totAcconto - importoRitenuta));
-            
-            params.put("totale_escluso_iva", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totSpeseArt15 - totAcconto));
-
-            String coordinate = "";
-            if (!StringUtils.isEmpty(dto.getDescrizioneNsBanca())) {
-                coordinate = dto.getDescrizioneNsBanca() + " - ";
+            // riferimento scontrino (se esiste)
+            if ( dto.getNumeroScontrino() != null && StringUtils.isNotEmpty(dto.getDataScontrino()) )
+            {
+                ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
+                ProdottoDto pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota(new StringBuilder("RIFERIMENTO SCONTRINO N. ").append(dto.getNumeroScontrino()).append(" DEL ").append(dto.getDataScontrino()).toString());
             }
-            if (!StringUtils.isEmpty(dto.getIbanNsBanca())) {
-                coordinate = coordinate + "IBAN " + dto.getIbanNsBanca();
+            // se la fattura è elettronica e la causale è compilata allora la faccio comparire nella stampa della fattura
+            if ( StringUtils.isNotEmpty(dto.getCausale()) )
+            {
+                ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
+                ProdottoDto pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota("");
+                pdDto = new ProdottoDocumentoDto();
+                pDto = new ProdottoDto();
+                pdDto.setProdottoDto(pDto);
+                dto.getProdotti().add(pdDto);
+                pdDto.setProdotto(false);
+                pdDto.setNota(dto.getCausale());
             }
-            params.put("coordinate", coordinate);
-
-            FatturaTemplate ft = new FatturaTemplate();
-            ft.setProdotti(dto.getProdotti());
+            // context.put("riepilogoiva", riepilogoIva);
+            // params.put("riepilogoiva", riepilogoIva);
             ft.setRiepilogoIva(riepilogoIva);
-            
-            // Handle Scadenze
-            List<ScadenzaPagamentoDocumentoDto> scadenze = fattureDao.getScadenze(id);
-            if (scadenze != null) {
-                for (ScadenzaPagamentoDocumentoDto s : scadenze) {
-                    s.setImportoFormattato(NumberUtils.formatAsCurrency(s.getImporto()));
+            BigDecimal totaleImponibile = BigDecimal.valueOf(totaleMerce);
+            BigDecimal totaleIva = new BigDecimal(0);
+            for ( RiepilogoIvaDto riDto : riepilogoIva )
+            {
+                riDto.setImportoIva(BigDecimal.valueOf(riDto.getTotaleImponibile()).multiply(BigDecimal.valueOf(riDto.getAliquotaIva()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue());
+                riDto.setImportoIvaFormattato(NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+                totaleIva = totaleIva.add(BigDecimal.valueOf(riDto.getImportoIva()));
+                totaleImponibile = totaleImponibile.add(riDto.getImponibileSpese() == null ? BigDecimal.ZERO : BigDecimal.valueOf(riDto.getImponibileSpese()));
+            }
+
+            totaleIva = totaleIva.setScale(2, BigDecimal.ROUND_HALF_UP);
+            totaleImponibile = totaleImponibile.setScale(2, BigDecimal.ROUND_HALF_UP);
+            // context.put("totalemerce",
+            // NumberUtils.formatAsCurrency(totaleMerce));
+            params.put("totalemerce", NumberUtils.formatAsCurrency(totaleMerce));
+            // context.put("totaleimponibile",
+            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
+            params.put("totaleimponibile", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
+            // context.put("totaleiva",
+            // NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
+            params.put("totaleiva", NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
+            // context.put("acconto", NumberUtils.formatAsCurrency(totAcconto));
+            params.put("acconto", NumberUtils.formatAsCurrency(totAcconto));
+            //
+            // context.put("speseart15",
+            // NumberUtils.formatAsCurrency(totSpeseArt15));
+            params.put("speseart15", NumberUtils.formatAsCurrency(totSpeseArt15));
+            // context.put("spesetrasporto",
+            // NumberUtils.formatAsCurrency(totTrasporto));
+            params.put("spesetrasporto", NumberUtils.formatAsCurrency(totTrasporto));
+            // context.put("spesealtre",
+            // NumberUtils.formatAsCurrency(totAltreSpese));
+            params.put("spesealtre", NumberUtils.formatAsCurrency(totAltreSpese));
+            // context.put("totalefattura",
+            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() +
+            // totaleIva.doubleValue() + totSpeseArt15));
+            params.put("totalefattura", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15));
+            // context.put("totalenetto",
+            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() +
+            // totaleIva.doubleValue() + totSpeseArt15 - totAcconto));
+            params.put("totalenetto", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15 - totAcconto));
+            params.put("totale_escluso_iva", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totSpeseArt15 - totAcconto));
+            String coordinate = "";
+            if ( !StringUtils.isEmpty(dto.getModalitaPagamento()) )
+            {
+                ModalitaPagamentoEnum pagamentoEnum = ModalitaPagamentoEnum.valueOf(dto.getModalitaPagamento());
+                if ( pagamentoEnum == ModalitaPagamentoEnum.RIBA )
+                {
+                    if ( !StringUtils.isEmpty(dto.getDescrizioneBanca()) )
+                    {
+                        coordinate = dto.getDescrizioneBanca() + " - ";
+                    }
+                    if ( dto.getIban() != null && !dto.getIban().equals("") )
+                    {
+                        coordinate = coordinate + "IBAN " + dto.getIban();
+                    }
+                    else
+                    {
+                        if ( dto.getCin() != null && !dto.getCin().equals("") )
+                        {
+                            coordinate = coordinate + "CIN " + dto.getCin() + " ";
+                        }
+                        if ( dto.getAbi() != null && !dto.getAbi().equals("") )
+                        {
+                            coordinate = coordinate + "ABI " + dto.getAbi() + " ";
+                        }
+                        if ( dto.getCab() != null && !dto.getCab().equals("") )
+                        {
+                            coordinate = coordinate + "CAB " + dto.getCab() + " ";
+                        }
+                        if ( dto.getConto() != null && !dto.getConto().equals("") )
+                        {
+                            coordinate = coordinate + "CONTO " + dto.getConto() + " ";
+                        }
+                    }
+                }
+                else if ( pagamentoEnum == ModalitaPagamentoEnum.BONIFICO )
+                {
+                    if ( !StringUtils.isEmpty(dto.getDescrizioneNsBanca()) )
+                    {
+                        coordinate = dto.getDescrizioneNsBanca() + " - ";
+                    }
+                    if ( !StringUtils.isEmpty(dto.getIbanNsBanca()) )
+                    {
+                        coordinate = coordinate + "IBAN " + dto.getIbanNsBanca();
+                    }
+                    else
+                    {
+                        if ( !StringUtils.isEmpty(dto.getCinNsBanca()) )
+                        {
+                            coordinate = coordinate + "CIN " + dto.getCinNsBanca() + " ";
+                        }
+                        if ( !StringUtils.isEmpty(dto.getAbiNsBanca()) )
+                        {
+                            coordinate = coordinate + "ABI " + dto.getAbiNsBanca() + " ";
+                        }
+                        if ( !StringUtils.isEmpty(dto.getCabNsBanca()) )
+                        {
+                            coordinate = coordinate + "CAB " + dto.getCabNsBanca() + " ";
+                        }
+                        if ( !StringUtils.isEmpty(dto.getContoNsBanca()) )
+                        {
+                            coordinate = coordinate + "CONTO " + dto.getContoNsBanca() + " ";
+                        }
+                    }
                 }
             }
-            ft.setScadenze(scadenze);
-            
-            params.put("SUBREPORT_SCADENZE", ReportLoader.getReport("fattura_scadenze.jrxml"));
-
-            JasperReport jasperReport = ReportLoader.getReport("fattura.jrxml");
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, params, new JRBeanCollectionDataSource(Arrays.asList(ft)));
-            byte[] bytes = JasperExportManager.exportReportToPdf(jasperPrint);
-
+            // context.put("coordinate", coordinate);
+            params.put("coordinate", coordinate);
+            JRBeanCollectionDataSource beanColDataSource = new JRBeanCollectionDataSource(Arrays.asList(ft));
+            td.setDataSource(beanColDataSource);
+            ConfigurazioneDao configurazioneDao = new ConfigurazioneDao(jdbcTemplate);
+            String baseDirTemplate = configurazioneDao.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_BASEDIR);
+            if ( StringUtils.isEmpty(baseDirTemplate) )
+            {
+                throw new Exception("Il parametro basedir per i template è vuoto o nullo");
+            }
+            Template t = new Template("name", new StringReader(baseDirTemplate), new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS));
+            Map<String, Object> model = new HashMap<>();
+            model.put("DB_KEY", DatabaseContextHolder.getClientDatabase());
+            String baseDir = FreeMarkerTemplateUtils.processTemplateIntoString(t, model);
+            String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDao.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
+            td.getParameters().put("print_codagente", new Boolean(stampaAgente));
+            td.getParameters().put("SUBREPORT_DIR", baseDir);
+            byte[] bytes = null;
+            InputStream reportIs = FileUtils.openInputStream(new File(new StringBuilder(baseDir).append(ISharedConstants.FATTURA_TEMPLATE_NAME).toString()));
+            if ( td.getDataSource() != null )
+            {
+                bytes = JasperRunManager.runReportToPdf(reportIs, td.getParameters(), td.getDataSource());
+            }
+            else
+            {
+                bytes = JasperRunManager.runReportToPdf(reportIs, td.getParameters(), new JREmptyDataSource());
+            }
             DocumentoWrapperDto result = new DocumentoWrapperDto();
             result.setFlusso(bytes);
-            result.setNome("Fattura_" + dto.getNumDocumento() + ".pdf");
+            result.setNome(outputName);
             return result;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return null;
+        }
+        catch ( Exception e )
+        {
+            _log.error("Errore nella generazione del pdf della fattura {}", id, e);
+            DocumentoWrapperDto result = new DocumentoWrapperDto();
+            result.setFlusso(new byte[0]);
+            result.setNome("blank.pdf");
+            return result;
         }
     }
+
+    public FatturaDto getById(long id) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        ClientiDao clientiDao = new ClientiDao(jdbcTemplate);
+        ProdottiDao prodottiDao = new ProdottiDao(jdbcTemplate);
+        FatturaDto dto = dao.getById(id);
+        if ( dto != null )
+        {
+            ClienteDto clienteDto = clientiDao.getById(dto.getIdCliente());
+            IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+            ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+            clienteDto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.CLIENTI.getValore(), dto.getIdCliente()));
+            clienteDto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.CLIENTI.getValore(), dto.getIdCliente()));
+            dto.setClienteDto(clienteDto);
+            if ( dto.getIdProgetto() != null && dto.getIdProgetto() != 0 )
+            {
+                ProgettiDao progettiDao = new ProgettiDao(jdbcTemplate);
+                dto.setProgettoDto(progettiDao.getById(dto.getIdProgetto().longValue()));
+            }
+            if ( dto.getIdAgente() != null && dto.getIdAgente() != 0 )
+            {
+                AgentiDao agentiDao = new AgentiDao(jdbcTemplate);
+                dto.setAgenteDto(agentiDao.getById(dto.getIdAgente()));
+            }
+            List<ProdottoDocumentoDto> listProdottiDdt = dao.getListProdottiById(dto.getId());
+            for ( ProdottoDocumentoDto pDto : listProdottiDdt )
+            {
+                if ( pDto.isProdotto() )
+                {
+                    pDto.setProdottoDto(prodottiDao.getById(pDto.getIdProdotto()));
+                }
+            }
+            dto.setProdotti(listProdottiDdt);
+            dto.setListaSpeseIncassoFattura(dao.getListSpeseIncassoById(dto.getId()));
+            dto.setListaScadenzePagamentiDocumento(dao.getScadenzePagamento(dto.getId()));
+        }
+        return dto;
+    }
+
+    public List<FatturaDto> getByProgetto(long idProgetto,
+                                          int length,
+                                          int start,
+                                          int orderColumn,
+                                          String orderDir) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        List<FatturaDto> list = dao.getByProgetto(idProgetto, length, start, orderColumn, orderDir);
+        for ( FatturaDto dto : list )
+        {
+            dto.setProdotti(dao.getListProdottiById(dto.getId()));
+        }
+        return list;
+    }
+
+    public Map<String, Object> getCombosMap(String tipoFattura) throws SQLException
+    {
+        AliquoteIvaDao aliquoteIvaDao = new AliquoteIvaDao(jdbcTemplate);
+        UnitaMisuraDao unitaMisuraDao = new UnitaMisuraDao(jdbcTemplate);
+        RisorseDao risorseDao = new RisorseDao(jdbcTemplate);
+        TipiPagamentoDao tipiPagamentoDao = new TipiPagamentoDao(jdbcTemplate);
+        CausaliEsigibilitaDifferitaDao causaliEsigibilitaDifferitaDao = new CausaliEsigibilitaDifferitaDao(jdbcTemplate);
+        DivisioniDao divisioniDao = new DivisioniDao(jdbcTemplate);
+        ConfigurazioneDao configurazioneDao = new ConfigurazioneDao(jdbcTemplate);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put(ISharedConstants.COMBOSMAP_KEY_ALIQUOTEIVA, aliquoteIvaDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_UNITAMISURA, unitaMisuraDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPAGAMENTO, tipiPagamentoDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_BANCHE, risorseDao.getListForCombo(RisorsaDto.Tipologia.BANCA.getValore()));
+        map.put(ISharedConstants.COMBOSMAP_KEY_CAUSALIESIGIBILITADIFFERITA, causaliEsigibilitaDifferitaDao.getListForCombo());
+        map.put(ISharedConstants.COMBOSMAP_KEY_DIVISIONI, divisioniDao.getListForCombo());
+        String particelleAsString = configurazioneDao.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
+        map.put(ISharedConstants.COMBOSMAP_KEY_PARTICELLE, StringUtils.split(particelleAsString, StringUtils.CR + StringUtils.LF));
+        if ( TipoFattura.valueOf(tipoFattura) == TipoFattura.FATTURA_ACCOMPAGNATORIA )
+        {
+            CausaliTrasportoDao causaliTrasportoDao = new CausaliTrasportoDao(jdbcTemplate);
+            TipiPortoDao tipiPortoDao = new TipiPortoDao(jdbcTemplate);
+            VettoriDao vettoriDao = new VettoriDao(jdbcTemplate);
+            AspettoBeniDao aspettoBeniDao = new AspettoBeniDao(jdbcTemplate);
+            map.put(ISharedConstants.COMBOSMAP_KEY_CAUSALITRASPORTO, causaliTrasportoDao.getListForCombo());
+            map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPORTO, tipiPortoDao.getListForCombo());
+            map.put(ISharedConstants.COMBOSMAP_KEY_VETTORI, vettoriDao.getListForCombo());
+            map.put(ISharedConstants.COMBOSMAP_KEY_ASPETTOBENI, aspettoBeniDao.getListForCombo());
+        }
+        return map;
+    }
+
+    public FatturaElettronicaWrapperDto getFatturaElettronica(long idFattura)
+    {
+        FatturaElettronicaWrapperDto result = new FatturaElettronicaWrapperDto();
+        FattureDao fattureDao = new FattureDao(jdbcTemplate);
+        DatiAziendaDao datiAziendaDao = new DatiAziendaDao(jdbcTemplate);
+        try
+        {
+            DatiAziendaDto datiAziendaDto = datiAziendaDao.getDatiAzienda();
+            FatturaDto fatturaDto = this.getById(idFattura);
+            result.setFattura(fatturaDto);
+            String xmlFatturaElettronica = fattureDao.getXmlFatturaElettronica(idFattura);
+            if ( StringUtils.isNotEmpty(xmlFatturaElettronica) )
+            {
+                Date dt = FastDateFormat.getInstance("dd/MM/yyyy").parse(result.getFattura().getDataDocumento());
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(dt);
+                DateFormat df = new SimpleDateFormat("yy"); // Just the year, with 2 digits
+                String formattedDate = df.format(cal.getTime());
+                result.getFattura().setNomeFileFattura(new StringBuilder("IT").append(datiAziendaDto.getPartitaIva()).append("_").append(formattedDate + StringUtils.leftPad("" + result.getFattura().getNumDocumento(), 3, "0")).toString());
+                result.setFlussoFatturaElettronica(xmlFatturaElettronica.getBytes());
+                fatturaDto.setXmlFattura(xmlFatturaElettronica);
+                return result;
+            }
+            else
+            {
+                try
+                {
+                    fatturaelettronicaDelegate.getFatturaElettronica(fatturaDto, null);
+                    if ( StringUtils.isNotBlank(fatturaDto.getErroreValidazioneXml()) )
+                    {
+                        result.setFlussoFatturaElettronica((fatturaDto.getErroreValidazioneXml() + StringUtils.CR + StringUtils.LF + fatturaDto.getXmlNonValido()).getBytes());
+                        result.getFattura().setNomeFileFattura("fattura_" + result.getFattura().getNumDocumento());
+                    }
+                    else
+                    {
+                        result.setFlussoFatturaElettronica(fatturaDto.getXmlFattura().getBytes());
+                    }
+                    try
+                    {
+                        fattureDao.salvaXmlFatturaElettronica(idFattura, fatturaDto.getXmlFattura());
+                    }
+                    catch ( SQLException e )
+                    {
+
+                    }
+                }
+                catch ( Exception e )
+                {
+                    result.setFlussoFatturaElettronica(ExceptionUtils.getStackTrace(e).getBytes());
+                    result.getFattura().setNomeFileFattura("fattura_" + result.getFattura().getNumDocumento());
+                }
+            }
+        }
+        catch ( SQLException | ParseException e )
+        {
+            // errore recupero fattura
+            result.setFlussoFatturaElettronica(ExceptionUtils.getStackTrace(e).getBytes());
+            result.getFattura().setNomeFileFattura("fattura_" + result.getFattura().getNumDocumento());
+        }
+        return result;
+    }
+
+    public List<MovimentiDocumentoDto> getFattureAssociabili(long idCliente,
+                                                             String dataNotaDebito) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        return dao.getFattureAssociabili(idCliente, dataNotaDebito);
+    }
+
+    public List<Long> getFattureElettronicheDaInviare(long[] idFatture) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        return dao.getFattureElettronicheDaInviare(idFatture);
+    }
+
+    public List<MovimentiDocumentoDto> getListForExcel(String tipoDocumento,
+                                                       Integer idCliente,
+                                                       String dtFrom,
+                                                       String dtTo,
+                                                       Integer idAgente,
+                                                       String stato,
+                                                       String statoFatturaElettronica,
+                                                       Integer length,
+                                                       Integer start,
+                                                       Integer orderColumn,
+                                                       String orderDir) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        return dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
+    }
+
+    public FattureListResponse getList(String tipoDocumento,
+                                       Integer idCliente,
+                                       String dtFrom,
+                                       String dtTo,
+                                       Integer idAgente,
+                                       String stato,
+                                       String statoFatturaElettronica,
+                                       Integer length,
+                                       Integer start,
+                                       Integer orderColumn,
+                                       String orderDir) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        FattureListResponse dto = new FattureListResponse();
+        List<MovimentiDocumentoDto> list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
+        BigDecimal totFatturato = BigDecimal.ZERO;
+        BigDecimal totDaSaldare = BigDecimal.ZERO;
+        BigDecimal totSaldato = BigDecimal.ZERO;
+        for ( MovimentiDocumentoDto mdDto : list )
+        {
+            if ( mdDto.getFlFatturaElettronica() == 0 || (mdDto.getFlFatturaElettronica() == 1 && mdDto.getStatoFatturaElettronica() != null && mdDto.getStatoFatturaElettronica() == StatoFatturaElettronica.AC) )
+            {
+                totFatturato = totFatturato.add(BigDecimal.valueOf(mdDto.getTotale()));
+                totDaSaldare = totDaSaldare.add(BigDecimal.valueOf(mdDto.getTotaleDaPagare()));
+                totSaldato = totSaldato.add(BigDecimal.valueOf(mdDto.getTotalePagato()));
+            }
+        }
+        dto.setTotalCount(list.isEmpty() ? 0l : (long) list.get(0).getTotal());
+        dto.setTotalFiltered(list.isEmpty() ? 0l : (long) list.get(0).getTotal());
+        dto.setTotFatturato(totFatturato.doubleValue());
+        dto.setTotDaSaldare(totDaSaldare.doubleValue());
+        dto.setTotSaldato(totSaldato.doubleValue());
+        dto.setList(list);
+        return dto;
+    }
+
+    public Integer getNextNumFattura(String data,
+                                     int flFatturaElettronica,
+                                     TipoFattura tipoFattura) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        if ( tipoFattura == TipoFattura.NOTA_DEBITO )
+        {
+            String value = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_NUM_NOTE_DEBITO_FATTURE), "0");
+            if ( value.equals("1") )
+            {
+                tipoFattura = TipoFattura.FATTURA;
+            }
+        }
+        else if ( flFatturaElettronica == 1 )
+        {
+            // se sono qui vuol dire che il tipo documento non è di sicuro NOTA_DEBITO
+            tipoFattura = TipoFattura.FATTURA;
+        }
+        return dao.getNextNum(data, flFatturaElettronica, tipoFattura);
+    }
+
+    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(Integer idScadenza) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        return dao.getScadenzaPagamento(idScadenza);
+    }
+
+    public List<MovimentiDocumentoDto> getUltimeFatture() throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        return dao.getUltimeFatture();
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public long insert(FatturaDto dto) throws SQLException
+    {
+        FattureDao fattureDao = new FattureDao(jdbcTemplate);
+        if ( (dto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA || dto.getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA) && dto.getFlFatturaElettronica() == 1 )
+        {
+            dto.setTipoFattura(TipoFattura.FATTURA);
+        }
+        long idFattura = fattureDao.insert(dto);
+        for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
+        {
+            prodottoDdtDto.setIdDocumento(idFattura);
+            fattureDao.insertProdotto(prodottoDdtDto);
+        }
+        if ( dto.getListaSpeseIncassoFattura() != null )
+        {
+            for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+            {
+                spesaIncassoDdtDto.setIdFattura(idFattura);
+                fattureDao.insertSpesaIncasso(spesaIncassoDdtDto);
+            }
+        }
+        if ( dto.getListaScadenzePagamentiDocumento() != null )
+        {
+            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+            {
+                scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
+                fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                // registrazione contabile del pagamento (se necessaria)
+                // if (scadenzaPagamentoDocumentoDto.getSaldato() != null &&
+                // scadenzaPagamentoDocumentoDto.getSaldato().intValue() == 1) {
+                // String modalita =
+                // scadenzaPagamentoDocumentoDto.getModalitaPagamento();
+                // if (!StringUtils.isEmpty(modalita)) {
+                // String causalePagamento = null;
+                // if
+                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_CONTANTI))
+                // {
+                // causalePagamento =
+                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOCONTANTI_RICEVUTO;
+                // }
+                // else if
+                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_BONIFICO))
+                // {
+                // causalePagamento =
+                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOBONIFICO_RICEVUTO;
+                // }
+                // else if
+                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_ASSEGNO))
+                // {
+                // causalePagamento =
+                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOASSEGNO_RICEVUTO;
+                // }
+                // if (!StringUtils.isEmpty(causalePagamento)) {
+                // cDto = ccDelegate.getByOperazione(causalePagamento);
+                // if (cDto != null) {
+                // for (ContoCausaleDto contoCausaleDto :
+                // cDto.getElencoContiCausale()) {
+                // BigDecimal importo = null;
+                // if
+                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_IMPONIBILE))
+                // {
+                // importo =
+                // scadenzaPagamentoDocumentoDto.getImponibileContabilita();
+                // }
+                // else if
+                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_IMPOSTA))
+                // {
+                // importo =
+                // scadenzaPagamentoDocumentoDto.getImpostaContabilita();
+                // }
+                // else if
+                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_TOTALE))
+                // {
+                // importo =
+                // scadenzaPagamentoDocumentoDto.getTotaleContabilita();
+                // }
+                // MovimentoContabileDto mcDto = new MovimentoContabileDto();
+                // if (contoCausaleDto.getParametrizzato().intValue() == 1) {
+                // // dato che sono in un documento di vendita
+                // // la parametrizzazione,
+                // // se non è sulla risorsa, sarà sul cliente
+                // if
+                // (contoCausaleDto.getTabellaRiferimento().equals(ISharedConstants.CONTO_TABELLARIFERIMENTO_RISORSE))
+                // {
+                // mcDto.setIdParametrizzazione(scadenzaPagamentoDocumentoDto.getIdParametrizzazione());
+                // }
+                // else if
+                // (contoCausaleDto.getTabellaRiferimento().equals(ISharedConstants.CONTO_TABELLARIFERIMENTO_CLIENTI))
+                // {
+                // mcDto.setIdParametrizzazione(dto.getIdParametrizzazione());
+                // }
+                // }
+                // mcDto.setIdDocumento(idPagamento);
+                // mcDto.setTipoDocumento(ISharedConstants.OPERAZIONECONTABILE_TIPODOC_PAGAMENTO_RICEVUTO);
+                // if (contoCausaleDto.getDare().intValue() == 1) {
+                // mcDto.setImportoDare(importo);
+                // }
+                // else {
+                // mcDto.setImportoAvere(importo);
+                // }
+                // mcDto.setIdCausaleContabile(cDto.getId());
+                // mcDto.setIdConto(contoCausaleDto.getIdConto());
+                // mcDto.setRiferimentoDocumento(ISharedConstants.OPERAZIONECONTABILE_TIPODOC_FATTURA);
+                // mcDao.insert(mcDto);
+                // }
+                // }
+                // }
+                // }
+                // }
+            }
+            // fine registrazione contabile pagamento
+        }
+        if ( dto.getIdPreventivi() != null && !dto.getIdPreventivi().isEmpty() )
+        {
+            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+            for ( Integer idPreventivo : dto.getIdPreventivi() )
+            {
+                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idPreventivo, ISharedConstants.TIPODOCASSOCIATO_PREVENTIVO);
+            }
+        }
+        else if ( dto.getIdDdt() != null && !dto.getIdDdt().isEmpty() )
+        {
+            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+            for ( Integer idDdt : dto.getIdDdt() )
+            {
+                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idDdt, ISharedConstants.TIPODOCASSOCIATO_DDT);
+            }
+        }
+        double totale = fattureDao.getTotale(idFattura);
+        double totalePagato = fattureDao.getTotalePagato(idFattura);
+        fattureDao.aggiornaTotaliFattura(totale, totalePagato, idFattura);
+        return idFattura;
+    }
+
+    public boolean isExistentNumero(Integer numeroDdt,
+                                    String particella,
+                                    String data,
+                                    int flFatturaElettronica,
+                                    TipoFattura tipoFattura,
+                                    Integer id) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        if ( tipoFattura == TipoFattura.NOTA_DEBITO )
+        {
+            String value = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_NUM_NOTE_DEBITO_FATTURE), "0");
+            if ( value.equals("1") )
+            {
+                tipoFattura = TipoFattura.FATTURA;
+            }
+        }
+        return dao.isExistentNumero(numeroDdt, particella, data, flFatturaElettronica, tipoFattura, id);
+    }
+
+    @Transactional(rollbackFor = SQLException.class)
+    public void update(UtenteDto utenteDto,
+                       FatturaDto dto) throws SQLException
+    {
+        FattureDao fattureDao = new FattureDao(jdbcTemplate);
+        FatturaDto existentDto = fattureDao.getById(dto.getId());
+        dto.setTipoFattura(existentDto.getTipoFattura());
+        if ( dto.getFlFatturaElettronica() == 1 )
+        {
+            // recupero lo stato precedente della fattura elettronica
+            if ( existentDto.getFlFatturaElettronica() != 1 )
+            {
+                if ( utenteDto.getFatturaElettronica() == 1 )
+                {
+                    dto.setStatoFatturaElettronica(StatoFatturaElettronica.DI);
+                }
+                if ( existentDto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA )
+                {
+                    dto.setTipoFattura(TipoFattura.FATTURA);
+                }
+            }
+            else
+            {
+                if ( utenteDto.getFatturaElettronica() == 1 )
+                {
+                    dto.setStatoFatturaElettronica(existentDto.getStatoFatturaElettronica());
+                }
+            }
+        }
+        fattureDao.update(dto);
+        fattureDao.deleteProdottiById(dto.getId());
+        for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
+        {
+            prodottoDdtDto.setIdDocumento(dto.getId());
+            fattureDao.insertProdotto(prodottoDdtDto);
+        }
+        fattureDao.deleteSpeseIncassoById(dto.getId());
+        if ( dto.getListaSpeseIncassoFattura() != null )
+        {
+            for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+            {
+                spesaIncassoDdtDto.setIdFattura(dto.getId());
+                fattureDao.insertSpesaIncasso(spesaIncassoDdtDto);
+            }
+        }
+        fattureDao.deleteSpeseIncassoById(dto.getId());
+        if ( dto.getListaSpeseIncassoFattura() != null )
+        {
+            for ( SpesaIncassoDocumentoDto spesaIncassoFatturaDto : dto.getListaSpeseIncassoFattura() )
+            {
+                spesaIncassoFatturaDto.setIdFattura(dto.getId());
+                fattureDao.insertSpesaIncasso(spesaIncassoFatturaDto);
+            }
+        }
+        fattureDao.deleteScadenzePagamento(dto.getId());
+        if ( dto.getListaScadenzePagamentiDocumento() != null )
+        {
+            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+            {
+                scadenzaPagamentoDocumentoDto.setIdDocumento(dto.getId());
+                fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+            }
+        }
+        double totale = fattureDao.getTotale(dto.getId());
+        double totalePagato = fattureDao.getTotalePagato(dto.getId());
+        fattureDao.aggiornaTotaliFattura(totale, totalePagato, dto.getId());
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
+    public void updateScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException
+    {
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        dao.updateScadenzaPagamento(dto);
+        dto = dao.getScadenzaPagamento(dto.getId());
+        double totale = dao.getTotale(dto.getIdDocumento());
+        double totalePagato = dao.getTotalePagato(dto.getIdDocumento());
+        dao.aggiornaTotaliFattura(totale, totalePagato, dto.getIdDocumento());
+    }
+
 }
+

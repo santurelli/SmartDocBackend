@@ -1,0 +1,29 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-2.2.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.2.xsd
+	">
+
+	<import resource="classpath:jobs/InvioFattureElettronicheJustDesign_JobOperations.xml" />
+
+	<batch:job id="JOB_INVIO_FATTUREELETTRONICHE_JUSTDESIGN">
+		<!-- <batch:listeners>
+	        <batch:listener ref="jobExecutionListener"/>
+	    </batch:listeners> -->
+		<batch:step id="pathCreationJustDesign" next="preparazioneFattureJustDesign">
+			<batch:tasklet ref="pathCreatorJustDesignTasklet" />
+		</batch:step>
+		<batch:step id="preparazioneFattureJustDesign" next="invioSupportiJustDesign">
+			<batch:tasklet>
+				<batch:chunk reader="invioFattureJustDesignReader" processor="invioFattureJustDesignProcessor" writer="invioFattureJustDesignWriter" commit-interval="1">
+				</batch:chunk>
+			</batch:tasklet>
+		</batch:step>
+		<batch:step id="invioSupportiJustDesign">
+			<batch:tasklet ref="invioSupportiJustDesignTasklet" />
+		</batch:step>
+	</batch:job>
+
+</beans>

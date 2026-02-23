@@ -84,3 +84,4 @@ public class AvvisiDao extends BaseDao {
         return count != null && count > 0;
     }
 }
+

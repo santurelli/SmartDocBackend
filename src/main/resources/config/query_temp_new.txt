@@ -1,0 +1,100 @@
+﻿	<query name="PREVENTIVI_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_prodotti_preventivi.k_d_e_prodotti_preventivi AS id,
+				   d_e_prodotti_preventivi.k_d_e_preventivi AS idDocumento,
+				   d_e_prodotti_preventivi.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti.descrizione AS descProdotto,
+				   d_e_prodotti.codice AS codiceProdotto,
+				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
+				   d_e_prodotti_preventivi.k_d_e_aliquoteiva AS idAliquotaIva,
+				   d_e_aliquoteiva.imposta AS percentualeIva,
+				   d_e_prodotti_preventivi.k_d_e_unitamisura AS idUnitaMisura,
+				   d_e_unitamisura.descrizione AS descUnitaMisura,
+				   d_e_prodotti_preventivi.prezzo,
+				   d_e_prodotti_preventivi.sconto,
+				   d_e_prodotti_preventivi.quantita,
+				   d_e_prodotti_preventivi.provvigione,
+				   get_prezzoscontato_prodottopreventivo(d_e_prodotti_preventivi.k_d_e_prodotti_preventivi) AS totale,
+				   get_prezzoscontato_senzaiva_prodottopreventivo(d_e_prodotti_preventivi.k_d_e_prodotti_preventivi) AS totaleSenzaIva,
+				   d_e_prodotti_preventivi.nota,
+				   CASE (coalesce(d_e_prodotti_preventivi.k_d_e_prodotti,0))
+				  	      WHEN 0 THEN false
+						  ELSE true
+				   END prodotto,
+				   k_d_e_colori as idColore,
+				   k_d_e_taglie as idTaglia,
+				   k_d_e_toni as idTono,
+				   k_d_e_scelte as idScelta,
+				   COALESCE(d_e_prodotti_preventivi.k_d_e_conti, 0) AS idConto,
+				   COALESCE(d_e_conti.descrizione, '') AS descConto,
+				   CASE (COALESCE(d_e_prodotti_preventivi.fm_descrizione, ''))
+				   WHEN '' THEN false
+						  ELSE true
+				   END fuoriMagazzino,
+				   fm_codice as fmCodice,
+				   fm_descrizione as fmDescrizione,
+				   fm_unitamisura as fmUnitaMisura,
+				   fm_taglia as fmTaglia,
+				   fm_colore as fmColore,
+				   fm_tono as fmTono,
+				   fm_scelta as fmScelta
+			  FROM d_e_prodotti_preventivi
+		 LEFT JOIN d_e_aliquoteiva
+				ON d_e_prodotti_preventivi.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
+		 LEFT JOIN d_e_prodotti
+				ON d_e_prodotti_preventivi.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
+		 LEFT JOIN d_e_unitamisura
+				ON d_e_prodotti_preventivi.k_d_e_unitamisura = d_e_unitamisura.k_d_e_unitamisura
+		 LEFT JOIN d_e_conti
+		 		ON d_e_prodotti_preventivi.k_d_e_conti = d_e_conti.k_d_e_conti
+			 WHERE d_e_prodotti_preventivi.k_d_e_preventivi = ?
+			 ORDER BY k_d_e_prodotti_preventivi
+		</content>
+	</query>
+	<query name="PREVENTIVI_S05">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_speseincasso_preventivi.k_d_e_speseincasso_preventivi as id,
+				   d_e_speseincasso_preventivi.k_d_e_speseincasso as idSpesaIncasso,
+				   d_e_speseincasso_preventivi.importo,
+				   d_e_speseincasso.descrizione AS descrizione,
+				   d_e_speseincasso_preventivi.k_d_e_aliquoteiva as idAliquotaIva,
+				   COALESCE(d_e_aliquoteiva.imposta, 0) AS percIva,
+				   d_e_speseincasso.trasporto
+			  FROM d_e_speseincasso_preventivi
+		INNER JOIN d_e_speseincasso
+				ON d_e_speseincasso_preventivi.k_d_e_speseincasso = d_e_speseincasso.k_d_e_speseincasso
+		 LEFT JOIN d_e_aliquoteiva
+		 		ON d_e_speseincasso_preventivi.k_d_e_aliquoteiva = d_e_aliquoteiva.k_d_e_aliquoteiva
+			 WHERE k_d_e_preventivi = ?
+		  ORDER BY k_d_e_speseincasso_preventivi
+		</content>
+	</query>
+	<query name="PREVENTIVI_S06">
+		<content delimiterParsingDisabled="true">
+			SELECT num_preventivo + 1 AS numero
+			  FROM d_e_preventivi
+			 WHERE num_preventivo + 1 NOT IN (SELECT num_preventivo 
+			 								 FROM d_e_preventivi 
+			 								WHERE fl_deleted = 0 
+			 								AND EXTRACT(year FROM data_preventivo) = CASE WHEN ?::character varying IS NULL 
+			 																	  THEN EXTRACT(year FROM CURRENT_DATE) 
+			 																	  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
+			 							   )
+			   AND EXTRACT(year FROM data_preventivo) = CASE WHEN ?::character varying IS NULL 
+			   											  THEN EXTRACT(year FROM CURRENT_DATE) 
+			   											  ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
+			   AND fl_deleted = 0
+		  GROUP BY numero
+		  ORDER BY numero DESC
+		     LIMIT 1
+		</content>
+	</query>
+	<query name="PREVENTIVI_S07">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_preventivi.k_d_e_preventivi AS idDocumento,
+			  	   d_e_preventivi.num_preventivo || CASE WHEN d_e_preventivi.particella LIKE ' %' OR d_e_preventivi.particella LIKE '/%' OR d_e_preventivi.particella LIKE '\\%' THEN d_e_preventivi.particella ELSE COALESCE(' ' || d_e_preventivi.particella, '') END AS numeroDocumento,
+			  	   TO_CHAR(d_e_preventivi.data_preventivo,'DD/MM/YYYY') AS dataDocumento,
+			  	   d_e_clienti.denominazione AS soggetto,
+			  	   get_totale_preventivo(d_e_preventivi.k_d_e_preventivi) AS totale,
+			  	   get_descrizione_doccollegato(d_e_preventivi.k_d_e_preventivi, 'PREVENTIVO'::character varying) AS stato,
+			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,

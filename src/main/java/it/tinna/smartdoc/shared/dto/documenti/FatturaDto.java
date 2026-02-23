@@ -5,14 +5,7 @@ import java.util.List;
 
 import com.google.gson.annotations.Expose;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
 @SuppressWarnings("serial")
-@Getter
-@Setter
-@NoArgsConstructor
 public class FatturaDto extends FatturaElettronicaDto implements HasContabilita
 {
 
@@ -30,10 +23,8 @@ public class FatturaDto extends FatturaElettronicaDto implements HasContabilita
 
     private List<Integer> idPreventivi;
 
-    @Expose
     private BigDecimal    imponibileContabilita;
 
-    @Expose
     private BigDecimal    impostaContabilita;
 
     @Expose
@@ -42,36 +33,125 @@ public class FatturaDto extends FatturaElettronicaDto implements HasContabilita
     @Expose
     private TipoFattura   tipoFattura;
 
-    @Expose
     private BigDecimal    totaleContabilita;
 
+    public String getDataScontrino()
+    {
+        return dataScontrino;
+    }
 
+    public List<Integer> getIdConfOrdine()
+    {
+        return idConfOrdine;
+    }
 
-    @Expose
-    private String        erroreConsegna;
+    public List<Integer> getIdDdt()
+    {
+        return idDdt;
+    }
 
-    @Expose
-    private String        erroreXml;
+    public long getIdFatturaCollegata()
+    {
+        return idFatturaCollegata;
+    }
 
-    // Manual overrides if necessary, but HasContabilita requires these:
     @Override
-    public Integer getIdParametrizzazione() { return idParametrizzazione; }
+    public Integer getIdParametrizzazione()
+    {
+        return idParametrizzazione;
+    }
+
+    public List<Integer> getIdPreventivi()
+    {
+        return idPreventivi;
+    }
+
     @Override
-    public void setIdParametrizzazione(Integer id) { this.idParametrizzazione = id; }
-    
+    public BigDecimal getImponibileContabilita()
+    {
+        return imponibileContabilita;
+    }
+
     @Override
-    public BigDecimal getImponibileContabilita() { return imponibileContabilita; }
+    public BigDecimal getImpostaContabilita()
+    {
+        return impostaContabilita;
+    }
+
+    public Integer getNumeroScontrino()
+    {
+        return numeroScontrino;
+    }
+
+    public TipoFattura getTipoFattura()
+    {
+        return tipoFattura;
+    }
+
     @Override
-    public void setImponibileContabilita(BigDecimal val) { this.imponibileContabilita = val; }
-    
+    public BigDecimal getTotaleContabilita()
+    {
+        return totaleContabilita;
+    }
+
+    public void setDataScontrino(String dataScontrino)
+    {
+        this.dataScontrino = dataScontrino;
+    }
+
+    public void setIdConfOrdine(List<Integer> idConfOrdine)
+    {
+        this.idConfOrdine = idConfOrdine;
+    }
+
+    public void setIdDdt(List<Integer> idDocDaAssociare)
+    {
+        this.idDdt = idDocDaAssociare;
+    }
+
+    public void setIdFatturaCollegata(long idFatturaCollegata)
+    {
+        this.idFatturaCollegata = idFatturaCollegata;
+    }
+
     @Override
-    public BigDecimal getImpostaContabilita() { return impostaContabilita; }
+    public void setIdParametrizzazione(Integer idParametrizzazione)
+    {
+        this.idParametrizzazione = idParametrizzazione;
+    }
+
+    public void setIdPreventivi(List<Integer> idPreventivi)
+    {
+        this.idPreventivi = idPreventivi;
+    }
+
     @Override
-    public void setImpostaContabilita(BigDecimal val) { this.impostaContabilita = val; }
-    
+    public void setImponibileContabilita(BigDecimal imponibileContabilita)
+    {
+        this.imponibileContabilita = imponibileContabilita;
+    }
+
     @Override
-    public BigDecimal getTotaleContabilita() { return totaleContabilita; }
+    public void setImpostaContabilita(BigDecimal impostaContabilita)
+    {
+        this.impostaContabilita = impostaContabilita;
+    }
+
+    public void setNumeroScontrino(Integer numeroScontrino)
+    {
+        this.numeroScontrino = numeroScontrino;
+    }
+
+    public void setTipoFattura(TipoFattura tipoFattura)
+    {
+        this.tipoFattura = tipoFattura;
+    }
+
     @Override
-    public void setTotaleContabilita(BigDecimal val) { this.totaleContabilita = val; }
+    public void setTotaleContabilita(BigDecimal totaleContabilita)
+    {
+        this.totaleContabilita = totaleContabilita;
+    }
 
 }
+

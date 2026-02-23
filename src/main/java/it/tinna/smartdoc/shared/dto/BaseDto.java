@@ -94,3 +94,4 @@ public class BaseDto implements Serializable {
         this.value = value;
     }
 }
+

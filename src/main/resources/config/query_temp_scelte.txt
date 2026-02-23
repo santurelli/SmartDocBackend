@@ -1,0 +1,10 @@
+﻿	<query name="SCELTEARTICOLO_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_sceltearticolo AS id,
+				   descrizione
+			  FROM d_e_sceltearticolo
+		     WHERE fl_deleted = 0
+		  ORDER BY descrizione
+		</content>
+	</query>
+	<query name="SCELTEARTICOLO_U01">

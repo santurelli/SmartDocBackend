@@ -40,3 +40,4 @@ public class ProgettiDelegate extends BaseDelegate {
         return dao.insert(dto);
     }
 }
+

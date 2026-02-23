@@ -51,7 +51,7 @@ public class TipiPagamentoController {
     @GetMapping("/{id}")
     public ResponseEntity<TipoPagamentoDto> getById(@PathVariable Long id) {
         try {
-            TipoPagamentoDto dto = tipiPagamentoDelegate.getById(id);
+            TipoPagamentoDto dto = tipiPagamentoDelegate.getById(id.intValue());
             if (dto != null) {
                 return ResponseEntity.ok(dto);
             }
@@ -64,10 +64,11 @@ public class TipiPagamentoController {
     @PostMapping
     public ResponseEntity<?> save(@RequestBody TipoPagamentoDto dto) {
         try {
-            if (tipiPagamentoDelegate.isExistent(dto.getDescrizione(), dto.getId())) {
+            if (tipiPagamentoDelegate.isExistent(dto.getDescrizione(), (int) dto.getId())) {
                 return ResponseEntity.badRequest().body("Un tipo pagamento con questa descrizione esiste già");
             }
-            tipiPagamentoDelegate.insert(dto, 1L); // User 1 for now
+            dto.setUserCreated(1L); // User 1 for now
+            tipiPagamentoDelegate.insert(dto);
             return ResponseEntity.ok(dto);
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().build();
@@ -78,10 +79,11 @@ public class TipiPagamentoController {
     public ResponseEntity<?> update(@PathVariable Integer id, @RequestBody TipoPagamentoDto dto) {
         try {
             dto.setId(id);
-            if (tipiPagamentoDelegate.isExistent(dto.getDescrizione(), dto.getId())) {
+            if (tipiPagamentoDelegate.isExistent(dto.getDescrizione(), (int) dto.getId())) {
                 return ResponseEntity.badRequest().body("Un tipo pagamento con questa descrizione esiste già");
             }
-            tipiPagamentoDelegate.update(dto, 1L); // User 1 for now
+            dto.setUserLastUpdate(1L); // User 1 for now
+            tipiPagamentoDelegate.update(dto);
             return ResponseEntity.ok(dto);
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().build();
@@ -107,3 +109,4 @@ public class TipiPagamentoController {
         }
     }
 }
+

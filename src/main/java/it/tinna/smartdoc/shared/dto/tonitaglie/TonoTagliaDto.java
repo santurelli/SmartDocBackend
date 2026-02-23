@@ -39,3 +39,4 @@ public class TonoTagliaDto<T extends TonoTagliaDto> extends BaseDto implements C
     }
 
 }
+

@@ -13,7 +13,7 @@ import it.tinna.smartdoc.shared.dto.prodotti.MovimentoMagazzinoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.MovimentiSearchCriteriaDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 import java.util.List;
-import it.tinna.smartdoc.server.service.InventoryService;
+
 
 @Service
 public class MovimentiMagazzinoDelegate extends BaseDelegate {
@@ -21,8 +21,7 @@ public class MovimentiMagazzinoDelegate extends BaseDelegate {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Autowired
-    private InventoryService inventoryService;
+
 
     public Integer insertCarico(MovimentoMagazzinoDto dto) throws SQLException {
         MovimentiMagazzinoDao dao = new MovimentiMagazzinoDao(jdbcTemplate);
@@ -80,3 +79,4 @@ public class MovimentiMagazzinoDelegate extends BaseDelegate {
         return dao.list(criteria);
     }
 }
+

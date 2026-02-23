@@ -55,3 +55,4 @@ public class VettoriDelegate {
         return vettoriDao.checkUniqueness(descrizione, id);
     }
 }
+

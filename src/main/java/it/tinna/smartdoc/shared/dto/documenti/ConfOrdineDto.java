@@ -37,4 +37,11 @@ public class ConfOrdineDto extends DocumentoDto {
 
     @Expose
     private Integer pallet;
+
+    @Expose
+    private Long idDocAssociato;
+
+    @Expose
+    private String tipoDocAssociato;
 }
+

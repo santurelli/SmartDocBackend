@@ -11,3 +11,4 @@ public class CategoriaSpesaDto extends BaseDto {
     private String descrizione;
     private Integer predefinita;
 }
+

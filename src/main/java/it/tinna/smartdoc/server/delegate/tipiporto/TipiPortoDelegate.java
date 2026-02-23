@@ -55,3 +55,4 @@ public class TipiPortoDelegate {
         return tipiPortoDao.checkUniqueness(descrizione, id);
     }
 }
+

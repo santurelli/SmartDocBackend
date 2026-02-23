@@ -23,3 +23,4 @@ public class ListiniDelegate extends BaseDelegate {
         return listiniDao.getListForCombo();
     }
 }
+

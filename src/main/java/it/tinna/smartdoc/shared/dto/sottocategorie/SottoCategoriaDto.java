@@ -29,3 +29,4 @@ public class SottoCategoriaDto extends CategoriaDto {
 	}
 
 }
+

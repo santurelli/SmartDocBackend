@@ -3,61 +3,113 @@ package it.tinna.smartdoc.server.delegate.risorse;
 import java.sql.SQLException;
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.List;
 import it.tinna.smartdoc.server.dao.risorse.RisorseDao;
+import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.risorse.RisorsaDto;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 
-@Service
-@CacheConfig(cacheNames = "risorse", cacheResolver = "companyCacheResolver")
-public class RisorseDelegate {
+@Service(value = "risorseDelegate")
+public class RisorseDelegate extends BaseDelegate
+{
 
-    @Autowired
-    private RisorseDao risorseDao;
+    // public RisorseDelegate(JdbcTemplate jdbcTemplate)
+    // {
+    // super(jdbcTemplate);
+    // }
 
-    public List<RisorsaDto> getList(String tipologia, String search, Integer length, Integer start, Integer orderCol, String orderDir) throws SQLException {
-        return risorseDao.getList(tipologia, search, length, start, orderCol, orderDir);
-    }
-
-    @Cacheable
-    public List<RisorsaDto> getListForCombo(String tipologia) throws SQLException {
-        return risorseDao.getListForCombo(tipologia);
-    }
-    
-    public RisorsaDto getById(Integer id) throws SQLException {
-        return risorseDao.getById(id);
-    }
-
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void insert(RisorsaDto dto, Integer userId) throws SQLException {
-        if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
-            risorseDao.resetPredefinita(dto.getTipologia(), userId);
+    public void delete(final long idUser,
+                       List<Long> ids) throws SQLException
+    {
+        final RisorseDao dao = new RisorseDao(jdbcTemplate);
+        for (long arg0 : ids)
+        {
+            try
+            {
+                dao.delete(idUser, arg0);
+            }
+            catch ( SQLException e )
+            {
+                break;
+            }
         }
-        risorseDao.insert(dto, userId);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void update(RisorsaDto dto, Integer userId) throws SQLException {
-         if (dto.getPredefinita() != null && dto.getPredefinita() == 1) {
-            risorseDao.resetPredefinita(dto.getTipologia(), userId);
+    public boolean isExistent(String tipologia,
+                              String descrizione,
+                              Integer id) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        return dao.isExistent(tipologia, descrizione, id);
+    }
+
+    public RisorsaDto getByDenominazione(String tipologia,
+                                         String descrizione) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        return dao.getByDenominazione(tipologia, descrizione);
+    }
+
+    public RisorsaDto getById(Integer id) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        return dao.getById(id);
+    }
+
+    public List<RisorsaDto> getList(String tipologia,
+                                    String strToSearch,
+                                    Integer length,
+                                    Integer start,
+                                    Integer orderColumn,
+                                    String orderDir) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        return dao.getList(tipologia, strToSearch, length, start, orderColumn, orderDir);
+    }
+
+    public List<RisorsaDto> getListForCombo(String tipologia) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        return dao.getListForCombo(tipologia);
+    }
+
+    // public List<ItemSuggestion> getSuggestionBanche(String query) throws
+    // Exception {
+    // Connection conn = null;
+    // try {
+    // conn = PooledCnn.getSingleton(dbKey);
+    // RisorseDao dao = new RisorseDao(conn);
+    // return dao.getSuggestionBanche(query);
+    // }
+    // finally {
+    // PooledCnn.close(conn);
+    // }
+    // }
+
+    @Transactional(rollbackFor = SQLException.class)
+    public void insert(RisorsaDto dto) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        if ( dto.getPredefinita().intValue() == 1 )
+        {
+            dao.resetPredefinite(dto.getTipologia(), dto.getUserCreated());
         }
-        risorseDao.update(dto, userId);
+        dao.insert(dto);
     }
 
-    @Transactional
-    @CacheEvict(allEntries = true)
-    public void delete(Integer id, Integer userId) throws SQLException {
-        risorseDao.delete(id, userId);
+    @Transactional(rollbackFor = SQLException.class)
+    public void update(RisorsaDto dto) throws SQLException
+    {
+        RisorseDao dao = new RisorseDao(jdbcTemplate);
+        if ( dto.getPredefinita().intValue() == 1 )
+        {
+            dao.resetPredefinite(dto.getTipologia(), dto.getUserCreated());
+        }
+        dao.update(dto);
     }
-    
-    public boolean isExistent(String tipologia, String descrizione, Integer id) throws SQLException {
-        return risorseDao.checkUniqueness(tipologia, descrizione, id);
-    }
+
 }
+

@@ -101,3 +101,4 @@ public class CategorieSpesaDao extends BaseDao {
     }
 
 }
+

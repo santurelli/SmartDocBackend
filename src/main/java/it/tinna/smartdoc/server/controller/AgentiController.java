@@ -72,7 +72,8 @@ public class AgentiController {
             
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            agentiDelegate.insert(dto, userDetails.getId());
+            dto.setUserCreated(userDetails.getId().longValue());
+            agentiDelegate.insert(dto);
             
             return ResponseEntity.ok(dto);
         } catch (SQLException e) {
@@ -90,7 +91,8 @@ public class AgentiController {
             
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            agentiDelegate.update(dto, userDetails.getId());
+            dto.setUserLastUpdate(userDetails.getId().longValue());
+            agentiDelegate.update(dto);
             
             return ResponseEntity.ok().build();
         } catch (SQLException e) {
@@ -103,7 +105,7 @@ public class AgentiController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            agentiDelegate.delete(userDetails.getId(), Collections.singletonList(id));
+            agentiDelegate.delete(userDetails.getId().longValue(), Collections.singletonList(id.longValue()));
             return ResponseEntity.ok().build();
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().build();
@@ -119,3 +121,4 @@ public class AgentiController {
         }
     }
 }
+

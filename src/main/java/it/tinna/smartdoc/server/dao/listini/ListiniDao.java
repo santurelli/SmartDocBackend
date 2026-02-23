@@ -21,3 +21,4 @@ public class ListiniDao extends BaseDao {
         return jdbcTemplate.query(FileQueryReader.getQuery("LISTINI_S04"), rowMapper);
     }
 }
+

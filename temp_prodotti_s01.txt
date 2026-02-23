@@ -1,0 +1,252 @@
+﻿
+> 	<query name="MOVIMENTIPRODOTTI_S01">
+  		<content delimiterParsingDisabled="true">
+  			SELECT x.*,
+  				   
+COALESCE(d_e_formatiarticolo.descrizione,'') 
+AS descrFormato,
+  				   
+COALESCE(d_e_sceltearticolo.descrizione,'') 
+AS descrScelta,
+  				   
+COALESCE(d_e_toniarticolo.descrizione,'') AS 
+descrTono,
+  				   
+COALESCE(d_e_calibriarticolo.descrizione,'') 
+AS descrCalibro
+  			  FROM
+  				  (SELECT numero_documento AS 
+numeroDocumento,
+  						  TO_CHAR(data_movimento, 
+'DD/MM/YYYY') AS dataMovimento,
+  						  tipo_movimento AS tipoMovimento,
+  						  id_documento AS idDocumento,
+  						  id_prodotto AS idProdotto,
+  						  descrizione_prodotto AS 
+descrizioneProdotto,
+  						  codice_prodotto AS codiceProdotto,
+  						  quantita_movimento AS 
+quantitaMovimento,
+  						  id_um_movimento AS 
+idUnitaMisuraMovimento,
+  						  descrizione_um_movimento AS 
+descUnitaMisuraMovimento,
+  						  id_um_base AS idUnitaMisuraBase,
+  						  quantita_um_base AS quantitaBase,
+  						  descrizione_um_base AS 
+descUnitaMisuraBase,
+  						  causale,
+  						  cliente_fornitore AS 
+clienteFornitore,
+  						  COUNT(*) OVER() AS total
+  					 FROM v_movimenti_prodotti
+  				    WHERE id_prodotto = 
+COALESCE(NULLIF(?, 0), id_prodotto)
+  					  AND DATE_TRUNC('day', 
+data_movimento) &gt;= COALESCE(TO_DATE(?, 
+'DD/MM/YYYY'), DATE_TRUNC('day', 
+data_movimento))
+  					  AND DATE_TRUNC('day', 
+data_movimento) &lt;= COALESCE(TO_DATE(?, 
+'DD/MM/YYYY'), DATE_TRUNC('day', 
+data_movimento))
+  					  AND COALESCE(idmagazzino, 1) = 
+COALESCE(NULLIF(?,0), idmagazzino, 1)
+  				 ORDER BY ${ORDER_BY}
+  				 		  ${LIMIT}
+  				  ) x
+  		INNER JOIN d_e_prodotti
+  				ON d_e_prodotti.k_d_e_prodotti = 
+x.idProdotto	
+  		 LEFT JOIN d_e_formatiarticolo
+  				ON d_e_prodotti.k_d_e_formatiarticolo = 
+d_e_formatiarticolo.k_d_e_formatiarticolo
+  		 LEFT JOIN d_e_sceltearticolo
+  				ON d_e_prodotti.k_d_e_sceltearticolo = 
+d_e_sceltearticolo.k_d_e_sceltearticolo
+  		 LEFT JOIN d_e_toniarticolo
+  				ON d_e_prodotti.k_d_e_toniarticolo = 
+d_e_toniarticolo.k_d_e_toniarticolo
+  		 LEFT JOIN d_e_calibriarticolo
+  				ON d_e_prodotti.k_d_e_calibriarticolo = 
+d_e_calibriarticolo.k_d_e_calibriarticolo
+  		</content>
+  	</query>
+  	<query name="IVADOCUMENTI_S01">
+  		<content delimiterParsingDisabled="true">
+  			SELECT tipoDocumento,
+  				   tipoFattura,
+  				   categoriaDocumento,
+  				   id,
+  				   numeroDocumento,
+> 	<query name="MOVIMENTIPRODOTTI_S01">
+  		<content delimiterParsingDisabled="true">
+  			SELECT x.*,
+  				   
+COALESCE(d_e_formatiarticolo.descrizione,'') 
+AS descrFormato,
+  				   
+COALESCE(d_e_sceltearticolo.descrizione,'') 
+AS descrScelta,
+  				   
+COALESCE(d_e_toniarticolo.descrizione,'') AS 
+descrTono,
+  				   
+COALESCE(d_e_calibriarticolo.descrizione,'') 
+AS descrCalibro
+  			  FROM
+  				  (SELECT numero_documento AS 
+numeroDocumento,
+  						  TO_CHAR(data_movimento, 
+'DD/MM/YYYY') AS dataMovimento,
+  						  tipo_movimento AS tipoMovimento,
+  						  id_documento AS idDocumento,
+  						  id_prodotto AS idProdotto,
+  						  descrizione_prodotto AS 
+descrizioneProdotto,
+  						  codice_prodotto AS codiceProdotto,
+  						  quantita_movimento AS 
+quantitaMovimento,
+  						  id_um_movimento AS 
+idUnitaMisuraMovimento,
+  						  descrizione_um_movimento AS 
+descUnitaMisuraMovimento,
+  						  id_um_base AS idUnitaMisuraBase,
+  						  quantita_um_base AS quantitaBase,
+  						  descrizione_um_base AS 
+descUnitaMisuraBase,
+  						  causale,
+  						  cliente_fornitore AS 
+clienteFornitore,
+  						  COUNT(*) OVER() AS total
+  					 FROM v_movimenti_prodotti
+  				    WHERE id_prodotto = 
+COALESCE(NULLIF(?, 0), id_prodotto)
+  					  AND DATE_TRUNC('day', 
+data_movimento) &gt;= COALESCE(TO_DATE(?, 
+'DD/MM/YYYY'), DATE_TRUNC('day', 
+data_movimento))
+  					  AND DATE_TRUNC('day', 
+data_movimento) &lt;= COALESCE(TO_DATE(?, 
+'DD/MM/YYYY'), DATE_TRUNC('day', 
+data_movimento))
+  					  AND COALESCE(idmagazzino, 1) = 
+COALESCE(NULLIF(?,0), idmagazzino, 1)
+  				 ORDER BY ${ORDER_BY}
+  				 		  ${LIMIT}
+  				  ) x
+  		INNER JOIN d_e_prodotti
+  				ON d_e_prodotti.k_d_e_prodotti = 
+x.idProdotto	
+  		 LEFT JOIN d_e_formatiarticolo
+  				ON d_e_prodotti.k_d_e_formatiarticolo = 
+d_e_formatiarticolo.k_d_e_formatiarticolo
+  		 LEFT JOIN d_e_sceltearticolo
+  				ON d_e_prodotti.k_d_e_sceltearticolo = 
+d_e_sceltearticolo.k_d_e_sceltearticolo
+  		 LEFT JOIN d_e_toniarticolo
+  				ON d_e_prodotti.k_d_e_toniarticolo = 
+d_e_toniarticolo.k_d_e_toniarticolo
+  		 LEFT JOIN d_e_calibriarticolo
+  				ON d_e_prodotti.k_d_e_calibriarticolo = 
+d_e_calibriarticolo.k_d_e_calibriarticolo
+  		</content>
+  	</query>
+  	
+  	<query name="NOTEDOCUMENTI_D01">
+  		<content delimiterParsingDisabled="true">
+  			UPDATE d_e_notedocumenti
+  			   SET fl_deleted = 1, 
+  				   user_last_update = ?, 
+  				   dt_last_update = CURRENT_TIMESTAMP
+> 	<query name="PRODOTTI_S01">
+  		<content delimiterParsingDisabled="true">
+  			SELECT x.*,
+  				   CASE x.tipologia
+  				   WHEN 'S' THEN 0
+  				   WHEN 'A' THEN 0
+  				   ELSE get_totale_disponibile(x.id, 1) 
+END AS quantitaEsistente,
+  				   CASE x.tipologia
+  				   WHEN 'S' THEN 0
+  				   WHEN 'A' THEN 0
+  				   ELSE COALESCE((SELECT SUM(quantita)
+  				       		   FROM d_e_prodotti_confordine
+  				     		   JOIN d_e_confordine
+  				       			 ON 
+d_e_prodotti_confordine.k_d_e_confordine = 
+d_e_confordine.k_d_e_confordine
+  							  WHERE d_e_confordine.fl_deleted = 0
+  					  		    AND 
+d_e_prodotti_confordine.k_d_e_prodotti = x.id
+  					  		    AND NOT 
+(d_e_confordine.k_d_e_confordine IN (SELECT 
+d_r_doccollegati.id_docpadre
+  						 											 		   FROM 
+d_r_doccollegati
+  																	 		  WHERE 
+CAST(d_r_doccollegati.tipo_docpadre AS text) 
+= 'CONF_ORDINE'))),0) END AS 
+quantitaImpegnata,
+  				  
+  				   
+COALESCE(d_e_formatiarticolo.descrizione, '') 
+AS descrFormato,
+  				   
+COALESCE(d_e_sceltearticolo.descrizione, '') 
+AS descrScelta,
+  				   
+COALESCE(d_e_toniarticolo.descrizione, '') AS 
+descrTono,
+  				   
+COALESCE(d_e_calibriarticolo.descrizione, '') 
+AS descrCalibro
+  			 FROM (
+  				   SELECT k_d_e_prodotti AS id,
+  						  codice,
+  						  d_e_prodotti.descrizione,
+  						  tipologia,
+  						  COALESCE(d_e_categorie.descrizione, 
+'') AS descCategoria,
+  					      COALESCE(' 
+&amp;raquo;&amp;raquo; ' || 
+d_e_sottocategorie.descrizione, '') AS 
+descSottoCategoria,
+  					      
+COALESCE(d_e_unitamisura.descrizione, '') AS 
+descUnitaMisura1,
+  					      k_d_e_formatiarticolo,
+  					      k_d_e_sceltearticolo,
+  					      k_d_e_toniarticolo,
+  					      k_d_e_calibriarticolo,
+  					      COUNT(*) OVER() AS total
+  					 FROM d_e_prodotti
+  				LEFT JOIN d_e_categorie
+  					   ON d_e_prodotti.k_d_e_categorie = 
+d_e_categorie.k_d_e_categorie
+  				LEFT JOIN d_e_sottocategorie
+  					   ON 
+d_e_prodotti.k_d_e_sottocategorie = 
+d_e_sottocategorie.k_d_e_sottocategorie
+  				LEFT JOIN d_e_unitamisura
+  			   		   ON 
+d_e_prodotti.k_d_e_unitamisura1 = 
+d_e_unitamisura.k_d_e_unitamisura
+  					WHERE d_e_prodotti.fl_deleted = 0
+  					  AND 
+COALESCE(d_e_prodotti.k_d_e_categorie, 0) = 
+COALESCE(?, d_e_prodotti.k_d_e_categorie, 0)
+   					  AND (   LOWER(codice) LIKE 
+COALESCE(LOWER(?), LOWER(codice))
+  					       OR 
+LOWER(d_e_prodotti.descrizione) LIKE 
+COALESCE(LOWER(?), 
+LOWER(d_e_prodotti.descrizione))
+  					       OR 
+COALESCE(LOWER(d_e_categorie.descrizione), 
+'') LIKE COALESCE(LOWER(?), 
+LOWER(d_e_categorie.descrizione), ''))
+  				 ${EXTRA_FILTERS}
+  				 ORDER BY ${ORDER_BY}
+
+

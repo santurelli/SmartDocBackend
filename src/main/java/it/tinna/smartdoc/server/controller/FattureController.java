@@ -28,20 +28,20 @@ public class FattureController {
     }
 
     @GetMapping
-    public ResponseEntity<GenericResponseDto<List<FatturaDto>>> getList(
+    public ResponseEntity<GenericResponseDto<it.tinna.smartdoc.shared.dto.documenti.FattureListResponse>> getList(
             @RequestParam(required = false) String dataInizio,
             @RequestParam(required = false) String dataFine,
             @RequestParam(required = false) Integer idCliente,
             @RequestParam(required = false) Integer idAgente,
-            @RequestParam(required = false, defaultValue = "id_documento") String orderColumn,
-            @RequestParam(required = false, defaultValue = "DESC") String orderDir,
+            @RequestParam(required = false, defaultValue = "1") Integer orderColumn,
+            @RequestParam(required = false, defaultValue = "asc") String orderDir,
             @RequestParam(required = false, defaultValue = "0") int start,
             @RequestParam(required = false, defaultValue = "10") int length,
             @RequestParam(required = false) String tipo,
-            @RequestParam(required = false) String numDocumento,
+            @RequestParam(required = false) String statoFatturaElettronica,
             @RequestParam(required = false) String stato) throws SQLException {
         
-        List<FatturaDto> list = fattureDelegate.getList(dataInizio, dataFine, idCliente, idAgente, orderColumn, orderDir, start, length, tipo, stato, numDocumento);
+        it.tinna.smartdoc.shared.dto.documenti.FattureListResponse list = fattureDelegate.getList(tipo, idCliente, dataInizio, dataFine, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
         return ResponseEntity.ok(new GenericResponseDto<>(list, null));
     }
 
@@ -53,7 +53,7 @@ public class FattureController {
 
     @PostMapping
     public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody FatturaDto dto) throws SQLException {
-        long id = fattureDelegate.save(dto);
+        long id = fattureDelegate.insert(dto);
         return ResponseEntity.ok(new GenericResponseDto<>(id, null));
     }
 
@@ -62,7 +62,7 @@ public class FattureController {
         FatturaDto dto = new FatturaDto();
         dto.setId(id);
         dto.setUserLastUpdate(user);
-        fattureDelegate.delete(dto);
+        fattureDelegate.delete(java.util.Collections.singletonList(dto));
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }
 
@@ -71,20 +71,20 @@ public class FattureController {
             @RequestParam String data,
             @RequestParam int flElettronica,
             @RequestParam String tipo) throws SQLException {
-        Integer nextNum = fattureDelegate.getNextNum(data, flElettronica, tipo);
+        Integer nextNum = fattureDelegate.getNextNumFattura(data, flElettronica, it.tinna.smartdoc.shared.dto.documenti.TipoFattura.valueOf(tipo));
         return ResponseEntity.ok(new GenericResponseDto<>(nextNum, null));
     }
 
     @GetMapping("/combos")
-    public ResponseEntity<GenericResponseDto<Map<String, Object>>> getCombosMap() throws SQLException {
-        Map<String, Object> map = fattureDelegate.getCombosMap();
+    public ResponseEntity<GenericResponseDto<Map<String, Object>>> getCombosMap(@RequestParam String tipo) throws SQLException {
+        Map<String, Object> map = fattureDelegate.getCombosMap(tipo);
         return ResponseEntity.ok(new GenericResponseDto<>(map, null));
     }
 
     @GetMapping("/print/{id}")
     public ResponseEntity<byte[]> exportPdf(@PathVariable Long id) {
         try {
-            DocumentoWrapperDto doc = fattureDelegate.esportaFatturaPdf(id);
+            DocumentoWrapperDto doc = fattureDelegate.esportaFatturaPdf(it.tinna.smartdoc.server.database.DatabaseContextHolder.getClientDatabase(), id);
             if (doc == null || doc.getFlusso() == null) return ResponseEntity.notFound().build();
             
             HttpHeaders headers = new HttpHeaders();
@@ -98,3 +98,4 @@ public class FattureController {
         }
     }
 }
+

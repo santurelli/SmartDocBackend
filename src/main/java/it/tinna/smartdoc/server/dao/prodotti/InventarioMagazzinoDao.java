@@ -90,3 +90,4 @@ public class InventarioMagazzinoDao extends BaseDao {
         }
     }
 }
+

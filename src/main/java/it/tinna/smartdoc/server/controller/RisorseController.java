@@ -70,7 +70,8 @@ public class RisorseController {
             
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            risorseDelegate.insert(dto, userDetails.getId());
+            dto.setUserCreated((long) userDetails.getId());
+            risorseDelegate.insert(dto);
             
             return ResponseEntity.ok(dto);
         } catch (SQLException e) {
@@ -88,7 +89,8 @@ public class RisorseController {
             
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            risorseDelegate.update(dto, userDetails.getId());
+            dto.setUserLastUpdate((long) userDetails.getId());
+            risorseDelegate.update(dto);
             
             return ResponseEntity.ok().build();
         } catch (SQLException e) {
@@ -101,10 +103,11 @@ public class RisorseController {
         try {
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
-            risorseDelegate.delete(id, userDetails.getId());
+            risorseDelegate.delete((long) userDetails.getId(), List.of(id.longValue()));
             return ResponseEntity.ok().build();
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().build();
         }
     }
 }
+

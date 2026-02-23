@@ -22,3 +22,4 @@ public class PreventivoDto extends DocumentoDto {
     private String descTipoPagamento;
 
 }
+

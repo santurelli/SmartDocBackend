@@ -32,3 +32,4 @@ public class SpesaIncassoDocumentoDto extends BaseDto {
         return false;
     }
 }
+

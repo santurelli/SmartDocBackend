@@ -41,3 +41,4 @@ public class ConfigurazioneDto extends BaseDto implements Serializable {
         this.valore = valore;
     }
 }
+

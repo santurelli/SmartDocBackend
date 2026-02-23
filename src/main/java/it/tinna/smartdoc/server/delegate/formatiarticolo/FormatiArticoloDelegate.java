@@ -53,3 +53,4 @@ public class FormatiArticoloDelegate extends BaseDelegate {
         return dao.isExistent(descrizione, id);
     }
 }
+

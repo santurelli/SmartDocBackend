@@ -89,3 +89,4 @@ public class MovimentoMagazzinoDto extends BaseDto
     private Double quantitaCarico;
     private Double quantitaScarico;
 }
+

@@ -62,7 +62,8 @@ public class ToniArticoloController {
             }
 
             Integer userId = ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            toniArticoloDelegate.insert(dto, userId);
+            dto.setUserCreated(userId.longValue()); // Assuming it might need it in dto
+            toniArticoloDelegate.insert(dto);
             response.setPayload(dto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -82,7 +83,8 @@ public class ToniArticoloController {
             }
 
             Integer userId = ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            toniArticoloDelegate.update(dto, userId);
+            dto.setUserLastUpdate(userId.longValue());
+            toniArticoloDelegate.update(dto);
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.setErrorText(ExceptionUtils.getMessage(e));
@@ -95,7 +97,7 @@ public class ToniArticoloController {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
         try {
             Integer userId = ((UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            toniArticoloDelegate.delete(id, userId);
+            toniArticoloDelegate.delete((long) userId, List.of(id.longValue()));
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             response.setErrorText(ExceptionUtils.getMessage(e));
@@ -103,3 +105,4 @@ public class ToniArticoloController {
         }
     }
 }
+

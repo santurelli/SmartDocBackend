@@ -13,3 +13,4 @@ public class NotaDocumentoDto extends BaseDto {
         this.descrizione = descrizione;
     }
 }
+

@@ -15,3 +15,4 @@ public class CittaDto extends BaseDto {
     private String nome;
     private String provincia;
 }
+
