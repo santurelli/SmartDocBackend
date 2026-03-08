@@ -13,7 +13,8 @@ public enum TipoDocumentoEnum
  FATTURA_SERVIZI("Fattura per servizi"),
  ACCONTO_ANTICIPO_FATTURA("Acconto/anticipo su fattura"),
  ACCONTO_ANTICIPO_PARCELLA("Acconto/anticipo su parcella"),
- PARCELLA("Parcella");
+ PARCELLA("Parcella"),
+ FATTURA_DIFFERITA("Fattura differita");
 
     private String descrizione;
 

@@ -439,6 +439,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
             case ACCONTO_ANTICIPO_PARCELLA:
                 return "TD03";
 
+            case FATTURA_DIFFERITA:
+                return "TD24";
+
         }
 
         return null;
@@ -468,6 +471,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
 
         if ( "TD03".equals(value) )
             return TipoDocumentoEnum.ACCONTO_ANTICIPO_PARCELLA;
+
+        if ( "TD24".equals(value) )
+            return TipoDocumentoEnum.FATTURA_DIFFERITA;
 
         return null;
     }

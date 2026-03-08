@@ -45,6 +45,8 @@ import it.tinna.smartdoc.server.constants.NaturaEsenzioneEnum;
 import it.tinna.smartdoc.server.constants.RegimeFiscaleEnum;
 import it.tinna.smartdoc.server.constants.TipoDocumentoEnum;
 import it.tinna.smartdoc.server.constants.TipoPagamentoEnum;
+import it.tinna.smartdoc.server.constants.TipoRitenutaEnum;
+import it.tinna.smartdoc.server.constants.CausalePagamentoEnum;
 import it.tinna.smartdoc.server.constants.TipoScontoDocumentoEnum;
 import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.dao.configurazione.ConfigurazioneDao;
@@ -69,6 +71,7 @@ import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiGeneraliDocum
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiGeneraliType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiPagamentoType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRiepilogoType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRitenutaType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiTrasmissioneType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioLineeType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioPagamentoType;
@@ -289,7 +292,13 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             datiGenerali.setDatiGeneraliDocumento(datiGeneraliDocumento);
             if ( dto instanceof FatturaDto )
             {
-                if ( ((FatturaDto) dto).getTipoFattura() == TipoFattura.FATTURA || ((FatturaDto) dto).getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA )
+                FatturaDto fDto = (FatturaDto) dto;
+                if ( fDto.getNumeroScontrino() != null && StringUtils.isNotEmpty(fDto.getDataScontrino()) )
+                {
+                    // Se c'è lo scontrino, è una fattura differita (TD24)
+                    datiGeneraliDocumento.setTipoDocumento(TipoDocumentoEnum.FATTURA_DIFFERITA);
+                }
+                else if ( fDto.getTipoFattura() == TipoFattura.FATTURA || fDto.getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA )
                 {
                     datiGeneraliDocumento.setTipoDocumento(TipoDocumentoEnum.FATTURA);
                 }
@@ -358,9 +367,27 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 datiOrdineAcquisto.setCodiceCIG(StringUtils.defaultIfBlank(dto.getCig(), null));
                 datiOrdineAcquisto.setCodiceCUP(StringUtils.defaultIfBlank(dto.getCup(), null));
             }
+            if ( dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1 )
+            {
+                DatiRitenutaType datiRitenuta = new DatiRitenutaType();
+                datiRitenuta.setTipoRitenuta(TipoRitenutaEnum.valueOf(dto.getTipoRitenuta()));
+                datiRitenuta.setImportoRitenuta(dto.getImportoRitenutaAcconto() != null ? dto.getImportoRitenutaAcconto().doubleValue() : 0.0);
+                datiRitenuta.setAliquotaRitenuta(dto.getPercRitenutaAcconto());
+                datiRitenuta.setCausalePagamento(CausalePagamentoEnum.A); // Default value
+                datiGeneraliDocumento.setDatiRitenuta(datiRitenuta);
+            }
             if ( StringUtils.isNotBlank(dto.getCausale()) )
             {
                 datiGeneraliDocumento.getCausale().add(dto.getCausale());
+            }
+            // Gestione Scontrino
+            if ( dto instanceof FatturaDto )
+            {
+                FatturaDto fDto = (FatturaDto) dto;
+                if ( fDto.getNumeroScontrino() != null && StringUtils.isNotEmpty(fDto.getDataScontrino()) )
+                {
+                    datiGeneraliDocumento.getCausale().add(new StringBuilder("RIFERIMENTO SCONTRINO N. ").append(fDto.getNumeroScontrino()).append(" DEL ").append(fDto.getDataScontrino()).toString());
+                }
             }
             // 2.1.2 DatiFattureCollegate
             if ( datiGeneraliDocumento.getTipoDocumento() == TipoDocumentoEnum.NOTA_DEBITO && ((FatturaDto) dto).getIdFatturaCollegata() != 0L )
@@ -409,13 +436,14 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             for ( int i = 0; i < dto.getProdotti().size(); i++ )
             {
                 ProdottoDocumentoDto pdDto = dto.getProdotti().get(i);
-                if ( StringUtils.isBlank(pdDto.getNota()) )
+                RiepilogoIvaDto riDto = new RiepilogoIvaDto();
+                riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
+                DettaglioLineeType dettaglioLinea = new DettaglioLineeType();
+                datiBeniServizi.getDettaglioLinee().add(dettaglioLinea);
+                dettaglioLinea.setNumeroLinea(numLinea++);
+                
+                if ( pdDto.isProdotto() )
                 {
-                    RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
-                    DettaglioLineeType dettaglioLinea = new DettaglioLineeType();
-                    datiBeniServizi.getDettaglioLinee().add(dettaglioLinea);
-                    dettaglioLinea.setNumeroLinea(numLinea++);
                     if ( !pdDto.isFuoriMagazzino() )
                     {
                         dettaglioLinea.setDescrizione(pdDto.getCodiceProdotto() + " - " + pdDto.getDescProdotto());
@@ -465,33 +493,45 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     {
                         dettaglioLinea.setNatura(NaturaEsenzioneEnum.valueOf(aiDto.getClasse()));
                     }
+                    
+                    if ( dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1 )
+                    {
+                        if ( riDto.getFlRitenuta() == null || riDto.getFlRitenuta().intValue() == 1 )
+                        {
+                            dettaglioLinea.setRitenuta(true);
+                        }
+                    }
+                    
+                    if ( dto instanceof FatturaDto )
+                    {
+                        FatturaDto fDto = (FatturaDto) dto;
+                        if ( fDto.getNumeroScontrino() != null && StringUtils.isNotEmpty(fDto.getDataScontrino()) )
+                        {
+                            it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.AltriDatiGestionaliType altriDatiGestionali = new it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.AltriDatiGestionaliType();
+                            altriDatiGestionali.setTipoDato("SCONTRINO");
+                            altriDatiGestionali.setRiferimentoTesto("" + fDto.getNumeroScontrino());
+                            altriDatiGestionali.setRiferimentoData(FastDateFormat.getInstance("dd/MM/yyyy").parse(fDto.getDataScontrino()));
+                            dettaglioLinea.getAltriDatiGestionali().add(altriDatiGestionali);
+                        }
+                    }
+
                     if ( riepilogoIva.contains(riDto) )
                     {
                         riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibile(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile() + pdDto.getTotaleSenzaIva());
-//                        if ( !aiDto.getImposta().equals(0d) )
-//                        {
-                        // BigDecimal totaleSenzaIva = BigDecimal.valueOf(pdDto.getTotaleSenzaIva());
-                        // BigDecimal iva = BigDecimal.valueOf(aiDto.getImposta()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
-                        // BigDecimal totaleConIva = totaleSenzaIva.divide(BigDecimal.ONE.subtract(iva), 4, RoundingMode.HALF_UP);
-                        // BigDecimal importoIva = totaleConIva.subtract(totaleSenzaIva, new MathContext(2, RoundingMode.HALF_UP));
-                        // riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIva(BigDecimal.valueOf(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva()).add(importoIva).doubleValue());
-//                            riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImportoIva(BigDecimal.valueOf(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImportoIva()).add(BigDecimal.valueOf(pdDto.getTotaleSenzaIva()).multiply(BigDecimal.valueOf(aiDto.getImposta())).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue());
-//                        }
                     }
                     else
                     {
                         riepilogoIva.add(riDto);
                         riDto.setAliquotaIva(aiDto.getImposta());
                         riDto.setTotaleImponibile(pdDto.getTotaleSenzaIva());
-//                        if ( aiDto.getImposta().equals(0d) )
-//                        {
-//                            riDto.setImportoIva(0d);
-//                        }
-//                        else
-//                        {
-//                            riDto.setImportoIva(BigDecimal.valueOf(pdDto.getTotaleSenzaIva()).multiply(BigDecimal.valueOf(aiDto.getImposta())).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP).doubleValue());
-//                        }
                     }
+                }
+                else
+                {
+                    dettaglioLinea.setDescrizione(pdDto.getNota());
+                    dettaglioLinea.setPrezzoUnitario(0d);
+                    dettaglioLinea.setPrezzoTotale(0d);
+                    dettaglioLinea.setAliquotaIVA(0d);
                 }
             }
             // 2.2.2 DatiRiepilogo
