@@ -438,6 +438,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 ProdottoDocumentoDto pdDto = dto.getProdotti().get(i);
                 RiepilogoIvaDto riDto = new RiepilogoIvaDto();
                 riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
+                riDto.setFlRitenuta(pdDto.getFlRitenuta());
                 DettaglioLineeType dettaglioLinea = new DettaglioLineeType();
                 datiBeniServizi.getDettaglioLinee().add(dettaglioLinea);
                 dettaglioLinea.setNumeroLinea(numLinea++);

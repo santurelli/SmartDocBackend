@@ -314,7 +314,8 @@ public class FattureDao extends BaseDao
                                                Integer length,
                                                Integer start,
                                                Integer orderColumn,
-                                               String orderDir) throws SQLException
+                                               String orderDir,
+                                               String numDocumento) throws SQLException
     {
         String query = FileQueryReader.getQuery("FATTURE_S16");
         List<Object> params = new ArrayList<>();
@@ -324,6 +325,17 @@ public class FattureDao extends BaseDao
         params.add(idAgente);
         params.add(StringUtils.defaultIfBlank(statoFatturaElettronica, null));
         Map<String, String> valuesMap = new HashMap<>();
+        
+        if ( StringUtils.isNotBlank(numDocumento) )
+        {
+            valuesMap.put("NUM_DOCUMENTO", "AND num_fattura LIKE ?");
+            params.add("%" + numDocumento + "%");
+        }
+        else
+        {
+            valuesMap.put("NUM_DOCUMENTO", "");
+        }
+
         if ( StringUtils.isNotBlank(tipoDocumento) )
         {
             valuesMap.put("TIPO_FATTURA", "AND tipo_fattura = ?");

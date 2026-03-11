@@ -43,6 +43,16 @@ public class RiepilogoIvaDto extends BaseDto
     private Double  totaleIndetraibile;
 
     private String  totaleIndetraibileFormattato;
+    
+    private Integer flRitenuta;
+
+    public Integer getFlRitenuta() {
+        return flRitenuta;
+    }
+
+    public void setFlRitenuta(Integer flRitenuta) {
+        this.flRitenuta = flRitenuta;
+    }
 
     public boolean equals(Object obj)
     {

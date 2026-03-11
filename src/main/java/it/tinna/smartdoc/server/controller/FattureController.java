@@ -5,26 +5,33 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
-import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.server.delegate.statistiche.StatisticheDelegate;
+import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
+import it.tinna.smartdoc.shared.dto.statistiche.DatiGlobaliDto;
+import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
+import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
+import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
+import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 
 @RestController
 @RequestMapping("/api/fatture")
 public class FattureController {
 
     private final FattureDelegate fattureDelegate;
+    private final StatisticheDelegate statisticheDelegate;
 
     @Autowired
-    public FattureController(FattureDelegate fattureDelegate) {
+    public FattureController(FattureDelegate fattureDelegate, StatisticheDelegate statisticheDelegate) {
         this.fattureDelegate = fattureDelegate;
+        this.statisticheDelegate = statisticheDelegate;
     }
 
     @GetMapping
@@ -33,16 +40,34 @@ public class FattureController {
             @RequestParam(required = false) String dataFine,
             @RequestParam(required = false) Integer idCliente,
             @RequestParam(required = false) Integer idAgente,
-            @RequestParam(required = false, defaultValue = "1") Integer orderColumn,
+            @RequestParam(required = false, defaultValue = "data_fattura") String orderColumn,
             @RequestParam(required = false, defaultValue = "asc") String orderDir,
             @RequestParam(required = false, defaultValue = "0") int start,
             @RequestParam(required = false, defaultValue = "10") int length,
             @RequestParam(required = false) String tipo,
             @RequestParam(required = false) String statoFatturaElettronica,
+            @RequestParam(required = false) String numDocumento,
             @RequestParam(required = false) String stato) throws SQLException {
         
-        it.tinna.smartdoc.shared.dto.documenti.FattureListResponse list = fattureDelegate.getList(tipo, idCliente, dataInizio, dataFine, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
+        Integer orderColumnIdx = 1;
+        if ("num_fattura".equals(orderColumn)) orderColumnIdx = 2;
+        else if ("d_e_clienti.denominazione".equals(orderColumn)) orderColumnIdx = 3;
+        else if ("data_fattura".equals(orderColumn)) orderColumnIdx = 1;
+        
+        it.tinna.smartdoc.shared.dto.documenti.FattureListResponse list = fattureDelegate.getList(tipo, idCliente, dataInizio, dataFine, idAgente, stato, statoFatturaElettronica, length, start, orderColumnIdx, orderDir, numDocumento);
         return ResponseEntity.ok(new GenericResponseDto<>(list, null));
+    }
+
+    @GetMapping("/ultime")
+    public ResponseEntity<GenericResponseDto<List<it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto>>> getUltime() throws SQLException {
+        List<it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto> list = fattureDelegate.getUltimeFatture();
+        return ResponseEntity.ok(new GenericResponseDto<>(list, null));
+    }
+
+    @GetMapping("/statistiche-globali")
+    public ResponseEntity<GenericResponseDto<DatiGlobaliDto>> getStatisticheGlobali() throws SQLException {
+        DatiGlobaliDto dto = statisticheDelegate.getDatiGlobali();
+        return ResponseEntity.ok(new GenericResponseDto<>(dto, null));
     }
 
     @GetMapping("/{id}")
@@ -96,6 +121,12 @@ public class FattureController {
             e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @PutMapping("/scadenze")
+    public ResponseEntity<GenericResponseDto<Boolean>> updateScadenzaPagamento(@RequestBody ScadenzaPagamentoDocumentoDto dto) throws SQLException {
+        fattureDelegate.updateScadenzaPagamento(dto);
+        return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }
 }
 

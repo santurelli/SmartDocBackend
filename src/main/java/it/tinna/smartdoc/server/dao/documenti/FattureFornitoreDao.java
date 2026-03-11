@@ -57,7 +57,7 @@ public class FattureFornitoreDao extends BaseDao
         }
     }
 
-    public void deleteScadenzaPagamento(Integer id) throws SQLException
+    public void deleteScadenzaPagamento(long id) throws SQLException
     {
         try
         {
@@ -317,7 +317,7 @@ public class FattureFornitoreDao extends BaseDao
         }
     }
 
-    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(Integer idScadenza) throws SQLException
+    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(long idScadenza) throws SQLException
     {
         try
         {
@@ -466,6 +466,45 @@ public class FattureFornitoreDao extends BaseDao
         catch ( DataAccessException e )
         {
             _log.error("Errore nell'aggiornamento della scadenza di pagamento (fattura fornitore) {} ", dto.getId(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public double getTotale(long idFatturaFornitore) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTUREFORNITORE_S15"), Double.class, idFatturaFornitore);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del totale della fattura fornitore {}", idFatturaFornitore, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public double getTotalePagato(long idFatturaFornitore) throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTUREFORNITORE_S16"), Double.class, idFatturaFornitore);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del totale pagato della fattura fornitore {}", idFatturaFornitore, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void aggiornaTotaliFatturaFornitore(long idFatturaFornitore) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTUREFORNITORE_U03"), idFatturaFornitore, idFatturaFornitore);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'aggiornamento del flag saldato della fattura fornitore {}", idFatturaFornitore, e);
             throw new SQLException(e);
         }
     }

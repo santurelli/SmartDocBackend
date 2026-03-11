@@ -2,6 +2,7 @@ package it.tinna.smartdoc.shared.dto.statistiche;
 
 import java.math.BigDecimal;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -25,6 +26,7 @@ public class DatiGlobaliDto extends BaseDto {
 	private Long numFattureMese;
 	@Expose
 	@SerializedName("pagamenti")
+	@JsonProperty("pagamenti")
 	private List<StatisticaDto> pagamentiRicevutiPerMese;
 	/**
 	 * Importo totale delle fatture fornitore ricevute nel mese corrente
@@ -42,6 +44,7 @@ public class DatiGlobaliDto extends BaseDto {
 	private BigDecimal totDaRicevere;
 	@Expose
 	@SerializedName("venduto")
+	@JsonProperty("venduto")
 	private List<StatisticaDto> vendutoPerMese;
 	
 	public Long getNumFattureMese() {

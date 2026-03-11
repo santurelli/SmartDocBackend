@@ -13,6 +13,9 @@ public class MovimentiDocumentoDto extends BaseDto
     @Expose
     private String                     agente;
 
+    @Expose
+    private String                     denominazioneCliente;
+
     private boolean                    checked;
 
     @Expose
@@ -39,6 +42,9 @@ public class MovimentiDocumentoDto extends BaseDto
 
     @Expose
     private String                     numeroDocumento;
+
+    @Expose
+    private String                     numDocumento;
 
     @Expose
     private List<ProdottoDocumentoDto> prodotti;
@@ -81,6 +87,11 @@ public class MovimentiDocumentoDto extends BaseDto
         return dataDocumento;
     }
 
+    public String getDenominazioneCliente()
+    {
+        return denominazioneCliente;
+    }
+
     public String getDescrizioneStatoFatturaElettronica()
     {
         return descrizioneStatoFatturaElettronica;
@@ -119,6 +130,11 @@ public class MovimentiDocumentoDto extends BaseDto
     public String getNumeroDocumento()
     {
         return numeroDocumento;
+    }
+
+    public String getNumDocumento()
+    {
+        return numDocumento;
     }
 
     public List<ProdottoDocumentoDto> getProdotti()
@@ -193,6 +209,11 @@ public class MovimentiDocumentoDto extends BaseDto
         this.dataDocumento = dataDocumento;
     }
 
+    public void setDenominazioneCliente(String denominazioneCliente)
+    {
+        this.denominazioneCliente = denominazioneCliente;
+    }
+
     public void setDescrizioneStatoFatturaElettronica(String descrizioneStatoFatturaElettronica)
     {
         this.descrizioneStatoFatturaElettronica = descrizioneStatoFatturaElettronica;
@@ -231,6 +252,11 @@ public class MovimentiDocumentoDto extends BaseDto
     public void setNumeroDocumento(String numeroDocumento)
     {
         this.numeroDocumento = numeroDocumento;
+    }
+
+    public void setNumDocumento(String numDocumento)
+    {
+        this.numDocumento = numDocumento;
     }
 
     public void setProdotti(List<ProdottoDocumentoDto> prodotti)

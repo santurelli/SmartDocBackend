@@ -55,6 +55,34 @@ public class ClientiDelegate extends BaseDelegate
         return dto;
     }
 
+    public ClienteDto getClienteByPartitaIva(String partitaIva) throws SQLException
+    {
+        ClientiDao clientiDao = new ClientiDao(jdbcTemplate);
+        ClienteDto dto = clientiDao.getByPartitaIva(partitaIva);
+        if ( dto != null )
+        {
+            IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+            ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+            dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.CLIENTI.getValore(), dto.getId()));
+            dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.CLIENTI.getValore(), dto.getId()));
+        }
+        return dto;
+    }
+
+    public ClienteDto getClienteByCodiceFiscale(String codiceFiscale) throws SQLException
+    {
+        ClientiDao clientiDao = new ClientiDao(jdbcTemplate);
+        ClienteDto dto = clientiDao.getByCodiceFiscale(codiceFiscale);
+        if ( dto != null )
+        {
+            IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+            ContattiDao contattiDao = new ContattiDao(jdbcTemplate);
+            dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.CLIENTI.getValore(), dto.getId()));
+            dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.CLIENTI.getValore(), dto.getId()));
+        }
+        return dto;
+    }
+
     public ClienteDto getById(Integer id) throws SQLException
     {
         ClientiDao clientiDao = new ClientiDao(jdbcTemplate);

@@ -728,7 +728,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
         return dao.getNextNum(data);
     }
 
-    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(Integer idScadenza) throws SQLException
+    public ScadenzaPagamentoDocumentoDto getScadenzaPagamento(long idScadenza) throws SQLException
     {
         FattureFornitoreDao dao = new FattureFornitoreDao(jdbcTemplate);
         return dao.getScadenzaPagamento(idScadenza);
@@ -1046,10 +1046,46 @@ public class FattureFornitoreDelegate extends BaseDelegate
         }
     }
 
+    @Transactional(rollbackFor = SQLException.class)
     public void updateScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException
     {
         FattureFornitoreDao dao = new FattureFornitoreDao(jdbcTemplate);
-        dao.updateScadenzaPagamento(dto);
+        
+        ScadenzaPagamentoDocumentoDto currentDto = dao.getScadenzaPagamento(dto.getId());
+        if (currentDto == null) {
+            throw new SQLException("Scadenza non trovata: " + dto.getId());
+        }
+
+        double currentImporto = (currentDto.getImporto() != null ? currentDto.getImporto() : 0);
+        double currentSpese = (currentDto.getImportoSpeseIncasso() != null ? currentDto.getImportoSpeseIncasso() : 0);
+        double currentTotal = currentImporto + currentSpese;
+
+        double newImporto = (dto.getImporto() != null ? dto.getImporto() : 0);
+        double newSpese = (dto.getImportoSpeseIncasso() != null ? dto.getImportoSpeseIncasso() : 0);
+        double newTotal = newImporto + newSpese;
+
+        if (dto.getSaldato() == 1 && newTotal < currentTotal && newTotal > 0) {
+            // Pagamento parziale
+            dao.updateScadenzaPagamento(dto);
+            
+            ScadenzaPagamentoDocumentoDto residuoDto = new ScadenzaPagamentoDocumentoDto();
+            residuoDto.setIdDocumento(currentDto.getIdDocumento());
+            residuoDto.setDtScadenza(currentDto.getDtScadenza());
+            residuoDto.setImporto(currentTotal - newTotal);
+            residuoDto.setImportoSpeseIncasso(0.0);
+            residuoDto.setIvaSpeseIncasso(0.0);
+            residuoDto.setIdRisorsa(currentDto.getIdRisorsa());
+            residuoDto.setModalitaPagamento(currentDto.getModalitaPagamento());
+            residuoDto.setSaldato(0);
+            residuoDto.setAcconto(currentDto.getAcconto());
+            residuoDto.setNote("Residuo da pagamento parziale di " + NumberUtils.formatAsCurrency(newTotal));
+            
+            dao.insertScadenzaPagamento(residuoDto);
+        } else {
+            dao.updateScadenzaPagamento(dto);
+        }
+
+        dao.aggiornaTotaliFatturaFornitore(currentDto.getIdDocumento());
     }
 
 }

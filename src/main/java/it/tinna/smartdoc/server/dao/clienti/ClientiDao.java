@@ -72,6 +72,46 @@ public class ClientiDao extends BaseDao
         }
     }
 
+    public ClienteDto getByPartitaIva(String partitaIva) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<ClienteDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ClienteDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("CLIENTI_S10"), rowMapper, partitaIva);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.info("Nessun cliente trovato con partita IVA {}", partitaIva);
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del cliente con partita IVA {}", partitaIva, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public ClienteDto getByCodiceFiscale(String codiceFiscale) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<ClienteDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ClienteDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("CLIENTI_S11"), rowMapper, codiceFiscale);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.info("Nessun cliente trovato con codice fiscale {}", codiceFiscale);
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del cliente con codice fiscale {}", codiceFiscale, e);
+            throw new SQLException(e);
+        }
+    }
+
     public ClienteDto getById(long id) throws SQLException
     {
         try

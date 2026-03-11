@@ -1528,6 +1528,52 @@
 			   AND fl_deleted = 0
 		</content>
 	</query>
+	<query name="CLIENTI_S10">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_clienti as id,
+			  	   codice,
+			  	   denominazione,
+			  	   referente,
+			  	   COALESCE(codice_fiscale, '') as codiceFiscale,
+			  	   COALESCE(partita_iva, '') as partitaIva,
+			  	   COALESCE(k_d_e_agenti, 0) AS idAgente,
+			  	   COALESCE(k_d_e_listini, 0) AS idListino,
+			  	   COALESCE(k_d_e_tipipagamento, 0) AS idTipoPagamento,
+			  	   COALESCE(k_d_e_aliquoteiva, 0) AS idAliquotaIva,
+			  	   COALESCE(k_d_e_risorse, 0) AS idRisorsa,
+			  	   COALESCE(sconto, '') AS sconto,
+			  	   k_d_e_avvisi AS idAvviso,
+			  	   k_d_e_tipiporto AS idTipoPorto,
+			  	   k_d_e_vettori AS idVettore,
+			  	   note
+			  FROM d_e_clienti
+			 WHERE partita_iva = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="CLIENTI_S11">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_clienti as id,
+			  	   codice,
+			  	   denominazione,
+			  	   referente,
+			  	   COALESCE(codice_fiscale, '') as codiceFiscale,
+			  	   COALESCE(partita_iva, '') as partitaIva,
+			  	   COALESCE(k_d_e_agenti, 0) AS idAgente,
+			  	   COALESCE(k_d_e_listini, 0) AS idListino,
+			  	   COALESCE(k_d_e_tipipagamento, 0) AS idTipoPagamento,
+			  	   COALESCE(k_d_e_aliquoteiva, 0) AS idAliquotaIva,
+			  	   COALESCE(k_d_e_risorse, 0) AS idRisorsa,
+			  	   COALESCE(sconto, '') AS sconto,
+			  	   k_d_e_avvisi AS idAvviso,
+			  	   k_d_e_tipiporto AS idTipoPorto,
+			  	   k_d_e_vettori AS idVettore,
+			  	   note
+			  FROM d_e_clienti
+			 WHERE codice_fiscale = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
 	<query name="CLIENTI_S08">
 		<content delimiterParsingDisabled="true">
 			SELECT COUNT(*)
@@ -3921,6 +3967,7 @@
 				  	   d_e_fatture.totale_pagato AS totalePagato, 
 	                   d_e_fatture.totale - d_e_fatture.totale_pagato AS totaleDaPagare,
 				  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
+				  	   get_descrizione_doccollegato(d_e_fatture.k_d_e_fatture, 'FATTURA'::character varying) AS stato,
 				  	   COALESCE(stato_fattura_elettronica, '') AS statoFatturaElettronica,
 				  	   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'NS' THEN getDescrizioneScarto(d_e_fatture.k_d_e_fatture) ELSE '' END AS erroreConsegna,
 				  	   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'DI' THEN getDescrizioneErroreXml(d_e_fatture.k_d_e_fatture) ELSE '' END AS erroreXml,
@@ -4666,6 +4713,23 @@
 				   acconto = ?,
 				   dt_pagamento = TO_DATE(?,'DD/MM/YYYY')
 			 WHERE k_d_e_scadenzepagamentifatturefornitore = ?
+		</content>
+	</query>
+	<query name="FATTUREFORNITORE_S15">
+		<content delimiterParsingDisabled="true">
+			SELECT get_totale_fatturafornitore(?)
+		</content>
+	</query>
+	<query name="FATTUREFORNITORE_S16">
+		<content delimiterParsingDisabled="true">
+			SELECT get_totalepagato_fatturafornitore(?)
+		</content>
+	</query>
+	<query name="FATTUREFORNITORE_U03">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_fatturefornitore 
+               SET saldato = CASE WHEN get_totaledapagare_fatturafornitore(?) &lt;= 0 THEN 1 ELSE 0 END
+             WHERE k_d_e_fatturefornitore = ?
 		</content>
 	</query>
 	<query name="FORMATIARTICOLO_D01">

@@ -177,7 +177,7 @@ public class FattureDelegate extends BaseDelegate
             _log.error("Errore nell'apertura dello stream per il template dell'elenco fatture", e);
             throw e;
         }
-        list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc");
+        list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc", null);
         try
         {
             bytes = JasperRunManager.runReportToPdf(reportIs, params, new JRBeanCollectionDataSource(list));
@@ -836,10 +836,11 @@ public class FattureDelegate extends BaseDelegate
                                                        Integer length,
                                                        Integer start,
                                                        Integer orderColumn,
-                                                       String orderDir) throws SQLException
+                                                       String orderDir,
+                                                       String numDocumento) throws SQLException
     {
         FattureDao dao = new FattureDao(jdbcTemplate);
-        return dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
+        return dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento);
     }
 
     public FattureListResponse getList(String tipoDocumento,
@@ -852,11 +853,12 @@ public class FattureDelegate extends BaseDelegate
                                        Integer length,
                                        Integer start,
                                        Integer orderColumn,
-                                       String orderDir) throws SQLException
+                                       String orderDir,
+                                       String numDocumento) throws SQLException
     {
         FattureDao dao = new FattureDao(jdbcTemplate);
         FattureListResponse dto = new FattureListResponse();
-        List<MovimentiDocumentoDto> list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir);
+        List<MovimentiDocumentoDto> list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento);
         BigDecimal totFatturato = BigDecimal.ZERO;
         BigDecimal totDaSaldare = BigDecimal.ZERO;
         BigDecimal totSaldato = BigDecimal.ZERO;
@@ -1137,11 +1139,46 @@ public class FattureDelegate extends BaseDelegate
     public void updateScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException
     {
         FattureDao dao = new FattureDao(jdbcTemplate);
-        dao.updateScadenzaPagamento(dto);
-        dto = dao.getScadenzaPagamento(dto.getId());
-        double totale = dao.getTotale(dto.getIdDocumento());
-        double totalePagato = dao.getTotalePagato(dto.getIdDocumento());
-        dao.aggiornaTotaliFattura(totale, totalePagato, dto.getIdDocumento());
+        
+        ScadenzaPagamentoDocumentoDto currentDto = dao.getScadenzaPagamento(dto.getId());
+        if (currentDto == null) {
+            throw new SQLException("Scadenza non trovata: " + dto.getId());
+        }
+
+        double currentImporto = (currentDto.getImporto() != null ? currentDto.getImporto() : 0);
+        double currentSpese = (currentDto.getImportoSpeseIncasso() != null ? currentDto.getImportoSpeseIncasso() : 0);
+        double currentTotal = currentImporto + currentSpese;
+
+        double newImporto = (dto.getImporto() != null ? dto.getImporto() : 0);
+        double newSpese = (dto.getImportoSpeseIncasso() != null ? dto.getImportoSpeseIncasso() : 0);
+        double newTotal = newImporto + newSpese;
+
+        if (dto.getSaldato() == 1 && newTotal < currentTotal && newTotal > 0) {
+            // Pagamento parziale: aggiorna la scadenza attuale all'importo pagato e crea una nuova scadenza per il residuo
+            dao.updateScadenzaPagamento(dto);
+            
+            ScadenzaPagamentoDocumentoDto residuoDto = new ScadenzaPagamentoDocumentoDto();
+            residuoDto.setIdDocumento(currentDto.getIdDocumento());
+            residuoDto.setDtScadenza(currentDto.getDtScadenza());
+            // Il residuo viene calcolato sulla differenza totale
+            residuoDto.setImporto(currentTotal - newTotal);
+            residuoDto.setImportoSpeseIncasso(0.0); // Le spese si considerano pagate con la prima tranche
+            residuoDto.setIvaSpeseIncasso(0.0);
+            residuoDto.setIdRisorsa(currentDto.getIdRisorsa());
+            residuoDto.setModalitaPagamento(currentDto.getModalitaPagamento());
+            residuoDto.setSaldato(0);
+            residuoDto.setAcconto(currentDto.getAcconto());
+            residuoDto.setNote("Residuo da pagamento parziale di " + NumberUtils.formatAsCurrency(newTotal));
+            
+            dao.insertScadenzaPagamento(residuoDto);
+        } else {
+            dao.updateScadenzaPagamento(dto);
+        }
+
+        long idDocumento = currentDto.getIdDocumento();
+        double totale = dao.getTotale(idDocumento);
+        double totalePagato = dao.getTotalePagato(idDocumento);
+        dao.aggiornaTotaliFattura(totale, totalePagato, idDocumento);
     }
 
 }

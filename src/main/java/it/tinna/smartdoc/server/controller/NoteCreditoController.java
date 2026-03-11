@@ -96,5 +96,11 @@ public class NoteCreditoController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/scadenze")
+    public ResponseEntity<GenericResponseDto<Boolean>> updateScadenzaPagamento(@RequestBody it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto dto) throws SQLException {
+        noteCreditoDelegate.updateScadenzaPagamento(dto);
+        return ResponseEntity.ok(new GenericResponseDto<>(true, null));
+    }
 }
 
