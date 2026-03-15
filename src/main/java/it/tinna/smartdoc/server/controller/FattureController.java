@@ -101,7 +101,7 @@ public class FattureController {
     }
 
     @GetMapping("/combos")
-    public ResponseEntity<GenericResponseDto<Map<String, Object>>> getCombosMap(@RequestParam String tipo) throws SQLException {
+    public ResponseEntity<GenericResponseDto<Map<String, Object>>> getCombosMap(@RequestParam(required = false, defaultValue = "FATTURA") String tipo) throws SQLException {
         Map<String, Object> map = fattureDelegate.getCombosMap(tipo);
         return ResponseEntity.ok(new GenericResponseDto<>(map, null));
     }

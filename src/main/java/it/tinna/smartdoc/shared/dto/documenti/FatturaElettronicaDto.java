@@ -16,7 +16,7 @@ public class FatturaElettronicaDto extends DocumentoDto
     private StatoFatturaElettronica statoFatturaElettronica;
 
     @com.google.gson.annotations.Expose
-    private int splitPayment;
+    private Integer splitPayment;
 
     @com.google.gson.annotations.Expose
     private String tipoComunicazione;

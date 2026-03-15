@@ -108,5 +108,17 @@ public class TipiPagamentoController {
             return ResponseEntity.internalServerError().build();
         }
     }
+
+    @GetMapping("/{id}/scadenze-documento")
+    public ResponseEntity<List<it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto>> getScadenzeDocumento(
+            @PathVariable Integer id,
+            @RequestParam String dataDocumento,
+            @RequestParam java.math.BigDecimal totaleDocumento) {
+        try {
+            return ResponseEntity.ok(tipiPagamentoDelegate.getScadenzeDocumento(dataDocumento, id, totaleDocumento));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 }
 

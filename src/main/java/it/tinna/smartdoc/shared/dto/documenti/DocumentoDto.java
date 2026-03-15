@@ -326,7 +326,7 @@ public class DocumentoDto extends BaseDto
     private String                              sconto;
 
     @Expose
-    private int                                 splitPayment;
+    private Integer                                 splitPayment;
 
     @Expose
     private StatoFatturaElettronica             statoFatturaElettronica;
