@@ -581,7 +581,7 @@ public class NoteCreditoDao extends BaseDao
                                     String particella,
                                     String data,
                                     Integer flFatturaElettronica,
-                                    Integer id) throws SQLException
+                                    Long id) throws SQLException
     {
         try
         {

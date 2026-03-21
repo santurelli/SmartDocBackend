@@ -1,0 +1,404 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="iva_acquisti" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7d0c6d45-ab98-4316-8a6a-ebebb2112941">
+	<property name="ireport.zoom" value="1.5"/>
+	<property name="ireport.x" value="182"/>
+	<property name="ireport.y" value="285"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<pen lineStyle="Dashed"/>
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.0"/>
+			<leftPen lineStyle="Dashed"/>
+			<bottomPen lineWidth="0.0"/>
+			<rightPen lineStyle="Dashed"/>
+		</box>
+	</style>
+	<subDataset name="dettaglio_iva_dataset" uuid="ab6d8889-9978-420d-bff2-2ce614239b3f">
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="aliquotaIvaFormattata" class="java.lang.String">
+			<fieldDescription><![CDATA[aliquotaIvaFormattata]]></fieldDescription>
+		</field>
+		<field name="totaleImponibileFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[totaleImponibileFormattato]]></fieldDescription>
+		</field>
+		<field name="importoIvaFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[importoIvaFormattato]]></fieldDescription>
+		</field>
+	</subDataset>
+	<subDataset name="riepilogo_dataset" uuid="61827f50-b9b1-4300-93ee-1cba2afa7e15">
+		<parameter name="list_riepilogo" class="it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto" isForPrompting="false"/>
+		<queryString>
+			<![CDATA[]]>
+		</queryString>
+		<field name="descrizioneAliquota" class="java.lang.String">
+			<fieldDescription><![CDATA[descrizioneAliquota]]></fieldDescription>
+		</field>
+		<field name="aliquotaIvaFormattata" class="java.lang.String">
+			<fieldDescription><![CDATA[aliquotaIvaFormattata]]></fieldDescription>
+		</field>
+		<field name="totaleImponibileFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[totaleImponibileFormattato]]></fieldDescription>
+		</field>
+		<field name="totaleIndetraibileFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[totaleIndetraibileFormattato]]></fieldDescription>
+		</field>
+		<field name="totaleDetraibileFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[totaleDetraibileFormattato]]></fieldDescription>
+		</field>
+		<field name="importoIvaFormattato" class="java.lang.String">
+			<fieldDescription><![CDATA[importoIvaFormattato]]></fieldDescription>
+		</field>
+	</subDataset>
+	<parameter name="datiazienda" class="it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto" isForPrompting="false"/>
+	<parameter name="periodo" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["Annuale 2011"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="riepilogo" class="java.util.List" isForPrompting="false">
+		<defaultValueExpression><![CDATA[new ArrayList()]]></defaultValueExpression>
+	</parameter>
+	<parameter name="totaleImponibile" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="totaleImposta" class="java.lang.String" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="nProgr" class="java.lang.Integer">
+		<fieldDescription><![CDATA[nProgr]]></fieldDescription>
+	</field>
+	<field name="descrTipoDocumento" class="java.lang.String">
+		<fieldDescription><![CDATA[descrTipoDocumento]]></fieldDescription>
+	</field>
+	<field name="riepilogoIva" class="java.util.List">
+		<fieldDescription><![CDATA[riepilogoIva]]></fieldDescription>
+	</field>
+	<field name="totaleFormattato" class="java.lang.String">
+		<fieldDescription><![CDATA[totaleFormattato]]></fieldDescription>
+	</field>
+	<field name="ivaCreditoFormattato" class="java.lang.String">
+		<fieldDescription><![CDATA[ivaCreditoFormattato]]></fieldDescription>
+	</field>
+	<field name="soggetto" class="java.lang.String">
+		<fieldDescription><![CDATA[soggetto]]></fieldDescription>
+	</field>
+	<field name="ivaDebitoFormattato" class="java.lang.String">
+		<fieldDescription><![CDATA[ivaDebitoFormattato]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="88" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="1" y="0" width="286" height="13" uuid="cfe00fa5-5164-43a7-a0ef-5d11861101ae"/>
+				<textElement>
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="14" width="286" height="12" uuid="cbc33b88-3c67-4d8b-8e11-599f0a6fcfd1"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda}.getIndirizzo() == null ? "" : $P{datiazienda}.getIndirizzo()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="27" width="286" height="12" uuid="f771c0a9-35dc-42e3-908f-f35f6c273d5b"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getCap() == null || $P{datiazienda}.getCap().equals("") ? "" : $P{datiazienda}.getCap() + " - ") + ($P{datiazienda}.getCitta() == null || $P{datiazienda}.getCitta().equals("") ? "" : $P{datiazienda}.getCitta() + " ") + ($P{datiazienda}.getProvincia() == null || $P{datiazienda}.getProvincia().equals("") ? "" : "(" + $P{datiazienda}.getProvincia() + ")") + " - ITALY"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="40" width="286" height="12" uuid="eb61ecd1-6fff-401f-b01e-21250a18741c"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getTelefono() == null || $P{datiazienda}.getTelefono().equals("") ? "" : "Tel. " + $P{datiazienda}.getTelefono()) + ($P{datiazienda}.getFax() == null || $P{datiazienda}.getFax().equals("") ? "" : "Fax " + $P{datiazienda}.getFax())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="53" width="286" height="12" uuid="f22c5ed6-8d0f-4103-aa01-58617f7a50df"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getCodiceFiscale() == null || $P{datiazienda}.getCodiceFiscale().equals("") ? "" : "Codice Fiscale " + $P{datiazienda}.getCodiceFiscale()) + ($P{datiazienda}.getPartitaIva() == null || $P{datiazienda}.getPartitaIva().equals("") ? "" : "Partita IVA " + $P{datiazienda}.getPartitaIva())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="326" y="6" width="229" height="20" uuid="51ae1e5b-cc0e-442e-b35f-2ae4d5153d8f"/>
+				<textElement>
+					<font fontName="Arial" size="11" isBold="true" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Registro IVA Vendite " + $P{periodo}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="13" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="51" height="13" uuid="3f026308-b72c-4457-8d63-ba061d9eb692"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[N. Progr.]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="82" y="0" width="73" height="13" uuid="9f5ada3e-0fdf-482a-b7c7-2b5b3a3f5b75"/>
+				<box leftPadding="3"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Documento]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="491" y="0" width="64" height="13" uuid="7079413a-bb18-4952-9560-05a81ff55b32"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Imposta]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="427" y="0" width="64" height="13" uuid="41117814-c344-4bbb-8d15-3ba786a0175f"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Imponibile]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="363" y="0" width="64" height="13" uuid="69198d8b-434b-4277-a89b-0846e70a086c"/>
+				<textElement textAlignment="Center" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Cod. Iva]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="77" splitType="Stretch">
+			<textField>
+				<reportElement x="13" y="0" width="32" height="16" uuid="389bca96-af1c-45aa-b81e-5a87b4a52996"/>
+				<textElement>
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{nProgr}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="82" y="0" width="281" height="16" uuid="ec1691fd-7b6b-4140-b278-fd1a6b299639"/>
+				<box leftPadding="3" rightPadding="3"/>
+				<textElement>
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descrTipoDocumento} + "\n" + $F{soggetto}]]></textFieldExpression>
+			</textField>
+			<componentElement>
+				<reportElement key="table" x="363" y="4" width="192" height="55" uuid="c00ab1d2-d675-41f6-b1fa-912560a23f5c"/>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd">
+					<datasetRun subDataset="dettaglio_iva_dataset" uuid="a412f133-f1b3-4681-a96d-d7a2fb8a9276">
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($F{riepilogoIva})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="64" uuid="7ccdadef-9530-434a-8183-28726711e175">
+						<jr:detailCell style="table_TD" height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="64" height="20" uuid="7f242402-8633-4378-9587-e225b1014f3b"/>
+								<textElement textAlignment="Center">
+									<font fontName="Arial" size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{aliquotaIvaFormattata}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="64" uuid="2d856a9a-ad4e-4a59-aa3c-e7ac848a73ad">
+						<jr:detailCell style="table_TD" height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="64" height="20" uuid="33f13688-28ca-4330-a884-ad031ebad1c3"/>
+								<box rightPadding="3"/>
+								<textElement textAlignment="Right">
+									<font fontName="Arial" size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA["€ " + $F{totaleImponibileFormattato}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="64" uuid="0d7d337d-9a2e-497a-9b19-32490d8389a3">
+						<jr:detailCell style="table_TD" height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="64" height="20" uuid="e5effece-2c26-464f-a2a2-d94cfce34cd9"/>
+								<box rightPadding="3"/>
+								<textElement textAlignment="Right">
+									<font fontName="Arial" size="9"/>
+								</textElement>
+								<textFieldExpression><![CDATA["€ " + $F{importoIvaFormattato}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+			<line>
+				<reportElement positionType="Float" x="272" y="59" width="283" height="1" uuid="40731a82-e944-4973-b04a-06f7541fac1d"/>
+				<graphicElement>
+					<pen lineStyle="Dashed"/>
+				</graphicElement>
+			</line>
+			<staticText>
+				<reportElement positionType="Float" x="272" y="60" width="91" height="14" uuid="621c57d4-f4f5-4589-979c-04004f97eb0b"/>
+				<box topPadding="2"/>
+				<textElement>
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Tot. registrazione]]></text>
+			</staticText>
+			<textField>
+				<reportElement positionType="Float" x="427" y="60" width="64" height="14" uuid="fbc494a5-982a-413e-bc44-2e79271d6c30"/>
+				<box topPadding="2" rightPadding="3"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["€ " + $F{totaleFormattato}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="491" y="60" width="64" height="14" uuid="808dee4e-e4cb-4e29-b242-0ca971d0a3a5"/>
+				<box topPadding="2" rightPadding="3"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["€ " + $F{ivaDebitoFormattato}]]></textFieldExpression>
+			</textField>
+			<line>
+				<reportElement positionType="Float" x="0" y="74" width="555" height="1" uuid="4d1a828a-d1fa-49d3-b6f8-413165539b39"/>
+			</line>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="13" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="13" uuid="01848b58-8ac7-4f02-87ce-5d8e6f4b5166"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="7"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Pag. " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="166" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="24" width="555" height="14" uuid="32c45f5b-9872-4e85-8a0f-14f77eca42b8"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="9" isBold="true" isUnderline="true"/>
+				</textElement>
+				<text><![CDATA[Riepilogo complessivo]]></text>
+			</staticText>
+			<componentElement>
+				<reportElement key="table 1" x="0" y="49" width="555" height="50" uuid="50aef05e-49d6-4975-b390-68cdebf13d3c"/>
+				<jr:table xmlns:jr="http://jasperreports.sourceforge.net/jasperreports/components" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports/components http://jasperreports.sourceforge.net/xsd/components.xsd" whenNoDataType="AllSectionsNoDetail">
+					<datasetRun subDataset="riepilogo_dataset" uuid="41981ec3-01c6-4362-99c9-b1c2d34bf8f8">
+						<datasetParameter name="list_riepilogo">
+							<datasetParameterExpression><![CDATA[$P{riepilogo}]]></datasetParameterExpression>
+						</datasetParameter>
+						<dataSourceExpression><![CDATA[new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource($P{riepilogo})]]></dataSourceExpression>
+					</datasetRun>
+					<jr:column width="129" uuid="674f2de1-0a6a-42a6-8aaa-399b181afae5">
+						<jr:columnHeader height="20" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="129" height="20" uuid="9c76996b-2831-4120-9237-4b23bb18d91c"/>
+								<box rightPadding="6"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font fontName="Arial" size="10" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Imponibile]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="129" height="20" uuid="cbd6be7c-0a53-420e-820c-494e9b1604a7"/>
+								<box rightPadding="6"/>
+								<textElement textAlignment="Right">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression><![CDATA["€ " + $F{totaleImponibileFormattato}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="320" uuid="1cc15324-994c-44ce-a8fa-a657e9469b63">
+						<jr:columnHeader height="20" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="320" height="20" uuid="9733086a-b062-499b-9b69-effda4158342"/>
+								<box leftPadding="6"/>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="10" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Tipo Iva]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="320" height="20" uuid="cf44dc39-5c21-449b-8583-cb497fce17a6"/>
+								<box leftPadding="6"/>
+								<textElement>
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression><![CDATA[$F{aliquotaIvaFormattata} + ": " + $F{descrizioneAliquota}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+					<jr:column width="106" uuid="efb59105-1bb3-4b7f-bae7-26a7b47af47a">
+						<jr:columnHeader height="20" rowSpan="1">
+							<staticText>
+								<reportElement x="0" y="0" width="106" height="20" uuid="26279876-5620-4a9c-b54c-495d3d2c41f0"/>
+								<box rightPadding="6"/>
+								<textElement textAlignment="Right" verticalAlignment="Middle">
+									<font fontName="Arial" size="10" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Imposta]]></text>
+							</staticText>
+						</jr:columnHeader>
+						<jr:detailCell height="20" rowSpan="1">
+							<textField>
+								<reportElement x="0" y="0" width="106" height="20" uuid="0882078b-c230-4250-9605-287e8aaafe42"/>
+								<box rightPadding="6"/>
+								<textElement textAlignment="Right">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression><![CDATA["€ " + $F{importoIvaFormattato}]]></textFieldExpression>
+							</textField>
+						</jr:detailCell>
+					</jr:column>
+				</jr:table>
+			</componentElement>
+			<line>
+				<reportElement positionType="Float" x="0" y="117" width="555" height="1" uuid="7a964d75-5483-4400-8bdd-0e4dab162aff"/>
+			</line>
+			<textField>
+				<reportElement positionType="Float" x="0" y="118" width="129" height="14" uuid="3afa13cd-5373-454f-aef0-08a210fd77b3"/>
+				<box topPadding="2" rightPadding="6"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["€ " + $P{totaleImponibile}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement positionType="Float" x="454" y="118" width="101" height="14" uuid="ac5eba8a-337e-4b1b-86fb-4abf494e115e"/>
+				<box topPadding="2" rightPadding="6"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["€ " + $P{totaleImposta}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

@@ -207,7 +207,23 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
-            _log.error("Errore nell'aggiornamento del preventivo {}", dto.getId(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public boolean isExistentNumero(Integer numero,
+                                    String particella,
+                                    String data,
+                                    Integer id) throws SQLException
+    {
+        try
+        {
+            long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("PREVENTIVI_S02"), Long.class, numero, StringUtils.defaultIfEmpty(particella, null), StringUtils.defaultIfEmpty(particella, null), id, StringUtils.defaultIfEmpty(data, null), StringUtils.defaultIfEmpty(data, null));
+            return l > 0;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella determinazione dell'esistenza del numero preventivo {}, particella {}", numero, StringUtils.defaultIfBlank(particella, "<vuoto>"), e);
             throw new SQLException(e);
         }
     }

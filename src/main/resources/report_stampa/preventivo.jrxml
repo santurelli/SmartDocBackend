@@ -51,10 +51,10 @@
 			<![CDATA[]]>
 		</queryString>
 		<field name="codice" class="java.lang.String">
-			<fieldDescription><![CDATA[codiceProdotto]]></fieldDescription>
+			<fieldDescription><![CDATA[prodottoDto.codice]]></fieldDescription>
 		</field>
 		<field name="descrizione" class="java.lang.String">
-			<fieldDescription><![CDATA[descrizione]]></fieldDescription>
+			<fieldDescription><![CDATA[prodottoDto.descrizioneDocumento]]></fieldDescription>
 		</field>
 		<field name="nota" class="java.lang.String">
 			<fieldDescription><![CDATA[nota]]></fieldDescription>

@@ -134,6 +134,10 @@ public class DdtDelegate extends BaseDelegate {
 
     @Transactional(rollbackFor = Exception.class)
     public long insert(DdtDto dto) throws SQLException {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
+        {
+            throw new SQLException("Il numero di DDT " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         long id = ddtDao.insert(dto);
         dto.setId(id);
         if (dto.getProdotti() != null) {
@@ -153,6 +157,10 @@ public class DdtDelegate extends BaseDelegate {
 
     @Transactional(rollbackFor = Exception.class)
     public void update(DdtDto dto) throws SQLException {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
+        {
+            throw new SQLException("Il numero di DDT " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         ddtDao.update(dto);
         ddtDao.deleteProdottiById(dto.getId());
         ddtDao.deleteSpeseIncassoById(dto.getId());
@@ -313,6 +321,14 @@ public class DdtDelegate extends BaseDelegate {
             _log.error("Errore critico durante la generazione del PDF per DDT ID: {}", id, e);
             return null;
         }
+    }
+
+    public boolean isExistentNumero(Integer numeroDdt,
+                                    String particella,
+                                    String data,
+                                    Long id) throws SQLException
+    {
+        return ddtDao.isExistentNumero(numeroDdt, particella, data, id);
     }
 }
 

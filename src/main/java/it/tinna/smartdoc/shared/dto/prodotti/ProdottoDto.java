@@ -293,9 +293,23 @@ public class ProdottoDto extends BaseDto
 
     public void setDescrizioneDocumento()
     {
+        String tipoStore = "";
+        try
+        {
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+            tipoStore = (String) request.getSession().getAttribute(ISharedConstants.CONFIG_KEY_TIPOSTORE);
+        }
+        catch ( Exception e )
+        {
+            // Silently fail if session or request is not available
+        }
+        setDescrizioneDocumento(tipoStore);
+    }
+
+    public void setDescrizioneDocumento(String tipoStore)
+    {
         StringBuilder strB = new StringBuilder(getDescrizione());
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-        if ( request.getSession().getAttribute(ISharedConstants.CONFIG_KEY_TIPOSTORE).equals("CERAMICA") )
+        if ( "CERAMICA".equals(tipoStore) )
         {
             if ( StringUtils.isNotBlank(getDescrFormato()) || StringUtils.isNotBlank(getDescrScelta()) || StringUtils.isNotBlank(getDescrTono()) || StringUtils.isNotBlank(getDescrCalibro()) )
             {

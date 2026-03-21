@@ -8,8 +8,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import it.tinna.smartdoc.server.dao.prodotti.PrezziProdottiDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
+import it.tinna.smartdoc.shared.dto.prodotti.PrezzoProdottoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 
 @Service
@@ -57,6 +59,13 @@ public class ProdottiDelegate extends BaseDelegate {
     public void delete(long id, Object user) throws SQLException {
         ProdottiDao dao = new ProdottiDao(jdbcTemplate);
         dao.delete(id, user);
+    }
+
+    @Autowired
+    private PricingDelegate pricingDelegate;
+
+    public Double getPrezzoDocumento(Long idProdotto, Long idListino) throws SQLException {
+        return pricingDelegate.calculatePrice(idProdotto, idListino);
     }
 }
 

@@ -2501,6 +2501,17 @@
 			 WHERE k_d_e_confordine = ?
 		</content>
 	</query>
+	<query name="CONFORDINE_S09">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*) 
+			  FROM d_e_confordine
+			 WHERE num_confordine = ?
+			   AND CASE WHEN ?::character varying IS NULL THEN particella IS NULL ELSE particella = ?::character varying END
+			   AND k_d_e_confordine != COALESCE(?, 0)
+			   AND EXTRACT(year FROM data_confordine) = CASE WHEN ?::character varying IS NULL THEN EXTRACT(year FROM CURRENT_DATE) ELSE EXTRACT(year FROM TO_DATE(?, 'DD/MM/YYYY')) END
+			   AND fl_deleted = 0
+		</content>
+	</query>
 	<query name="CONFORDINE_S07">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_confordine.k_d_e_confordine AS idDocumento,
@@ -3474,7 +3485,7 @@
 				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- 28 placeholders for line 2
 				 	    ?,?,?,?,?,?,?,?,?,?,?, -- 11 placeholders for line 3
 				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?, -- 5 placeholders for line 4
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?, -- 9 placeholders for line 5 (added tipo_ritenuta)
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?, -- 8 placeholders for line 5 (fixed extra ?)
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -5518,34 +5529,38 @@
 	</query>
 	<query name="LISTINI_I01">
 		<content delimiterParsingDisabled="true">
-			SELECT insert_listino(?,?,?,?,?,?,?)
+			INSERT INTO d_e_listini (descrizione, id_parent, derivation_source, derivation_type, derivation_value, rounding_rule, fl_default, user_created, dt_created)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			RETURNING k_d_e_listini
 		</content>
 	</query>
 	<query name="LISTINI_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT list.k_d_e_listini AS id,
 				   list.descrizione,
-				   getIdSorgente(list.k_d_e_listini) AS idSorgente,
-				   sorgente.descrizione AS descrizioneSorgente,
-				   list.aggiunta,
-				   list.sottrazione,
-				   list.importo_fisso AS importoFisso,
+				   list.id_parent AS idParent,
+				   sorgente.descrizione AS descrizioneParent,
+				   list.derivation_source AS derivationSource,
+				   list.derivation_type AS derivationType,
+				   list.derivation_value AS derivationValue,
+				   list.rounding_rule AS roundingRule,
 				   list.fl_default AS flDefault
 			  FROM d_e_listini list
 		 LEFT JOIN d_e_listini sorgente
-			  	ON sorgente.k_d_e_listini = getIdSorgente(list.k_d_e_listini)
+			  	ON sorgente.k_d_e_listini = list.id_parent
 		   	 WHERE list.fl_deleted = 0
-		  ORDER BY list.fl_default desc, list.sorgente asc;
+		  ORDER BY list.fl_default DESC, list.descrizione ASC;
 		</content>
 	</query>
 	<query name="LISTINI_S02">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_listini AS id,
 				   descrizione,
-				   getIdSorgente(k_d_e_listini) AS idSorgente,
-				   aggiunta,
-				   sottrazione,
-				   importo_fisso AS importoFisso,
+				   id_parent AS idParent,
+				   derivation_source AS derivationSource,
+				   derivation_type AS derivationType,
+				   derivation_value AS derivationValue,
+				   rounding_rule AS roundingRule,
 				   fl_default AS flDefault
 			FROM d_e_listini
 		   WHERE k_d_e_listini = ?
@@ -5572,7 +5587,17 @@
 	</query>
 	<query name="LISTINI_U01">
 		<content delimiterParsingDisabled="true">
-			SELECT update_listino(?,?,?,?,?,?,?,?)
+			UPDATE d_e_listini SET
+				descrizione = ?,
+				id_parent = ?,
+				derivation_source = ?,
+				derivation_type = ?,
+				derivation_value = ?,
+				rounding_rule = ?,
+				fl_default = ?,
+				user_last_update = ?,
+				dt_last_update = CURRENT_TIMESTAMP
+			WHERE k_d_e_listini = ?
 		</content>
 	</query>
 	<query name="LOGIN_S01">

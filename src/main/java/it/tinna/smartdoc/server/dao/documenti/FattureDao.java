@@ -702,7 +702,7 @@ public class FattureDao extends BaseDao
                                     String data,
                                     int flFatturaElettronica,
                                     TipoFattura tipoFattura,
-                                    Integer id) throws SQLException
+                                    Long id) throws SQLException
     {
         try
         {

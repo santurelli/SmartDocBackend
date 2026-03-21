@@ -266,6 +266,7 @@ public class DocumentoDto extends BaseDto
     @SerializedName("scadenze")
     private List<ScadenzaPagamentoDocumentoDto> listaScadenzePagamentiDocumento;
 
+    @Expose
     private List<SpesaIncassoDocumentoDto>      listaSpeseIncassoFattura;
 
     private String                              modalitaPagamento;

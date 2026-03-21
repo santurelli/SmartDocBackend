@@ -14,6 +14,11 @@ public class ListinoDto extends BaseDto {
     @Expose
     private String descrizione;
     private Integer flDefault;
+    private Long idParent;
+    private String derivationSource; // LISTINO, ULTIMO_ACQUISTO, MEDIO_ACQUISTO
+    private String derivationType;   // NONE, PERCENTAGE, FIXED_MARKUP
+    private BigDecimal derivationValue;
+    private BigDecimal roundingRule;
     private BigDecimal aggiunta;
     private BigDecimal sottrazione;
     private BigDecimal importoFisso;

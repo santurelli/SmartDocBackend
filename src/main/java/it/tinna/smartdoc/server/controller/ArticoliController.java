@@ -169,5 +169,22 @@ public class ArticoliController {
             return ResponseEntity.internalServerError().body(response);
         }
     }
+
+    @PostMapping("/price")
+    public ResponseEntity<?> getPrice(@RequestBody Map<String, Object> params) {
+        try {
+            Long idProdotto = params.get("idProdotto") != null ? Long.parseLong(params.get("idProdotto").toString()) : null;
+            Long idListino = params.get("idListino") != null && !params.get("idListino").toString().isEmpty() ? Long.parseLong(params.get("idListino").toString()) : null;
+
+            if (idProdotto == null) {
+                return ResponseEntity.badRequest().body("idProdotto is required");
+            }
+
+            Double prezzo = prodottiDelegate.getPrezzoDocumento(idProdotto, idListino);
+            return ResponseEntity.ok(Map.of("prezzo", prezzo));
+        } catch (SQLException e) {
+            return ResponseEntity.internalServerError().body("Error fetching price: " + e.getMessage());
+        }
+    }
 }
 

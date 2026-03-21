@@ -89,6 +89,8 @@ import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
+import it.tinna.smartdoc.server.util.ReportLoader;
+import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
@@ -226,6 +228,9 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                 }
             }
 
+            ConfigurazioneDao confDao = new ConfigurazioneDao(jdbcTemplate);
+            String tipoStore = confDao.getByKey(ISharedConstants.CONFIG_DOMAIN_GLOBAL, ISharedConstants.CONFIG_KEY_TIPOSTORE);
+
             double totaleMerce = 0;
             for ( ProdottoDocumentoDto pdDto : dto.getProdotti() )
             {
@@ -243,7 +248,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                         pdDto.getProdottoDto().setDescrizione(pdDto.getFmDescrizione());
                         // pdDto.setDescUnitaMisura(pdDto.getFmUnitaMisura());
                     }
-                    pdDto.getProdottoDto().setDescrizioneDocumento();
+                    pdDto.getProdottoDto().setDescrizioneDocumento(tipoStore);
                 }
             }
             ft.setProdotti(dto.getProdotti());
@@ -424,7 +429,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
             }
             // verifico se la fattura è ad esigibilità differita e, se lo è,
             // inserisco una riga con l'indicazione e l'eventuale motivo
-            if ( dto.getEsigibilitaDifferita().intValue() == 1 )
+            if ( dto.getEsigibilitaDifferita() != null && dto.getEsigibilitaDifferita().intValue() == 1 )
             {
                 ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
                 ProdottoDto pDto = new ProdottoDto();
@@ -448,7 +453,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
             }
             // verifico se la fattura è con split payment e, se lo è, inserisco
             // una riga con l'indicazione
-            if ( dto.getSplitPayment() == 1 )
+            if ( dto.getSplitPayment() != null && dto.getSplitPayment().intValue() == 1 )
             {
                 ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
                 ProdottoDto pDto = new ProdottoDto();
@@ -593,27 +598,24 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
             JRBeanCollectionDataSource beanColDataSource = new JRBeanCollectionDataSource(Arrays.asList(ft));
             td.setDataSource(beanColDataSource);
             ConfigurazioneDao configurazioneDao = new ConfigurazioneDao(jdbcTemplate);
-            String baseDirTemplate = configurazioneDao.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_BASEDIR);
-            if ( StringUtils.isEmpty(baseDirTemplate) )
-            {
-                throw new Exception("Il parametro basedir per i template è vuoto o nullo");
-            }
-            Template t = new Template("name", new StringReader(baseDirTemplate), new Configuration(Configuration.DEFAULT_INCOMPATIBLE_IMPROVEMENTS));
-            Map<String, Object> model = new HashMap<>();
-            model.put("DB_KEY", DatabaseContextHolder.getClientDatabase());
-            String baseDir = FreeMarkerTemplateUtils.processTemplateIntoString(t, model);
+
             String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDao.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
-            td.getParameters().put("print_codagente", new Boolean(stampaAgente));
-            td.getParameters().put("SUBREPORT_DIR", baseDir);
+            td.getParameters().put("print_codagente", Boolean.valueOf("1".equals(stampaAgente) || "true".equalsIgnoreCase(stampaAgente)));
+            
+            // Load reports from classpath
+            JasperReport report = ReportLoader.getReport("notacreditofornitore.jrxml");
+            JasperReport subreportScadenze = ReportLoader.getReport("notacreditofornitore_scadenze.jrxml");
+            
+            td.getParameters().put("SUBREPORT_SCADENZE", subreportScadenze);
+
             byte[] bytes = null;
-            InputStream reportIs = FileUtils.openInputStream(new File(new StringBuilder(baseDir).append(ISharedConstants.NOTACREDITOFORNITORE_TEMPLATE_NAME).toString()));
             if ( td.getDataSource() != null )
             {
-                bytes = JasperRunManager.runReportToPdf(reportIs, td.getParameters(), td.getDataSource());
+                bytes = JasperRunManager.runReportToPdf(report, td.getParameters(), td.getDataSource());
             }
             else
             {
-                bytes = JasperRunManager.runReportToPdf(reportIs, td.getParameters(), new JREmptyDataSource());
+                bytes = JasperRunManager.runReportToPdf(report, td.getParameters(), new JREmptyDataSource());
             }
             DocumentoWrapperDto result = new DocumentoWrapperDto();
             result.setFlusso(bytes);

@@ -116,6 +116,7 @@ public class PreventiviDelegate {
 
             double totaleMerce = 0;
             if (dto.getProdotti() != null) {
+                String tipoStore = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_GLOBAL, ISharedConstants.CONFIG_KEY_TIPOSTORE);
                 for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
                     if (pdDto.isProdotto() || pdDto.isFuoriMagazzino()) {
                         pdDto.setQuantitaFormattata(it.tinna.smartdoc.server.util.NumberUtils.formatAsQuantity(pdDto.getQuantita()));
@@ -134,7 +135,7 @@ public class PreventiviDelegate {
                         } else {
                             pdDto.setDescrizione(pdDto.getDescProdotto());
                         }
-                        // pdDto.getProdottoDto().setDescrizioneDocumento(); // Missing method on DTO, skipping
+                        pdDto.getProdottoDto().setDescrizioneDocumento(tipoStore);
                     }
                 }
                 pt.setProdotti(dto.getProdotti());
@@ -313,6 +314,10 @@ public class PreventiviDelegate {
 
     @Transactional(rollbackFor = Exception.class)
     public Integer insert(PreventivoDto dto) throws SQLException {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) (long) dto.getId()) )
+        {
+            throw new SQLException("Il numero di preventivo " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         Integer id = preventiviDao.insert(dto);
         dto.setId(id);
         if (dto.getProdotti() != null) {
@@ -331,6 +336,10 @@ public class PreventiviDelegate {
 
     @Transactional(rollbackFor = Exception.class)
     public void update(PreventivoDto dto) throws SQLException {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) (long) dto.getId()) )
+        {
+            throw new SQLException("Il numero di preventivo " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         preventiviDao.update(dto);
         
         // Replace lines: Delete all lines and re-insert
@@ -377,6 +386,14 @@ public class PreventiviDelegate {
         }
         
         return map;
+    }
+
+    public boolean isExistentNumero(Integer numero,
+                                    String particella,
+                                    String data,
+                                    Integer id) throws SQLException
+    {
+        return preventiviDao.isExistentNumero(numero, particella, data, id);
     }
 }
 

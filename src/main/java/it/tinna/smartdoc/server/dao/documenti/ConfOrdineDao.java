@@ -220,7 +220,23 @@ public class ConfOrdineDao extends BaseDao {
             Integer count = jdbcTemplate.queryForObject(FileQueryReader.getQuery("DOCUMENTI_S10"), Integer.class, idDocPadre, tipoDocPadre, idDocFiglio, tipoDocFiglio);
             return count != null && count > 0;
         } catch (DataAccessException e) {
-            _log.error("Errore nella verifica del collegamento documento {} -> {}", idDocPadre, idDocFiglio, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public boolean isExistentNumero(Integer numero,
+                                    String particella,
+                                    String data,
+                                    Long id) throws SQLException
+    {
+        try
+        {
+            long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("CONFORDINE_S09"), Long.class, numero, StringUtils.defaultIfEmpty(particella, null), StringUtils.defaultIfEmpty(particella, null), id, StringUtils.defaultIfEmpty(data, null), StringUtils.defaultIfEmpty(data, null));
+            return l > 0;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella determinazione dell'esistenza del numero conferma ordine {}, particella {}", numero, StringUtils.defaultIfBlank(particella, "<vuoto>"), e);
             throw new SQLException(e);
         }
     }

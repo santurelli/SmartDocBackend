@@ -90,6 +90,10 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
 
     @Transactional(rollbackFor = Exception.class)
     public Integer save(ConfOrdineDto dto) throws SQLException {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
+        {
+            throw new SQLException("Il numero di conferma ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         Integer id;
         if (dto.getId() == 0) {
             id = confOrdineDao.insert(dto);
@@ -310,11 +314,17 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
         String particelleAsString = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
         if (StringUtils.isNotEmpty(particelleAsString)) {
             map.put(ISharedConstants.COMBOSMAP_KEY_PARTICELLE, StringUtils.split(particelleAsString, "\r\n"));
-        } else {
-            map.put(ISharedConstants.COMBOSMAP_KEY_PARTICELLE, new String[0]);
         }
         
         return map;
+    }
+
+    public boolean isExistentNumero(Integer numero,
+                                    String particella,
+                                    String data,
+                                    Long id) throws SQLException
+    {
+        return confOrdineDao.isExistentNumero(numero, particella, data, id);
     }
 }
 

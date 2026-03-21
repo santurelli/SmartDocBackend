@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="iva_acquisti" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="7d0c6d45-ab98-4316-8a6a-ebebb2112941">
+	<property name="ireport.zoom" value="2.9230756500000017"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="427"/>
+	<style name="table">
+		<box>
+			<pen lineWidth="1.0" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TH" mode="Opaque" backcolor="#F0F8FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_CH" mode="Opaque" backcolor="#BFE1FF">
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+		</box>
+	</style>
+	<style name="table_TD" mode="Opaque" backcolor="#FFFFFF">
+		<pen lineStyle="Dashed"/>
+		<box>
+			<pen lineWidth="0.5" lineColor="#000000"/>
+			<topPen lineWidth="0.0"/>
+			<leftPen lineStyle="Dashed"/>
+			<bottomPen lineWidth="0.0"/>
+			<rightPen lineStyle="Dashed"/>
+		</box>
+	</style>
+	<parameter name="periodo" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["Annuale 2011"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ivaVendite" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["8.000,00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ivaAcquisti" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["1.258.369,00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="acconto" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["0,00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ivaDebito" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["800,00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="ivaCredito" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="maggiorazionePerc" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="imposta" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="precedenteDebito" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["100,00"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="precedenteCredito" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="totDaVersare" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA[]]></defaultValueExpression>
+	</parameter>
+	<parameter name="datiazienda" class="it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto" isForPrompting="false"/>
+	<parameter name="maggiorazioneTot" class="java.lang.String" isForPrompting="false"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="88" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="1" y="0" width="286" height="13" uuid="cfe00fa5-5164-43a7-a0ef-5d11861101ae"/>
+				<textElement>
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="14" width="286" height="12" uuid="cbc33b88-3c67-4d8b-8e11-599f0a6fcfd1"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda}.getIndirizzo() == null ? "" : $P{datiazienda}.getIndirizzo()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="27" width="286" height="12" uuid="f771c0a9-35dc-42e3-908f-f35f6c273d5b"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getCap() == null || $P{datiazienda}.getCap().equals("") ? "" : $P{datiazienda}.getCap() + " - ") + ($P{datiazienda}.getCitta() == null || $P{datiazienda}.getCitta().equals("") ? "" : $P{datiazienda}.getCitta() + " ") + ($P{datiazienda}.getProvincia() == null || $P{datiazienda}.getProvincia().equals("") ? "" : "(" + $P{datiazienda}.getProvincia() + ")") + " - ITALY"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="40" width="286" height="12" uuid="eb61ecd1-6fff-401f-b01e-21250a18741c"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getTelefono() == null || $P{datiazienda}.getTelefono().equals("") ? "" : "Tel. " + $P{datiazienda}.getTelefono()) + ($P{datiazienda}.getFax() == null || $P{datiazienda}.getFax().equals("") ? "" : "Fax " + $P{datiazienda}.getFax())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="1" y="53" width="286" height="12" uuid="f22c5ed6-8d0f-4103-aa01-58617f7a50df"/>
+				<textElement>
+					<font fontName="Arial" size="10" isBold="false"/>
+				</textElement>
+				<textFieldExpression><![CDATA[($P{datiazienda}.getCodiceFiscale() == null || $P{datiazienda}.getCodiceFiscale().equals("") ? "" : "Codice Fiscale " + $P{datiazienda}.getCodiceFiscale()) + ($P{datiazienda}.getPartitaIva() == null || $P{datiazienda}.getPartitaIva().equals("") ? "" : "Partita IVA " + $P{datiazienda}.getPartitaIva())]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="326" y="6" width="229" height="20" uuid="51ae1e5b-cc0e-442e-b35f-2ae4d5153d8f"/>
+				<textElement>
+					<font fontName="Arial" size="11" isBold="true" isUnderline="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Prospetto liquidazione Iva " + $P{periodo}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="44" splitType="Stretch">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="20" width="272" height="24" uuid="3f026308-b72c-4457-8d63-ba061d9eb692"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Riepilogo liquidazione]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="458" y="20" width="80" height="24" uuid="41117814-c344-4bbb-8d15-3ba786a0175f"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Iva a credito]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="344" y="20" width="80" height="24" uuid="69198d8b-434b-4277-a89b-0846e70a086c"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Iva a debito]]></text>
+			</staticText>
+			<line>
+				<reportElement positionType="Float" x="0" y="3" width="555" height="1" uuid="c6c96eed-cb7c-44b6-8340-2a095f638a82"/>
+			</line>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="165" splitType="Stretch">
+			<staticText>
+				<reportElement positionType="Float" x="0" y="6" width="100" height="16" uuid="76131c46-3c66-4d1f-b96b-ad6784f133b6"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Tot. Iva vendite]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="21" width="100" height="16" uuid="b0e17ae2-29ac-4fb9-90ab-fe55312ebc71"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Tot. Iva acquisti]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="36" width="100" height="16" uuid="56733137-9177-41fe-997e-a48534445d99"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Acconto]]></text>
+			</staticText>
+			<staticText>
+				<reportElement positionType="Float" x="0" y="51" width="100" height="16" uuid="f298c994-914a-4e04-a81f-76ab4e6d405f"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<text><![CDATA[Saldo precedente]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="77" width="100" height="16" uuid="fb3ff9be-a58f-45f9-aa79-b5eda3fdcf51"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? "IVA A DEBITO" : $P{ivaCredito} != "" ? "Iva a credito" : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="92" width="100" height="16" uuid="70b4ec79-9eb8-4f82-9a23-8279291c3267"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? $P{maggiorazioneTot} != "" ? "Maggiorazione (" + $P{maggiorazionePerc} + ")" : "" : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="107" width="100" height="16" uuid="a9c36963-46a7-4924-868f-3add2eb0a101"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement>
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? "Imposta da versare" : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="344" y="6" width="80" height="16" uuid="48f473a1-ac4a-4c9f-8e20-fb7da24ef929"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaVendite}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="458" y="21" width="80" height="16" uuid="7417a576-3427-46eb-8366-49c25b5d034f"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaAcquisti}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="458" y="36" width="80" height="16" uuid="b1d4fdf7-4bdb-4cd7-a6fc-035c85b24cac"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{acconto}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="344" y="51" width="80" height="16" uuid="ec9df6b8-cece-4017-92cb-e19d0a40b713"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{precedenteDebito} != "" ? $P{precedenteDebito} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="458" y="51" width="80" height="16" uuid="95d09633-a087-4e20-91c3-140b6539a74a"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{precedenteCredito} != "" ? $P{precedenteCredito} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="344" y="77" width="80" height="16" uuid="caddad68-f718-418a-9b59-1620f3014807"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? $P{ivaDebito} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="458" y="77" width="80" height="16" uuid="95d0a939-babb-4d38-962b-406a943a67a5"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaCredito} != "0,00" ? $P{ivaCredito} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="344" y="92" width="80" height="16" uuid="e93b550a-77aa-477f-ab03-1d09ba5c81d6"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? $P{maggiorazioneTot} : ""]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="344" y="107" width="80" height="16" uuid="d2904163-4893-4574-861b-186c8335657c"/>
+				<box leftPadding="1" rightPadding="1"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{ivaDebito} != "" ? $P{totDaVersare} : ""]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="13" splitType="Stretch"/>
+	</pageFooter>
+</jasperReport>

@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="fattura_scadenze" language="groovy" columnCount="8" printOrder="Horizontal" pageWidth="555" pageHeight="802" columnWidth="69" leftMargin="0" rightMargin="0" topMargin="0" bottomMargin="0" whenResourceMissingType="Empty" uuid="9b24ff4d-4d3e-4278-a2df-13c704de61de">
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<queryString>
+		<![CDATA[]]>
+	</queryString>
+	<field name="dtScadenza" class="java.lang.String">
+		<fieldDescription><![CDATA[dtScadenza]]></fieldDescription>
+	</field>
+	<field name="importoFormattato" class="java.lang.String">
+		<fieldDescription><![CDATA[importoFormattato]]></fieldDescription>
+	</field>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<detail>
+		<band height="31">
+			<textField>
+				<reportElement x="0" y="0" width="69" height="13" uuid="c3a62042-0fcf-414f-90b9-36507f6f633d"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dtScadenza}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="18" width="69" height="13" uuid="b18e056d-2c79-48d9-9ae2-98c256df749e"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importoFormattato}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+</jasperReport>

@@ -48,7 +48,7 @@ public class SpeseIncassoController {
         it.tinna.smartdoc.shared.dto.response.GenericResponseDto<Void> response = new it.tinna.smartdoc.shared.dto.response.GenericResponseDto<>();
         try {
             Integer userId = ((it.tinna.smartdoc.server.security.UserDetailsImpl) org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getId();
-            if (dto.getId() != null) {
+            if (dto.getId() > 0) {
                 dto.setUserLastUpdate(userId.longValue());
                 speseIncassoDelegate.update(dto);
             } else {

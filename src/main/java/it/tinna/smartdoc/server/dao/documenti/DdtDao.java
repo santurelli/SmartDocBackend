@@ -252,7 +252,7 @@ public class DdtDao extends BaseDao {
     public boolean isExistentNumero(Integer numero,
                                     String particella,
                                     String data,
-                                    Integer id) throws SQLException {
+                                    Long id) throws SQLException {
         String fData = formatDate(data);
         try {
             long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("DDT_S04"), Long.class, 

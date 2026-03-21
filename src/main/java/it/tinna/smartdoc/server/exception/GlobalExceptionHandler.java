@@ -18,7 +18,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGlobalException(Exception ex, WebRequest request) {
         log.error("Unhandled exception occurred at request: " + request.getDescription(false), ex);
-        return new ResponseEntity<>("Si è verificato un errore interno. Contattare l'amministratore.", HttpStatus.INTERNAL_SERVER_ERROR);
+        String message = ex.getMessage() != null ? ex.getMessage() : "Si è verificato un errore interno. Contattare l'amministratore.";
+        return new ResponseEntity<>(message, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }
 
