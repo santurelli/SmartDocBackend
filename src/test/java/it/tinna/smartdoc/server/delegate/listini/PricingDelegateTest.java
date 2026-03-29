@@ -50,8 +50,8 @@ public class PricingDelegateTest {
         
         List<PrezzoProdottoDto> overrides = new ArrayList<>();
         PrezzoProdottoDto p = new PrezzoProdottoDto();
-        p.setIdListino(listId);
-        p.setPrezzo(BigDecimal.valueOf(50.0));
+        p.setIdListino(listId.intValue());
+        p.setPrezzo(50.0);
         overrides.add(p);
         
         when(prezziProdottiDao.getByIdProdotto(productId)).thenReturn(overrides);
@@ -85,8 +85,8 @@ public class PricingDelegateTest {
         // Prezzo sul base
         List<PrezzoProdottoDto> baseOverrides = new ArrayList<>();
         PrezzoProdottoDto pBase = new PrezzoProdottoDto();
-        pBase.setIdListino(listIdBase);
-        pBase.setPrezzo(BigDecimal.valueOf(100.0));
+        pBase.setIdListino(listIdBase.intValue());
+        pBase.setPrezzo(100.0);
         baseOverrides.add(pBase);
         
         when(prezziProdottiDao.getByIdProdotto(productId)).thenReturn(baseOverrides);
@@ -142,8 +142,8 @@ public class PricingDelegateTest {
         // Price on base
         List<PrezzoProdottoDto> baseOverrides = new ArrayList<>();
         PrezzoProdottoDto pBase = new PrezzoProdottoDto();
-        pBase.setIdListino(1L);
-        pBase.setPrezzo(BigDecimal.valueOf(123.45));
+        pBase.setIdListino(1);
+        pBase.setPrezzo(123.45);
         baseOverrides.add(pBase);
         
         when(prezziProdottiDao.getByIdProdotto(productId)).thenReturn(baseOverrides);

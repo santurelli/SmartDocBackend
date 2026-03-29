@@ -4,11 +4,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.StringUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
+
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -291,20 +289,7 @@ public class ProdottoDto extends BaseDto
         this.descFornitore = descFornitore;
     }
 
-    public void setDescrizioneDocumento()
-    {
-        String tipoStore = "";
-        try
-        {
-            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
-            tipoStore = (String) request.getSession().getAttribute(ISharedConstants.CONFIG_KEY_TIPOSTORE);
-        }
-        catch ( Exception e )
-        {
-            // Silently fail if session or request is not available
-        }
-        setDescrizioneDocumento(tipoStore);
-    }
+
 
     public void setDescrizioneDocumento(String tipoStore)
     {
@@ -313,6 +298,7 @@ public class ProdottoDto extends BaseDto
         {
             if ( StringUtils.isNotBlank(getDescrFormato()) || StringUtils.isNotBlank(getDescrScelta()) || StringUtils.isNotBlank(getDescrTono()) || StringUtils.isNotBlank(getDescrCalibro()) )
             {
+                strB.append("\n");
                 if ( StringUtils.isNotBlank(getDescrFormato()) )
                 {
                     strB.append(" Formato: ").append(getDescrFormato());

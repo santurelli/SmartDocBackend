@@ -119,11 +119,22 @@ public class PreventiviDelegate {
                 String tipoStore = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_GLOBAL, ISharedConstants.CONFIG_KEY_TIPOSTORE);
                 for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
                     if (pdDto.isProdotto() || pdDto.isFuoriMagazzino()) {
+                        
+                        // Safety: ensure ProdottoDto is not null
+                        if (pdDto.getProdottoDto() == null) {
+                            pdDto.setProdottoDto(new it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto());
+                        }
+                        // Sync basic info if not present
+                        if (StringUtils.isBlank(pdDto.getProdottoDto().getDescrizione())) {
+                            pdDto.getProdottoDto().setDescrizione(pdDto.isFuoriMagazzino() ? pdDto.getFmDescrizione() : pdDto.getDescProdotto());
+                        }
+
                         pdDto.setQuantitaFormattata(it.tinna.smartdoc.server.util.NumberUtils.formatAsQuantity(pdDto.getQuantita()));
                         pdDto.setPercentualeIvaFormattata(it.tinna.smartdoc.server.util.NumberUtils.formatAsPercentage(pdDto.getPercentualeIva()));
                         pdDto.setPrezzoFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(pdDto.getPrezzo()));
                         pdDto.setTotaleFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(pdDto.getTotaleSenzaIva()));
                         totaleMerce += pdDto.getTotaleSenzaIva();
+                        
                         if (pdDto.isFuoriMagazzino()) {
                             pdDto.getProdottoDto()
                                     .setCodice(StringUtils.isEmpty(pdDto.getFmCodice()) ? "" : pdDto.getFmCodice());
@@ -135,6 +146,13 @@ public class PreventiviDelegate {
                         } else {
                             pdDto.setDescrizione(pdDto.getDescProdotto());
                         }
+                        
+                        // Sync additional report fields to ProdottoDto
+                        pdDto.getProdottoDto().setDescrFormato(pdDto.getDescrFormato());
+                        pdDto.getProdottoDto().setDescrScelta(pdDto.getDescrScelta());
+                        pdDto.getProdottoDto().setDescrTono(pdDto.getDescrTono());
+                        pdDto.getProdottoDto().setDescrCalibro(pdDto.getDescrCalibro());
+                        
                         pdDto.getProdottoDto().setDescrizioneDocumento(tipoStore);
                     }
                 }
@@ -148,6 +166,7 @@ public class PreventiviDelegate {
                         it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto riDto = new it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto();
                         riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
                         it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto aiDto = aliquoteIvaDelegate.getById(pdDto.getIdAliquotaIva());
+                        double imposta = aiDto != null ? aiDto.getImposta() : 0.0;
                         if (riepilogoIva.contains(riDto)) {
                             int idx = riepilogoIva.indexOf(riDto);
                             it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto existing = riepilogoIva.get(idx);
@@ -155,17 +174,18 @@ public class PreventiviDelegate {
                             existing.setImponibileMerceFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(existing.getImponibileMerce()));
                             existing.setTotaleImponibile(existing.getTotaleImponibile() + pdDto.getTotaleSenzaIva());
                             existing.setTotaleImponibileFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(existing.getTotaleImponibile()));
-                            existing.setImportoIva(existing.getImportoIva() + (pdDto.getTotaleSenzaIva() * aiDto.getImposta() / 100));
+                            existing.setImportoIva(existing.getImportoIva() + (pdDto.getTotaleSenzaIva() * imposta / 100));
                             existing.setImportoIvaFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(existing.getImportoIva()));
                         } else {
                             riepilogoIva.add(riDto);
-                            riDto.setAliquotaIva(aiDto.getImposta());
-                            riDto.setAliquotaIvaFormattata(new StringBuilder(aiDto.getCodice()).append(" ").append(aiDto.getDescrizione()).toString());
+                            riDto.setAliquotaIva(imposta);
+                            String aliIvaDescr = aiDto != null ? (new StringBuilder(aiDto.getCodice()).append(" ").append(aiDto.getDescrizione()).toString()) : "IVA non specificata";
+                            riDto.setAliquotaIvaFormattata(aliIvaDescr);
                             riDto.setImponibileMerce(pdDto.getTotaleSenzaIva());
                             riDto.setImponibileMerceFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getImponibileMerce()));
                             riDto.setTotaleImponibile(pdDto.getTotaleSenzaIva());
                             riDto.setTotaleImponibileFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
-                            riDto.setImportoIva(pdDto.getTotaleSenzaIva() * aiDto.getImposta() / 100);
+                            riDto.setImportoIva(pdDto.getTotaleSenzaIva() * imposta / 100);
                             riDto.setImportoIvaFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getImportoIva()));
                         }
                     }
@@ -223,6 +243,11 @@ public class PreventiviDelegate {
             
             String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
             td.getParameters().put("print_codagente", Boolean.parseBoolean(stampaAgente));
+            
+            String annotazioneEsc = dto.getAnnotazioneEstesa();
+            if (StringUtils.isNotEmpty(annotazioneEsc) && annotazioneEsc.length() < 400) {
+                td.getParameters().put("annotazioni", annotazioneEsc);
+            }
 
             byte[] bytes = null;
 
@@ -236,7 +261,7 @@ public class PreventiviDelegate {
             }
             bytes = net.sf.jasperreports.engine.JasperExportManager.exportReportToPdf(jasperPrint);
             
-            if (StringUtils.isNotEmpty(dto.getAnnotazioneEstesa())) {
+            if (StringUtils.isNotEmpty(dto.getAnnotazioneEstesa()) && dto.getAnnotazioneEstesa().length() >= 400) {
                 params = new HashMap<>();
                 if (daDto != null) {
                     if (daDto.getByteLogo() != null) {
@@ -280,7 +305,16 @@ public class PreventiviDelegate {
     }
 
     public PreventivoDto getById(long id) throws SQLException {
-        return preventiviDao.getById(id);
+        PreventivoDto dto = preventiviDao.getById(id);
+        if (dto != null && dto.getProdotti() != null) {
+            String tipoStore = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_GLOBAL, ISharedConstants.CONFIG_KEY_TIPOSTORE);
+            for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
+                if (pdDto.getProdottoDto() != null) {
+                    pdDto.getProdottoDto().setDescrizioneDocumento(tipoStore);
+                }
+            }
+        }
+        return dto;
     }
 
     // Returns formatted for Datatables

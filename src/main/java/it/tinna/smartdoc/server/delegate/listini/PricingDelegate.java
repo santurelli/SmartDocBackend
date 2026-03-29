@@ -55,7 +55,7 @@ public class PricingDelegate extends BaseDelegate {
         for (PrezzoProdottoDto p : overrides) {
             if (p.getIdListino() != null && p.getIdListino().longValue() == idListino.longValue()) {
                 if (p.getPrezzo() != null) {
-                    return p.getPrezzo();
+                    return BigDecimal.valueOf(p.getPrezzo());
                 }
             }
         }
@@ -84,7 +84,7 @@ public class PricingDelegate extends BaseDelegate {
                 if ("ULTIMO_ACQUISTO".equals(source)) {
                     sourceValue = prodotto.getUltimoPrezzoAcquisto() != null ? BigDecimal.valueOf(prodotto.getUltimoPrezzoAcquisto()) : BigDecimal.ZERO;
                 } else {
-                    sourceValue = producto.getPrezzoMedioAcquisto() != null ? BigDecimal.valueOf(prodotto.getPrezzoMedioAcquisto()) : BigDecimal.ZERO;
+                    sourceValue = prodotto.getPrezzoMedioAcquisto() != null ? BigDecimal.valueOf(prodotto.getPrezzoMedioAcquisto()) : BigDecimal.ZERO;
                 }
             }
         }

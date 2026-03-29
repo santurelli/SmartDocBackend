@@ -23,6 +23,11 @@ public class ListiniDao extends BaseDao {
         return jdbcTemplate.query(FileQueryReader.getQuery("LISTINI_S04"), rowMapper);
     }
 
+    public List<ListinoDto> getAll() throws SQLException {
+        BeanPropertyRowMapper<ListinoDto> rowMapper = new BeanPropertyRowMapper<>(ListinoDto.class);
+        return jdbcTemplate.query(FileQueryReader.getQuery("LISTINI_S01"), rowMapper);
+    }
+
     public ListinoDto getById(Long id) throws SQLException {
         try {
             BeanPropertyRowMapper<ListinoDto> rowMapper = new BeanPropertyRowMapper<>(ListinoDto.class);
@@ -34,7 +39,7 @@ public class ListiniDao extends BaseDao {
         }
     }
 
-    public Long insert(ListinoDto dto, String user) throws SQLException {
+    public Long insert(ListinoDto dto, Integer user) throws SQLException {
         try {
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("LISTINI_I01"), Long.class,
                 dto.getDescrizione(),
@@ -51,7 +56,7 @@ public class ListiniDao extends BaseDao {
         }
     }
 
-    public void update(ListinoDto dto, String user) throws SQLException {
+    public void update(ListinoDto dto, Integer user) throws SQLException {
         try {
             jdbcTemplate.update(FileQueryReader.getQuery("LISTINI_U01"),
                 dto.getDescrizione(),
@@ -69,7 +74,7 @@ public class ListiniDao extends BaseDao {
         }
     }
 
-    public void delete(Long id, String user) throws SQLException {
+    public void delete(Long id, Integer user) throws SQLException {
         try {
             jdbcTemplate.update(FileQueryReader.getQuery("LISTINI_D01"), user, id);
         } catch (DataAccessException e) {

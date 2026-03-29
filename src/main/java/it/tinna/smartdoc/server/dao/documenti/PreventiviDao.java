@@ -17,9 +17,12 @@ import org.springframework.stereotype.Repository;
 import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.database.FileQueryReader;
 import it.tinna.smartdoc.server.util.StringUtility;
-import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto; // Create if needed or use BaseDto for list
+import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto; 
 import it.tinna.smartdoc.shared.dto.documenti.PreventivoDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
+import it.tinna.smartdoc.shared.dto.documenti.SpesaIncassoDocumentoDto;
+import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+
 
 @Repository
 public class PreventiviDao extends BaseDao {
@@ -73,6 +76,12 @@ public class PreventiviDao extends BaseDao {
             List<ProdottoDocumentoDto> lines = jdbcTemplate.query(FileQueryReader.getQuery("PREVENTIVI_S04"), rowMapperLines, id);
             dto.setProdotti(lines);
             
+            // Get expirations (scadenze)
+            dto.setListaScadenzePagamentiDocumento(getScadenzePagamento(id));
+            
+            // Get expenses (spese)
+            dto.setListaSpeseIncassoFattura(getListSpeseIncassoById(id));
+            
             return dto;
         } catch (EmptyResultDataAccessException e) {
             _log.info("Nessun preventivo trovato con id {}", id);
@@ -122,13 +131,32 @@ public class PreventiviDao extends BaseDao {
         }
     }
     
-    public long getTotPreventivi() throws SQLException {
-        // Use generic S08 from CLIENTI? No, need PREVENTIVI version but not present in extracted queries list, using list size or simplified count
-        // Actually the list query returns total count in the window function, but separate count is useful.
-        // For now I'll skip separate count query and rely on the window function if possible, or key search.
-        // Actually, I can just do a simple count query.
-        return 0; // Placeholder
+    public List<ScadenzaPagamentoDocumentoDto> getScadenzePagamento(long id) throws SQLException {
+        try {
+            BeanPropertyRowMapper<ScadenzaPagamentoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(ScadenzaPagamentoDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S06"), rowMapper, id);
+        } catch (EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero dell'elenco scadenze pagamento per il preventivo {}", id, e);
+            throw new SQLException(e);
+        }
     }
+
+    public List<SpesaIncassoDocumentoDto> getListSpeseIncassoById(long id) throws SQLException {
+        try {
+            BeanPropertyRowMapper<SpesaIncassoDocumentoDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(SpesaIncassoDocumentoDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURE_S05"), rowMapper, id);
+        } catch (EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero dell'elenco spese incasso per il preventivo {}", id, e);
+            throw new SQLException(e);
+        }
+    }
+
 
     public Integer insert(PreventivoDto dto) throws SQLException {
         try {

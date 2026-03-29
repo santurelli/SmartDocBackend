@@ -140,12 +140,12 @@
         <dependency>
             <groupId>net.sf.jasperreports</groupId>
             <artifactId>jasperreports</artifactId>
-            <version>6.20.0</version>
+            <version>6.21.3</version>
         </dependency>
         <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy</artifactId>
-            <version>3.0.12</version>
+            <version>3.0.21</version>
         </dependency>
         <dependency>
             <groupId>org.apache.pdfbox</groupId>

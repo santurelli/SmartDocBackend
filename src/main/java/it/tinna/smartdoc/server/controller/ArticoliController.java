@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.tinna.smartdoc.server.delegate.prodotti.ProdottiDelegate;
+import it.tinna.smartdoc.shared.dto.prodotti.PrezzoProdottoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
@@ -184,6 +185,29 @@ public class ArticoliController {
             return ResponseEntity.ok(Map.of("prezzo", prezzo));
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().body("Error fetching price: " + e.getMessage());
+        }
+    }
+    @GetMapping("/{id}/prezzi")
+    public ResponseEntity<?> getPrezzi(@PathVariable long id) {
+        try {
+            List<PrezzoProdottoDto> list = prodottiDelegate.getPrezzi(id);
+            GenericResponseDto<List<PrezzoProdottoDto>> response = new GenericResponseDto<>();
+            response.setPayload(list);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error fetching prices: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/{id}/prezzi")
+    public ResponseEntity<?> savePrezzi(@PathVariable long id, @RequestBody List<PrezzoProdottoDto> prezzi) {
+        try {
+            prodottiDelegate.savePrezzi(id, prezzi);
+            return ResponseEntity.ok(new GenericResponseDto<Void>());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Error saving prices: " + e.getMessage());
         }
     }
 }

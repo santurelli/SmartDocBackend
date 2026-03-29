@@ -23,22 +23,27 @@ public class ListiniDelegate extends BaseDelegate {
         return listiniDao.getListForCombo();
     }
 
+    @Cacheable
+    public List<ListinoDto> getAll() throws SQLException {
+        return listiniDao.getAll();
+    }
+
     public ListinoDto getById(Long id) throws SQLException {
         return listiniDao.getById(id);
     }
 
     @CacheEvict(allEntries = true)
-    public Long insert(ListinoDto dto, String user) throws SQLException {
+    public Long insert(ListinoDto dto, Integer user) throws SQLException {
         return listiniDao.insert(dto, user);
     }
 
     @CacheEvict(allEntries = true)
-    public void update(ListinoDto dto, String user) throws SQLException {
+    public void update(ListinoDto dto, Integer user) throws SQLException {
         listiniDao.update(dto, user);
     }
 
     @CacheEvict(allEntries = true)
-    public void delete(Long id, String user) throws SQLException {
+    public void delete(Long id, Integer user) throws SQLException {
         listiniDao.delete(id, user);
     }
 }

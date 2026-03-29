@@ -4,13 +4,16 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
+import it.tinna.smartdoc.server.delegate.listini.PricingDelegate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import it.tinna.smartdoc.server.dao.listini.ListiniDao;
 import it.tinna.smartdoc.server.dao.prodotti.PrezziProdottiDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
+import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.shared.dto.prodotti.PrezzoProdottoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 
@@ -18,54 +21,65 @@ import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 public class ProdottiDelegate extends BaseDelegate {
 
     @Autowired
-    private JdbcTemplate jdbcTemplate;
+    private JdbcTemplate    jdbcTemplate;
+    @Autowired
+    private PricingDelegate pricingDelegate;
+    @Autowired
+    private PrezziProdottiDao prezziProdottiDao;
+    @Autowired
+    private ListiniDelegate listiniDelegate;
+    @Autowired
+    private ProdottiDao prodottiDao;
 
     public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir,
             Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta);
+        return prodottiDao.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta);
     }
 
     public ProdottoDto getById(long id) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.getById(id);
+        return prodottiDao.getById(id);
     }
 
     public Map<String, Object> getCombosMap() throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.getCombosMap();
+        return prodottiDao.getCombosMap();
     }
     
      public boolean isExistentCodice(String codice, Integer id) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.isExistentCodice(codice, id);
+        return prodottiDao.isExistentCodice(codice, id);
     }
 
     public void insert(ProdottoDto dto) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        dao.insert(dto);
+        prodottiDao.insert(dto);
     }
 
     public void update(ProdottoDto dto) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        dao.update(dto);
+        prodottiDao.update(dto);
     }
 
     public String getProssimoCodice() throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        return dao.getProssimoCodice();
+        return prodottiDao.getProssimoCodice();
     }
 
     public void delete(long id, Object user) throws SQLException {
-        ProdottiDao dao = new ProdottiDao(jdbcTemplate);
-        dao.delete(id, user);
+        prodottiDao.delete(id, user);
     }
-
-    @Autowired
-    private PricingDelegate pricingDelegate;
 
     public Double getPrezzoDocumento(Long idProdotto, Long idListino) throws SQLException {
         return pricingDelegate.calculatePrice(idProdotto, idListino);
+    }
+
+    public List<PrezzoProdottoDto> getPrezzi(long idProdotto) throws SQLException {
+        return prezziProdottiDao.getByIdProdotto(idProdotto);
+    }
+
+    public void savePrezzi(long idProdotto, List<PrezzoProdottoDto> prezzi) throws SQLException {
+        prezziProdottiDao.deleteByIdProdotto(idProdotto);
+        for (PrezzoProdottoDto dto : prezzi) {
+            if (dto.getPrezzo() != null) {
+                dto.setIdProdotto(idProdotto);
+                prezziProdottiDao.insert(dto);
+            }
+        }
     }
 }
 

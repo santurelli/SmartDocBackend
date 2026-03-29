@@ -99,6 +99,7 @@
 	<parameter name="documento" class="it.tinna.smartdoc.shared.dto.documenti.PreventivoDto" isForPrompting="false">
 		<parameterDescription><![CDATA[Oggetto che rappresenta il documento]]></parameterDescription>
 	</parameter>
+	<parameter name="annotazioni" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="totalemerce" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="spesetrasporto" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="spesealtre" class="java.lang.String" isForPrompting="false"/>
@@ -407,10 +408,10 @@
 							</textField>
 						</jr:detailCell>
 					</jr:column>
-					<jr:column width="178" uuid="d99dfbb6-53dd-47d6-b898-d1d4334ded3a">
+					<jr:column width="238" uuid="d99dfbb6-53dd-47d6-b898-d1d4334ded3a">
 						<jr:columnHeader style="table_TD" height="20" rowSpan="1">
 							<staticText>
-								<reportElement x="0" y="0" width="178" height="20" uuid="2c7139f1-385a-4c25-b2fa-f253aad2ebc6"/>
+								<reportElement x="0" y="0" width="238" height="20" uuid="2c7139f1-385a-4c25-b2fa-f253aad2ebc6"/>
 								<textElement textAlignment="Center" verticalAlignment="Middle">
 									<font fontName="Arial" size="7" isBold="true"/>
 								</textElement>
@@ -419,7 +420,7 @@
 						</jr:columnHeader>
 						<jr:detailCell height="12" rowSpan="1">
 							<textField isStretchWithOverflow="true">
-								<reportElement style="table_TD_1" x="0" y="1" width="178" height="11" uuid="c694490e-44de-4d40-b925-37f56e34d455"/>
+								<reportElement style="table_TD_1" x="0" y="1" width="238" height="11" uuid="c694490e-44de-4d40-b925-37f56e34d455"/>
 								<box leftPadding="1"/>
 								<textElement verticalAlignment="Middle">
 									<font fontName="Arial" size="8"/>
@@ -428,48 +429,7 @@
 							</textField>
 						</jr:detailCell>
 					</jr:column>
-					<jr:column width="25" uuid="f2e23632-824b-4a30-9394-6a4b48c4749e">
-						<jr:columnHeader style="table_TD" height="20" rowSpan="1">
-							<staticText>
-								<reportElement x="0" y="0" width="25" height="20" uuid="6f1a2b7b-b980-46ee-822a-2998f24c9a5b"/>
-								<textElement textAlignment="Center" verticalAlignment="Middle">
-									<font fontName="Arial" size="7" isBold="true"/>
-								</textElement>
-								<text><![CDATA[Sc]]></text>
-							</staticText>
-						</jr:columnHeader>
-						<jr:detailCell height="12" rowSpan="1">
-							<textField isStretchWithOverflow="true">
-								<reportElement x="0" y="1" width="25" height="11" uuid="68cd8df3-e8f9-4951-ab59-ada41a27f491"/>
-								<box leftPadding="1"/>
-								<textElement verticalAlignment="Middle">
-									<font fontName="Arial" size="8"/>
-								</textElement>
-								<textFieldExpression><![CDATA[$F{descrScelta} == null ? "" : $F{descrScelta}]]></textFieldExpression>
-							</textField>
-						</jr:detailCell>
-					</jr:column>
-					<jr:column width="35" uuid="e295229b-ea5c-411b-a7b9-3fe68cb455c9">
-						<jr:columnHeader style="table_TD" height="20" rowSpan="1">
-							<staticText>
-								<reportElement x="0" y="0" width="35" height="20" uuid="eeed677c-537d-44cb-b64d-ccf8238786b3"/>
-								<textElement textAlignment="Center" verticalAlignment="Middle">
-									<font fontName="Arial" size="7" isBold="true"/>
-								</textElement>
-								<text><![CDATA[T/C]]></text>
-							</staticText>
-						</jr:columnHeader>
-						<jr:detailCell height="12" rowSpan="1">
-							<textField isStretchWithOverflow="true">
-								<reportElement x="0" y="1" width="35" height="11" uuid="97358776-e8d9-482a-b745-0b81ee498f6f"/>
-								<box leftPadding="1"/>
-								<textElement verticalAlignment="Middle">
-									<font fontName="Arial" size="8"/>
-								</textElement>
-								<textFieldExpression><![CDATA[($F{descrTono} == null ? "" : $F{descrTono}) + ($F{descrCalibro} == null || $F{descrCalibro}.equals("") ? "" : " " + $F{descrCalibro})]]></textFieldExpression>
-							</textField>
-						</jr:detailCell>
-					</jr:column>
+
 					<jr:column width="22" uuid="e865d32c-81c5-4415-b550-31f53e7ff3c1">
 						<jr:columnHeader style="table_TD" height="20" rowSpan="1">
 							<staticText>
@@ -611,23 +571,12 @@
 					</box>
 				</frame>
 				<frame>
-					<reportElement stretchType="RelativeToBandHeight" x="80" y="0" width="178" height="460" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="dbd20362-139f-4844-9b14-27ec81bd9b92"/>
+					<reportElement stretchType="RelativeToBandHeight" x="80" y="0" width="238" height="460" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="dbd20362-139f-4844-9b14-27ec81bd9b92"/>
 					<box>
 						<rightPen lineWidth="0.5"/>
 					</box>
 				</frame>
-				<frame>
-					<reportElement stretchType="RelativeToBandHeight" x="258" y="0" width="25" height="460" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="867f72f4-29dc-4e9d-b8af-4a8dce8f67af"/>
-					<box>
-						<rightPen lineWidth="0.5"/>
-					</box>
-				</frame>
-				<frame>
-					<reportElement stretchType="RelativeToBandHeight" x="283" y="0" width="35" height="460" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="0066d9f6-0cfb-4194-ad14-6c0775005cd4"/>
-					<box>
-						<rightPen lineWidth="0.5"/>
-					</box>
-				</frame>
+
 				<frame>
 					<reportElement stretchType="RelativeToBandHeight" x="318" y="0" width="22" height="460" isPrintInFirstWholeBand="true" isPrintWhenDetailOverflows="true" uuid="c02427fc-a520-4598-86ff-4b4016c7c08f"/>
 					<box>
@@ -1128,6 +1077,14 @@
 					<rightPen lineWidth="0.5"/>
 				</box>
 			</frame>
+			<textField isStretchWithOverflow="true">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="116" width="368" height="31" uuid="eb60980e-3cae-4581-9f93-1823126f2940"/>
+				<box leftPadding="4" bottomPadding="2" rightPadding="4"/>
+				<textElement markup="html">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{annotazioni}]]></textFieldExpression>
+			</textField>
 		</band>
 	</lastPageFooter>
 </jasperReport>

@@ -3298,7 +3298,9 @@
 					SELECT k_d_e_fatture AS idDocumento,
 				           d_e_fatture.num_fattura || COALESCE('/' || d_e_fatture.particella, '') AS numeroDocumento,
 				           d_e_clienti.denominazione AS soggetto,
-				       	   TO_CHAR(data_fattura, 'DD/MM/YYYY') AS dataDocumento
+				       	   TO_CHAR(data_fattura, 'DD/MM/YYYY') AS dataDocumento,
+				       	   d_e_fatture.fl_fatturaelettronica,
+				       	   d_e_fatture.stato_fattura_elettronica
 		  			  FROM d_e_fatture,
 		  			  	   d_e_clienti
  					 WHERE d_e_fatture.k_d_e_clienti = d_e_clienti.k_d_e_clienti
@@ -8554,8 +8556,8 @@
 			  FROM d_e_listini
 		 LEFT JOIN d_r_prezzi_prodotti
 			 	ON d_r_prezzi_prodotti.k_d_e_listini = d_e_listini.k_d_e_listini 
-			 WHERE d_r_prezzi_prodotti.k_d_e_prodotti = ?
-			   AND d_e_listini.fl_deleted = 0
+			   AND d_r_prezzi_prodotti.k_d_e_prodotti = ?
+			 WHERE d_e_listini.fl_deleted = 0
 		</content>
 	</query>
 	<query name="PRODOTTI_S07">
