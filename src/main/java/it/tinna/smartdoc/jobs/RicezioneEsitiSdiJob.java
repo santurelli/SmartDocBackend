@@ -25,40 +25,26 @@ public class RicezioneEsitiSdiJob implements Job
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException
     {
-        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml");
-        logger.info("Avvio job ricezione esiti sdi");
-        RestTemplate restTemplate = new RestTemplate();
-        ConfigurazioneDelegate configurazioneDelegate = (ConfigurazioneDelegate) springContext.getBean("configurazioneDelegate");
+        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml", "classpath:jobs/RicezioneEsitiSdi_JobDefinitions.xml");
+        logger.info("Avvio job ricezione esiti sdi direttamente tramite JobLauncher");
         try
         {
-            String urlAvvioBatch = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_JOB_LETTURA_ESITI_SDI, BatchConstants.CONFIG_KEY_URL_AVVIO_BATCH);
+            org.springframework.batch.core.launch.JobLauncher jobLauncher = (org.springframework.batch.core.launch.JobLauncher) springContext.getBean(org.springframework.batch.core.launch.JobLauncher.class);
+            org.springframework.batch.core.Job job = (org.springframework.batch.core.Job) springContext.getBean("JOB_RICEZIONE_ESITISDI");
+
+            org.springframework.batch.core.JobParameters params = new org.springframework.batch.core.JobParametersBuilder()
+                    .addString("dtExecution", org.apache.commons.lang3.time.DateFormatUtils.format(new java.util.Date(), "yyyyMMddHHmmss"))
+                    .toJobParameters();
+            
             try
             {
-                ResponseEntity<String> response = restTemplate.getForEntity(urlAvvioBatch, String.class);
-                logger.info("Risposta alla chiamata del job di lettura esiti sdi: {}", response.getBody());
+                org.springframework.batch.core.JobExecution execution = jobLauncher.run(job, params);
+                logger.info("Job di ricezione esiti sdi terminato con stato: {}", execution.getStatus());
             }
-            catch ( RestClientException e )
+            catch ( Exception e )
             {
-                logger.error("Errore nella chiamata all'url per l'avvio del batch di ricezione esiti sdi", e);
+                logger.error("Errore nel lancio del batch di ricezione esiti sdi", e);
             }
-
-//        JobParametersBuilder jpb = new JobParametersBuilder().addString("dtExecution", DateFormatUtils.format(new Date(), "yyyyMMddHHmmss"));
-//        String params = jpb.toJobParameters().toString();
-//        params = params.substring(1);
-//        params = params.substring(0, params.length() - 1);
-//        try
-//        {
-//            JobOperator jobOperator = (JobOperator) springContext.getBean("jobOperator");
-//            jobOperator.start("JOB_RICEZIONE_ESITISDI", params);
-//        }
-//        catch ( NoSuchJobException | JobInstanceAlreadyExistsException | JobParametersInvalidException e )
-//        {
-//            logger.error("Errore nell'avvio del batch di ricezione degli esiti sdi", e);
-//        }
-        }
-        catch ( SQLException e )
-        {
-            logger.error("Errore nel recupero dell'url per l'avvio del batch di lettura degli esiti sdi", e);
         }
         finally
         {

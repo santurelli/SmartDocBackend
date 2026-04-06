@@ -33,50 +33,42 @@ public class InvioFattureElettronicheJob implements Job
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException
     {
-        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml");
+        // Using a more robust way to load the context if main-config.xml is the entry point
+        // but for now, we'll try to load the definitions directly or assume they are in main-config.xml
+        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml", "classpath:jobs/InvioFattureElettroniche_JobDefinitions.xml");
         try
         {
             MunicipalityDelegate municipalityDelegate = (MunicipalityDelegate) springContext.getBean("municipalityDelegate");
-//            springContext.getAutowireCapableBeanFactory().autowireBean(municipalityDelegate);
-            ConfigurazioneDelegate configurazioneDelegate = (ConfigurazioneDelegate) springContext.getBean("configurazioneDelegate");
-            String urlAvvioBatch = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_JOB_INVIO_FATTURE, BatchConstants.CONFIG_KEY_URL_AVVIO_BATCH);
+            org.springframework.batch.core.launch.JobLauncher jobLauncher = (org.springframework.batch.core.launch.JobLauncher) springContext.getBean(org.springframework.batch.core.launch.JobLauncher.class);
+            org.springframework.batch.core.Job job = (org.springframework.batch.core.Job) springContext.getBean("JOB_INVIO_FATTUREELETTRONICHE");
+
             List<MunicipalityDto> list = municipalityDelegate.getAziendeConFatturazioneElettronica();
             if ( list != null )
             {
-                RestTemplate restTemplate = new RestTemplate();
-//                JobOperator jobOperator = (JobOperator) springContext.getBean("jobOperator");
-//              jobOperator.start("JOB_RICEZIONE_ESITISDI", params);
                 for ( MunicipalityDto municipalityDto : list )
                 {
-                    logger.info("Trovata azienda {} con servizio di fatturazione elettronica attivo. Cerco di avviare il batch di invio fatture elettroniche", municipalityDto.getLabel());
-                    Map<String, Object> map = new HashMap<String, Object>();
-                    map.put("DB_KEY", municipalityDto.getDbName());
+                    logger.info("Trovata azienda {} con servizio di fatturazione elettronica attivo. Avvio il batch di invio fatture elettroniche direttamente.", municipalityDto.getLabel());
+                    
+                    org.springframework.batch.core.JobParameters params = new org.springframework.batch.core.JobParametersBuilder()
+                            .addString(BatchConstants.JOBPARAM_DB_KEY, municipalityDto.getDbName())
+                            .addString("dtExecution", org.apache.commons.lang3.time.DateFormatUtils.format(new java.util.Date(), "yyyyMMddHHmmss"))
+                            .toJobParameters();
+                    
                     try
                     {
-                        ResponseEntity<String> response = restTemplate.getForEntity(urlAvvioBatch, String.class, map);
-                        logger.info("Risposta alla chiamata del job di invio fatture elettroniche l'azienda {}: {}", municipalityDto.getLabel(), response.getBody());
+                        org.springframework.batch.core.JobExecution execution = jobLauncher.run(job, params);
+                        logger.info("Job di invio fatture per l'azienda {} terminato con stato: {}", municipalityDto.getLabel(), execution.getStatus());
                     }
-                    catch ( RestClientException e )
+                    catch ( Exception e )
                     {
-                        logger.error("Errore nella chiamata all'url per l'avvio del batch di invio fatture per l'azienda {}", municipalityDto.getLabel(), e);
+                        logger.error("Errore nel lancio del batch di invio fatture per l'azienda {}", municipalityDto.getLabel(), e);
                     }
-//                    JobParametersBuilder jpb = new JobParametersBuilder().addString("dtExecution", DateFormatUtils.format(new Date(), "yyyyMMddHHmmss")).addString(BatchConstants.JOBPARAM_DB_KEY, municipalityDto.getDbName());
-//                    String params = jpb.toJobParameters().toString();
-//                    params = params.substring(1);
-//                    params = params.substring(0, params.length() - 1);
-//                    try
-//                    {
-//                        jobOperator.start("JOB_INVIO_FATTUREELETTRONICHE", params);
-//                    }
-//                    catch ( NoSuchJobException | JobInstanceAlreadyExistsException | JobParametersInvalidException e )
-//                    {
-//                        logger.error("Errore nell'avvio del batch di invio fatture elettroniche per l'azienda {}", municipalityDto.getLabel(), e);
-//                    }
                 }
             }
         }
         catch ( SQLException e )
         {
+            logger.error("Errore nel recupero delle aziende dalla base dati", e);
         }
         finally
         {

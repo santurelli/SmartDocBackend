@@ -26,10 +26,9 @@ public class FileQueryReader {
             // config.setFile(ConfigurationUtils.getFile("\"" + fileQueryDirectory + "\"",
             // IConstants.QUERY_FILE));
             ClassPathResource resource = new ClassPathResource(
-                    IConstants.CONFIG_DIR + File.separator + IConstants.QUERY_FILE);
-            config.setFile(resource.getFile());
+                    IConstants.CONFIG_DIR + "/" + IConstants.QUERY_FILE);
             config.setDelimiterParsingDisabled(true);
-            config.load();
+            config.load(resource.getInputStream());
             List<Object> key = config.getList("query[@name]");
             List<Object> value = config.getList("query.content");
             queryMap = new HashMap<String, String>();

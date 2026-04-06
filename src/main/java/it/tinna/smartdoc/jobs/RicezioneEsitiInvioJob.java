@@ -15,6 +15,9 @@ import org.springframework.web.client.RestTemplate;
 
 import it.tinna.smartdoc.batch.constants.BatchConstants;
 import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
+import it.tinna.smartdoc.server.delegate.municipality.MunicipalityDelegate;
+import it.tinna.smartdoc.shared.dto.municipality.MunicipalityDto;
+import java.util.List;
 
 @DisallowConcurrentExecution
 public class RicezioneEsitiInvioJob implements Job
@@ -25,49 +28,46 @@ public class RicezioneEsitiInvioJob implements Job
     @Override
     public void execute(JobExecutionContext context) throws JobExecutionException
     {
-        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml");
-        logger.info("Avvio job ricezione esito invio fatture elettroniche");
-        RestTemplate restTemplate = new RestTemplate();
-        ConfigurazioneDelegate configurazioneDelegate = (ConfigurazioneDelegate) springContext.getBean("configurazioneDelegate");
+        ClassPathXmlApplicationContext springContext = new ClassPathXmlApplicationContext("/config/main-config.xml", "classpath:jobs/RicezioneEsitiInvio_JobDefinitions.xml");
+        logger.info("Avvio job ricezione esito invio fatture elettroniche direttamente tramite JobLauncher");
         try
         {
-            String urlAvvioBatch = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_JOB_LETTURA_ESITI_INVIO, BatchConstants.CONFIG_KEY_URL_AVVIO_BATCH);
-            try
+            MunicipalityDelegate municipalityDelegate = (MunicipalityDelegate) springContext.getBean("municipalityDelegate");
+            org.springframework.batch.core.launch.JobLauncher jobLauncher = (org.springframework.batch.core.launch.JobLauncher) springContext.getBean(org.springframework.batch.core.launch.JobLauncher.class);
+            org.springframework.batch.core.Job job = (org.springframework.batch.core.Job) springContext.getBean("JOB_RICEZIONE_ESITIINVIO");
+
+            List<MunicipalityDto> list = municipalityDelegate.getAziendeConFatturazioneElettronica();
+            if ( list != null )
             {
-                ResponseEntity<String> response = restTemplate.getForEntity(urlAvvioBatch, String.class);
-                logger.info("Risposta alla chiamata del job di lettura esiti invio: {}", response.getBody());
-            }
-            catch ( RestClientException e )
-            {
-                logger.error("Errore nella chiamata all'url per l'avvio del batch di lettura esiti invio fatture", e);
+                for ( MunicipalityDto municipalityDto : list )
+                {
+                    logger.info("Trovata azienda {} con servizio di fatturazione elettronica attivo. Avvio il batch di lettura esiti invio direttamente.", municipalityDto.getLabel());
+                    
+                    org.springframework.batch.core.JobParameters params = new org.springframework.batch.core.JobParametersBuilder()
+                            .addString(BatchConstants.JOBPARAM_DB_KEY, municipalityDto.getDbName())
+                            .addString("dtExecution", org.apache.commons.lang3.time.DateFormatUtils.format(new java.util.Date(), "yyyyMMddHHmmss"))
+                            .toJobParameters();
+                    
+                    try
+                    {
+                        org.springframework.batch.core.JobExecution execution = jobLauncher.run(job, params);
+                        logger.info("Job di lettura esiti invio per l'azienda {} terminato con stato: {}", municipalityDto.getLabel(), execution.getStatus());
+                    }
+                    catch ( Exception e )
+                    {
+                        logger.error("Errore nel lancio del batch di lettura esiti invio per l'azienda {}", municipalityDto.getLabel(), e);
+                    }
+                }
             }
         }
         catch ( SQLException e )
         {
-            logger.error("Errore nel recupero dell'url per l'avvio del batch di lettura degli esiti invio fatture", e);
+            logger.error("Errore nel recupero delle aziende dalla base dati", e);
         }
         finally
         {
             springContext.close();
         }
-
-//        JobParametersBuilder jpb = new JobParametersBuilder().addString("dtExecution", DateFormatUtils.format(new Date(), "yyyyMMddHHmmss"));
-//        String params = jpb.toJobParameters().toString();
-//        params = params.substring(1);
-//        params = params.substring(0, params.length() - 1);
-//        try
-//        {
-//            JobOperator jobOperator = (JobOperator) springContext.getBean("jobOperator");
-//            jobOperator.start("JOB_RICEZIONE_ESITIINVIO", params);
-//        }
-//        catch ( NoSuchJobException | JobInstanceAlreadyExistsException | JobParametersInvalidException e )
-//        {
-//            logger.error("Errore nell'avvio del batch di ricezione degli esiti di invio delle fatture elettroniche", e);
-//        }
-//        finally
-//        {
-//            springContext.close();
-//        }
     }
 
 }

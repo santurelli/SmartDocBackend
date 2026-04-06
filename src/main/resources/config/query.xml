@@ -1805,6 +1805,14 @@
 			  and d_e_fatture.data_fattura &lt;= coalesce(to_date(?, 'dd/mm/yyyy'), d_e_fatture.data_fattura)
 		</content>
 	</query>
+	<query name="ENTI_HMAC_AUTH_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT external_auth_key
+			  FROM d_e_enti
+			 WHERE nome_db = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
 	<query name="COMUNI_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_enti AS id,
