@@ -32,6 +32,8 @@ import org.apache.commons.lang3.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
 
@@ -101,6 +103,9 @@ import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 @Service(value = "fatturaelettronicaDelegate")
 public class FatturaElettronicaDelegate extends BaseDelegate
 {
+    @Autowired
+    @Qualifier("serviceJdbcTemplate")
+    private JdbcTemplate serviceJdbcTemplate;
 
     @Autowired
     private NumerazioneFatturaElettronicaDelegate numerazioneFatturaElettronicaDelegate;
@@ -327,7 +332,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 }
             }
             datiGeneraliDocumento.setNumero(numDocumento);
-            if ( dto.getSplitPayment() == 0 )
+            if ( dto.getSplitPayment() == null || dto.getSplitPayment() == 0 )
             {
                 datiGeneraliDocumento.setImportoTotaleDocumento(dto.getTotale());
             }
@@ -549,11 +554,11 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 datiRiepilogo.setImponibileImporto(riepilogoDto.getTotaleImponibile());
                 datiRiepilogo.setImposta(BigDecimal.valueOf(riepilogoDto.getAliquotaIva()).multiply(BigDecimal.valueOf(riepilogoDto.getTotaleImponibile())).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                 // datiRiepilogo.setImposta(riepilogoDto.getImportoIva());
-                if ( dto.getEsigibilitaDifferita().intValue() == 1 )
+                if ( dto.getEsigibilitaDifferita() != null && dto.getEsigibilitaDifferita() == 1 )
                 {
                     datiRiepilogo.setEsigibilitaIVA(EsigibilitaIvaEnum.DIFFERITA);
                 }
-                else if ( dto.getSplitPayment() == 1 )
+                else if ( dto.getSplitPayment() != null && dto.getSplitPayment() == 1 )
                 {
                     datiRiepilogo.setEsigibilitaIVA(EsigibilitaIvaEnum.SCISSIONE);
 
@@ -621,12 +626,20 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             {
                 for ( ScontoMaggiorazioneType scontoMaggiorazione : datiGeneraliDocumento.getScontoMaggiorazione() )
                 {
-                    totSconti = totSconti.add(BigDecimal.valueOf(scontoMaggiorazione.getImporto()));
+                    if ( scontoMaggiorazione.getImporto() != null )
+                    {
+                        totSconti = totSconti.add(BigDecimal.valueOf(scontoMaggiorazione.getImporto()));
+                    }
+                    else if ( scontoMaggiorazione.getPercentuale() != null )
+                    {
+                        BigDecimal scontoPercentuale = totRiepilogo.multiply(BigDecimal.valueOf(scontoMaggiorazione.getPercentuale())).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
+                        totSconti = totSconti.add(scontoPercentuale);
+                    }
                 }
             }
-            if ( totScadenze.compareTo(totRiepilogo.subtract(totSconti).subtract(dto.getSplitPayment() == 0 ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()))) != 0 )
+            if ( totScadenze.compareTo(totRiepilogo.subtract(totSconti).subtract((dto.getSplitPayment() == null || dto.getSplitPayment() == 0) ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()))) != 0 )
             {
-                BigDecimal arrotondamento = totRiepilogo.subtract(totSconti).subtract(totScadenze).subtract(dto.getSplitPayment() == 0 ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()));
+                BigDecimal arrotondamento = totRiepilogo.subtract(totSconti).subtract(totScadenze).subtract((dto.getSplitPayment() == null || dto.getSplitPayment() == 0) ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()));
                 arrotondamento = arrotondamento.setScale(2, BigDecimal.ROUND_HALF_UP);
                 if ( arrotondamento.compareTo(BigDecimal.ZERO) != 0 )
                 {
@@ -786,14 +799,14 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
     public void memorizzaEsitoSdi(String progressivoFile) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.memorizzaEsitoSdi(progressivoFile);
     }
 
     public long memorizzaFatturaElettronica(String dbKey,
                                             FatturaElettronicaWrapperDto dto) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.memorizzaFatturaElettronica(dbKey, dto);
     }
 
@@ -801,15 +814,21 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                                   String progressivoFile,
                                   long idSupporto) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.memorizzaInvioSdi(idFatturaElettronica, progressivoFile, idSupporto);
     }
 
     public long memorizzaSupporto(File fileSupporto,
                                   int numeroFatture) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.memorizzaSupporto(fileSupporto, numeroFatture);
+    }
+
+    public void cancellaFatturaElettronicaCentrale(String dbKey, long idFattura) throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
+        dao.cancellaFatturaElettronicaCentrale(dbKey, idFattura);
     }
 
 }

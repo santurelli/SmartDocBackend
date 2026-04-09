@@ -17,8 +17,9 @@ import jakarta.servlet.http.HttpServletResponse;
  * This filter MUST run before ApiKeyFilter.
  */
 @Component
-@Order(10) // Must be low enough to run before ApiKeyFilter if registered elsewhere
 public class CachedBodyFilter extends OncePerRequestFilter {
+
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CachedBodyFilter.class);
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -27,6 +28,7 @@ public class CachedBodyFilter extends OncePerRequestFilter {
         String requestUri = request.getRequestURI();
         
         if (requestUri.startsWith("/api/external/")) {
+            log.info("Wrapping request for URI: {} to allow multiple body reads", requestUri);
             CachedBodyHttpServletRequest cachedRequest = new CachedBodyHttpServletRequest(request);
             filterChain.doFilter(cachedRequest, response);
         } else {

@@ -649,6 +649,7 @@ public class FattureDao extends BaseDao
                                                dto.getPercRitenutaAcconto(),
                                                dto.getImportoRitenutaAcconto(),
                                                dto.getTipoRitenuta(),
+                                               dto.getSconto(),
                                                dto.getUserCreated());
         }
         catch ( DataAccessException | ParseException e )
@@ -764,6 +765,7 @@ public class FattureDao extends BaseDao
                                 dto.getIndirizzoIntestazione(),
                                 dto.getCapIntestazione(),
                                 dto.getCittaIntestazione(),
+                                dto.getSconto(),
                                 dto.getProvinciaIntestazione(),
                                 dto.getNazioneIntestazione(),
                                 dto.getIndirizzoDestinazione(),

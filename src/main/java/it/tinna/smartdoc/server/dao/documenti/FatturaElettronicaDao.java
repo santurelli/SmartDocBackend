@@ -416,5 +416,18 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
+    public void cancellaFatturaElettronicaCentrale(String dbKey, long idFattura) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURAELETTRONICA_D01"), dbKey, idFattura);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nella cancellazione della fattura elettronica centrale per idFattura {} e dbKey {}", idFattura, dbKey, e);
+            throw new SQLException(e);
+        }
+    }
+
 }
 

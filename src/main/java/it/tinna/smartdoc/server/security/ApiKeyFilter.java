@@ -77,9 +77,12 @@ public class ApiKeyFilter extends OncePerRequestFilter {
                 String payload = "";
                 if (request instanceof CachedBodyHttpServletRequest cachedRequest) {
                     payload = new String(cachedRequest.getCachedBody(), StandardCharsets.UTF_8);
+                } else {
+                    log.warn("Request is NOT an instance of CachedBodyHttpServletRequest. Body caching is disabled for URI: {}", requestUri);
                 }
                 
                 String dataToSign = timestampStr + payload;
+                log.info("HMAC Data To Sign: [{}], Timestamp: [{}], Payload: [{}]", dataToSign, timestampStr, payload);
                 String calculatedSignature = calculateHmac(secretKey, dataToSign);
 
                 if (!calculatedSignature.equalsIgnoreCase(signature)) {

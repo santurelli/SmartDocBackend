@@ -1983,6 +1983,13 @@
 			  RETURNING k_d_e_fatture_elettroniche
 		</content>
 	</query>
+	<query name="FATTURAELETTRONICA_D01">
+		<content delimiterParsingDisabled="true">
+			DELETE FROM d_e_fatture_elettroniche
+			 WHERE db_key = ? 
+			   AND k_d_e_fatture = ?
+		</content>
+	</query>
 	<query name="FATTURAELETTRONICA_S02">
 		<content delimiterParsingDisabled="true">
 			SELECT progressivo_invio
@@ -3489,13 +3496,14 @@
 						perc_ritenuta_acconto,
 						importo_ritenuta_acconto,
 						tipo_ritenuta,
+						sconto,
 						user_created,
 						dt_created)
 				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
 				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- 28 placeholders for line 2
 				 	    ?,?,?,?,?,?,?,?,?,?,?, -- 11 placeholders for line 3
 				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?, -- 5 placeholders for line 4
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?, -- 8 placeholders for line 5 (fixed extra ?)
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?, -- 9 placeholders for line 5 (was 8, now added 1 for sconto)
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3657,7 +3665,8 @@
 				   d_e_fatture.fl_ritenuta_acconto AS flRitenutaAcconto,
 				   d_e_fatture.perc_ritenuta_acconto AS percRitenutaAcconto,
 				   d_e_fatture.importo_ritenuta_acconto AS importoRitenutaAcconto,
-				   d_e_fatture.tipo_ritenuta AS tipoRitenuta
+				   d_e_fatture.tipo_ritenuta AS tipoRitenuta,
+				   d_e_fatture.sconto
 			  FROM d_e_fatture
 		 LEFT JOIN d_e_tipipagamento
 				ON d_e_fatture.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -4145,6 +4154,7 @@
 				   indirizzo_intestazione = ?,
 				   cap_intestazione = ?,
 				   citta_intestazione = ?,
+				   sconto = ?,
 				   provincia_intestazione = ?,
 				   nazione_intestazione = ?,
 				   indirizzo_destinazione = ?,

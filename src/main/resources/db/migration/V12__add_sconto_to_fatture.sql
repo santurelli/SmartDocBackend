@@ -1,0 +1,1 @@
+ALTER TABLE d_e_fatture ADD COLUMN sconto VARCHAR(50);

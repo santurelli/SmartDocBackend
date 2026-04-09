@@ -20,7 +20,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import it.tinna.smartdoc.server.security.JwtAuthenticationFilter;
 import it.tinna.smartdoc.server.security.ApiKeyFilter;
+import it.tinna.smartdoc.server.security.CachedBodyFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -29,6 +32,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final ApiKeyFilter apiKeyFilter;
+    private final CachedBodyFilter cachedBodyFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -39,10 +43,32 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**", "/api/municipalities/**", "/api/dati-azienda/**", "/api/configurazione/**", "/api/movimenti/list", "/api/external/**").permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .addFilterBefore(apiKeyFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(cachedBodyFilter, AuthorizationFilter.class)
+                .addFilterBefore(apiKeyFilter, AuthorizationFilter.class)
+                .addFilterBefore(jwtAuthFilter, AuthorizationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public FilterRegistrationBean<ApiKeyFilter> apiKeyFilterRegistration(ApiKeyFilter filter) {
+        FilterRegistrationBean<ApiKeyFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false); // Disable global registration
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<CachedBodyFilter> cachedBodyFilterRegistration(CachedBodyFilter filter) {
+        FilterRegistrationBean<CachedBodyFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false); // Disable global registration
+        return registration;
+    }
+
+    @Bean
+    public FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthFilterRegistration(JwtAuthenticationFilter filter) {
+        FilterRegistrationBean<JwtAuthenticationFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false); // Disable global registration
+        return registration;
     }
 
     @Bean
