@@ -249,6 +249,25 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
+    public List<NotificaFatturaDto> getNotificheGenericheSdi() throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<NotificaFatturaDto> rowMapper = new BeanPropertyRowMapper<NotificaFatturaDto>();
+            rowMapper.setMappedClass(NotificaFatturaDto.class);
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTURAELETTRONICA_S09"), rowMapper);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return new ArrayList<NotificaFatturaDto>();
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero degli esiti da notificare generici", e);
+            throw new SQLException(e);
+        }
+    }
+
     public List<NotificaFatturaDto> getNotificheFastOrder() throws SQLException
     {
         try

@@ -1107,6 +1107,19 @@ public class FattureDelegate extends BaseDelegate
             }
         }
         fattureDao.update(dto);
+
+        // Se è una fattura elettronica, invalido l'XML salvato nel database centrale.
+        // Questo forza la rigenerazione dell'XML corretto al prossimo invio se i dati sono stati modificati.
+        if (dto.getFlFatturaElettronica() == 1) {
+            try {
+                String dbKey = DatabaseContextHolder.getClientDatabase();
+                fatturaelettronicaDelegate.cancellaFatturaElettronicaCentrale(dbKey, dto.getId());
+                _log.info("Invalidazione XML fattura elettronica centrale eseguita per ID: {}", dto.getId());
+            } catch (Exception e) {
+                _log.warn("Impossibile cancellare l'XML centrale per la fattura {}: {}", dto.getId(), e.getMessage());
+            }
+        }
+
         fattureDao.deleteProdottiById(dto.getId());
         for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
         {

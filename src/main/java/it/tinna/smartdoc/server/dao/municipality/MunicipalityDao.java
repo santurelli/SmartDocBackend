@@ -62,5 +62,16 @@ public class MunicipalityDao extends BaseDao {
             throw new SQLException(e);
         }
     }
+
+    public String getEmailErroriSdi(String dbKey) throws SQLException {
+        try {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("ENTI_S02"), String.class, dbKey);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero dell'email errori SDI per dbKey {}", dbKey, e);
+            throw new SQLException(e);
+        }
+    }
 }
 

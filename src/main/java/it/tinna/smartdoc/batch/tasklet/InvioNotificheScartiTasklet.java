@@ -27,6 +27,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.mail.MailException;
 import org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer;
 
+import freemarker.template.Configuration;
 import freemarker.template.Template;
 import it.tinna.smartdoc.batch.dto.NotificaFatturaDto;
 import it.tinna.smartdoc.batch.service.scarti.ScartiExtractor;
@@ -46,10 +47,16 @@ public class InvioNotificheScartiTasklet implements Tasklet
     private ScartiExtractor            scartiExtractor;
 
     @Setter
-    private FreeMarkerConfigurer       freeMarkerConfiguration;
+    private Configuration              freeMarkerConfiguration;
 
     @Setter
     private MailSenderService          mailSenderService;
+
+    @org.springframework.beans.factory.annotation.Value("${smartdoc.mail.subject.scarti}")
+    private String                     mailSubject;
+
+    @Autowired
+    private it.tinna.smartdoc.server.delegate.municipality.MunicipalityDelegate municipalityDelegate;
 
     @Override
     public RepeatStatus execute(StepContribution contribution,
@@ -57,63 +64,100 @@ public class InvioNotificheScartiTasklet implements Tasklet
     {
         try
         {
-            // List<NotificaFatturaDto> list = fatturaelettronicaDelegate.getNotificheFastOrder();
             List<NotificaFatturaDto> list = scartiExtractor.getNotifiche();
             if ( list != null && !list.isEmpty() )
             {
-                Map<String, Object> model = new HashMap<>();
-                model.put("notifiche", list);
-                model.put("currentYear", DateFormatUtils.format(new Date(), "YYYY"));
-                try
+                // Raggruppo le notifiche per dbKey (Ente/Negozio)
+                Map<String, List<NotificaFatturaDto>> groupedNotifiche = new HashMap<>();
+                for ( NotificaFatturaDto dto : list )
                 {
-                    Template template1 = freeMarkerConfiguration.getConfiguration().getTemplate("notifica_fatture.ftl");
-                    Writer out = new StringWriter();
-                    template1.process(model, out);
-                    Map<String, Resource> imgs = new HashMap<>();
-                    imgs.put("headerimg", new ClassPathResource("email-header.png"));
+                    groupedNotifiche.computeIfAbsent(dto.getDbKey(), k -> new ArrayList<>()).add(dto);
+                }
+
+                for ( Map.Entry<String, List<NotificaFatturaDto>> entry : groupedNotifiche.entrySet() )
+                {
+                    String dbKey = entry.getKey();
+                    List<NotificaFatturaDto> groupList = entry.getValue();
+
+                    // Recupero gli indirizzi email dal database (smartdoc_service_db.d_e_enti)
+                    String destinationEmail = municipalityDelegate.getEmailErroriSdi(dbKey);
+                    String[] recipients;
 
                     List<Object[]> batchArgs = new ArrayList<Object[]>();
-                    for ( NotificaFatturaDto dto : list )
+                    for ( NotificaFatturaDto dto : groupList )
                     {
                         Object[] params = new Object[1];
                         params[0] = dto.getId();
                         batchArgs.add(params);
                     }
-                    try
+
+                    if ( org.apache.commons.lang3.StringUtils.isBlank(destinationEmail) )
                     {
-                        fatturaelettronicaDelegate.impostaFattureNotificate(batchArgs);
-                        File f = File.createTempFile("eml", "eml");
-                        FileUtils.writeStringToFile(f, out.toString(), StandardCharsets.UTF_8);
+                        logger.warn("Nessuna email_'errori_sdi' trovata per {}. Le notifiche verranno marcate come lette senza inviare la mail.", dbKey);
                         try
                         {
-                            mailSenderService.send("Report anomalie fatture elettroniche", out.toString(), null, null);
+                            fatturaelettronicaDelegate.impostaFattureNotificate(batchArgs);
                         }
-                        catch ( MailException e )
+                        catch ( SQLException e )
                         {
-                            logger.error("Errore nell'invio della mail con le anomalie delle fatture per FastOrder", e);
+                            logger.error("Errore database durante l'aggiornamento stato notifiche per {}", dbKey, e);
+                        }
+                        continue;
+                    }
+
+                    // Splitto per punto e virgola per gestire destinatari multipli
+                    recipients = destinationEmail.split(";");
+
+                    Map<String, Object> model = new HashMap<>();
+                    model.put("notifiche", groupList);
+                    model.put("currentYear", DateFormatUtils.format(new Date(), "YYYY"));
+                    
+                    try
+                    {
+                        java.io.InputStream is = getClass().getResourceAsStream("/template/notifica_fatture.ftl");
+                        if (is == null) {
+                            throw new IOException("Template /template/notifica_fatture.ftl non trovato nel classpath!");
+                        }
+                        Template template = new Template("notifica_fatture.ftl", 
+                            new java.io.InputStreamReader(is, java.nio.charset.StandardCharsets.UTF_8), 
+                            freeMarkerConfiguration);
+                        Writer out = new StringWriter();
+                        template.process(model, out);
+
+
+                        try
+                        {
+                            // Imposto come notificate prima dell'invio (strategia ottimistica del codice originale)
+                            fatturaelettronicaDelegate.impostaFattureNotificate(batchArgs);
                             try
                             {
+                                // Invio la mail al set specifico di destinatari usando l'oggetto dalle properties
+                                String subject = (org.apache.commons.lang3.StringUtils.defaultIfBlank(mailSubject, "Report anomalie fatture elettroniche")) + " - " + dbKey;
+                                mailSenderService.send(subject, out.toString(), null, recipients);
+                                logger.info("Inviata mail report anomalie per {} a {}.", dbKey, java.util.Arrays.toString(recipients));
+                            }
+                            catch ( MailException e )
+                            {
+                                logger.error("Errore nell'invio della mail con le anomalie per {}", dbKey, e);
+                                // Se fallisce l'invio, ripristino lo stato "non notificato"
                                 fatturaelettronicaDelegate.impostaFattureNonNotificate(batchArgs);
                             }
-                            catch ( SQLException e1 )
-                            {
-
-                            }
+                        }
+                        catch ( SQLException e )
+                        {
+                            logger.error("Errore database durante l'aggiornamento stato notifiche per {}", dbKey, e);
                         }
                     }
-                    catch ( SQLException e )
+                    catch ( IOException | freemarker.template.TemplateException e )
                     {
-
+                        logger.error("Errore nella generazione del report per {}", dbKey, e);
                     }
-                }
-                catch ( IOException e )
-                {
-                    logger.error("Errore nella generazione del testo della mail con le fatture con esiti di scarto o xml non valido per FastOrder", e);
                 }
             }
         }
-        catch ( SQLException e )
+        catch ( Exception e )
         {
+            logger.error("Errore generico nel tasklet invio notifiche", e);
             throw new Exception(ExceptionUtils.getMessage(e));
         }
         return RepeatStatus.FINISHED;

@@ -35,7 +35,44 @@ public class MailSenderService
     public void send(final String subject,
                      final String text)
     {
-        send(subject, text, null, null);
+        send(subject, text, null, null, null);
+    }
+
+
+
+//    public void setCcn(String[] ccn)
+//    {
+//        if ( ccn != null )
+//        {
+//            this.ccn = ccn;
+//        }
+//        else
+//        {
+//            this.ccn = new String[0];
+//        }
+//    }
+
+    public void setFrom(String from)
+    {
+        this.from = StringUtils.defaultIfBlank(from, StringUtils.EMPTY);
+    }
+
+    public void setMailSender(JavaMailSender mailSender)
+    {
+        this.mailSender = mailSender;
+    }
+
+    public String[] getTo()
+    {
+        return this.to != null ? this.to : new String[0];
+    }
+
+    public void send(final String subject,
+                     final String text,
+                     final MailAttachmentDto attachment,
+                     final String[] recipients) throws MailException
+    {
+        send(subject, text, attachment, null, recipients);
     }
 
     public void send(final String subject,
@@ -43,13 +80,25 @@ public class MailSenderService
                      final MailAttachmentDto attachment,
                      final Map<String, Resource> inlineImages) throws MailException
     {
+        send(subject, text, attachment, inlineImages, null);
+    }
+
+    public void send(final String subject,
+                     final String text,
+                     final MailAttachmentDto attachment,
+                     final Map<String, Resource> inlineImages,
+                     final String[] recipients) throws MailException
+    {
         MimeMessagePreparator preparator = new MimeMessagePreparator()
         {
             public void prepare(MimeMessage mimeMessage) throws Exception
             {
                 MimeMessageHelper message = new MimeMessageHelper(mimeMessage, attachment == null && inlineImages == null ? false : true, "UTF-8");
                 message.setSubject(subject);
-                message.setTo(to);
+                
+                String[] finalTo = recipients != null && recipients.length > 0 ? recipients : to;
+                message.setTo(finalTo);
+                
                 if ( StringUtils.isBlank(fromName) )
                 {
                     message.setFrom(from);
@@ -78,28 +127,6 @@ public class MailSenderService
             }
         };
         mailSender.send(preparator);
-    }
-
-//    public void setCcn(String[] ccn)
-//    {
-//        if ( ccn != null )
-//        {
-//            this.ccn = ccn;
-//        }
-//        else
-//        {
-//            this.ccn = new String[0];
-//        }
-//    }
-
-    public void setFrom(String from)
-    {
-        this.from = StringUtils.defaultIfBlank(from, StringUtils.EMPTY);
-    }
-
-    public void setMailSender(JavaMailSender mailSender)
-    {
-        this.mailSender = mailSender;
     }
 
     public void setTo(String[] to)

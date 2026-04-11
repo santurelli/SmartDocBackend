@@ -55,6 +55,12 @@ public class InvioFattureSdiPathCreatorTasklet implements Tasklet, InitializingB
         {
             DatabaseContextHolder.set(BatchConstants.DB_KEY_SERVICE_DB);
             templateDir = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.CONFIG_KEY_WORKDIR);
+            if (templateDir == null) {
+                logger.error("ATTENZIONE: Configurazione WORK_DIR (dominio {}) non trovata nel database {}. Il job per il tenant {} potrebbe fallire.", 
+                             BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.DB_KEY_SERVICE_DB, dbKey);
+                // Fallback di emergenza per evitare il crash immediato
+                templateDir = "/tmp/smartdoc_work"; 
+            }
         }
         finally
         {
@@ -67,7 +73,12 @@ public class InvioFattureSdiPathCreatorTasklet implements Tasklet, InitializingB
         cfg.setTemplateLoader(stringLoader);
         cfg.setDefaultEncoding("UTF-8");
         cfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
-        stringLoader.putTemplate("workdir", templateDir);
+        
+        if (templateDir != null) {
+            stringLoader.putTemplate("workdir", templateDir);
+        } else {
+            throw new IllegalArgumentException("Impossibile inizializzare il template workdir: templateDir è nullo.");
+        }
         Writer out = new StringWriter();
         try
         {

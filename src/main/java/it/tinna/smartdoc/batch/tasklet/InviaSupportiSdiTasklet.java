@@ -285,63 +285,61 @@ public class InviaSupportiSdiTasklet implements Tasklet, StepExecutionListener
                         {
                             exitValue = executor.execute(cmdLine);
                             logger.debug("Comando di cifratura {} terminato con codice di uscita {}", out.toString(), exitValue);
-                            try
-                            {
-                                DatabaseContextHolder.set(BatchConstants.DB_KEY_SERVICE_DB);
-                                long idSupporto = fatturaelettronicaDelegate.memorizzaSupporto(fileCifrato, files.size());
-
-                                for ( DatiFatturaInviataSdiDto dfiDto : datiFattureList )
-                                {
-                                    fatturaelettronicaDelegate.memorizzaInvioSdi(dfiDto.getIdFatturaElettronica(), dfiDto.getProgressivoFile(), idSupporto);
-                                    if ( !StringUtils.containsIgnoreCase(dbKey, "justdesign") )
-                                    {
-                                        if ( dfiDto.getTipoDocumento() == TipoDocumentoEnum.FATTURA )
-                                        {
-                                            fatturaelettronicaDelegate.impostaInviataSdi(dbKey, dfiDto.getIdFattura());
-                                        }
-                                        else
-                                        {
-                                            fatturaelettronicaDelegate.impostaNotaCreditoInviataSdi(dbKey, dfiDto.getIdFattura());
-                                        }
-                                    }
-                                }
-                            }
-                            finally
-                            {
-                                DatabaseContextHolder.clear();
-                            }
-                            // Files.copy(FileSystems.getDefault().getPath(fileCifrato.getAbsolutePath()), FileSystems.getDefault().getPath(new File(cartellaOutput, FilenameUtils.getName(fileCifrato.getAbsolutePath())).getAbsolutePath()), StandardCopyOption.COPY_ATTRIBUTES);
                             if ( SystemUtils.IS_OS_LINUX )
                             {
                                 Set<PosixFilePermission> ownerWritable = PosixFilePermissions.fromString("rw-rw-r--");
-                                // FileAttribute<?> permissions = PosixFilePermissions.asFileAttribute(ownerWritable);
                                 Files.setPosixFilePermissions(fileCifrato.toPath(), ownerWritable);
-                                logger.info("Sposto il supporto firmato e cifrato tramite comando linux");
-                                String comandoSpostamento = new StringBuilder("cp -a ").append(fileCifrato.getAbsolutePath()).append(" ").append(cartellaOutput).toString();
-                                logger.debug("Comando spostamento supporto cifrato generato: {}", comandoSpostamento);
-                                cmdLine = CommandLine.parse(comandoSpostamento);
-                                try
-                                {
-                                    exitValue = executor.execute(cmdLine);
-                                    logger.debug("Comando di spostamento supporto cifrato {} terminato con codice di uscita {}", comandoSpostamento, exitValue);
-                                }
-                                catch ( IOException e )
-                                {
-                                    logger.error("Errore nell'esecuzione del comando di spostamento del supporto cifrato {}", comandoSpostamento, e);
-                                    throw e;
+                            }
+                            logger.info("Sposto il supporto firmato e cifrato nella cartella di destinazione: {}", cartellaOutput);
+
+                            File outDir = new File(cartellaOutput);
+                            if (!outDir.exists()) {
+                                logger.warn("La cartella di destinazione {} non esiste, provo a crearla", cartellaOutput);
+                                if (!outDir.mkdirs()) {
+                                    logger.error("Impossibile creare la cartella di destinazione {}", cartellaOutput);
                                 }
                             }
-                            else
+
+                            if (!outDir.canWrite()) {
+                                logger.error("ATTENZIONE: L'utente che esegue l'applicazione NON ha i permessi di scrittura sulla cartella {}", cartellaOutput);
+                            }
+
+                            try
                             {
+                                FileUtils.copyFileToDirectory(fileCifrato, outDir, true);
+                                logger.info("Supporto cifrato {} spostato con successo in {}", fileCifrato.getName(), cartellaOutput);
+
+                                // Aggiorno il database SOLO DOPO il successo della copia fisica
                                 try
                                 {
-                                    FileUtils.copyFileToDirectory(fileCifrato, new File(cartellaOutput), true);
+                                    DatabaseContextHolder.set(BatchConstants.DB_KEY_SERVICE_DB);
+                                    long idSupporto = fatturaelettronicaDelegate.memorizzaSupporto(fileCifrato, files.size());
+
+                                    for ( DatiFatturaInviataSdiDto dfiDto : datiFattureList )
+                                    {
+                                        fatturaelettronicaDelegate.memorizzaInvioSdi(dfiDto.getIdFatturaElettronica(), dfiDto.getProgressivoFile(), idSupporto);
+                                        if ( !StringUtils.containsIgnoreCase(dbKey, "justdesign") )
+                                        {
+                                            if ( dfiDto.getTipoDocumento() == TipoDocumentoEnum.FATTURA )
+                                            {
+                                                fatturaelettronicaDelegate.impostaInviataSdi(dbKey, dfiDto.getIdFattura());
+                                            }
+                                            else
+                                            {
+                                                fatturaelettronicaDelegate.impostaNotaCreditoInviataSdi(dbKey, dfiDto.getIdFattura());
+                                            }
+                                        }
+                                    }
                                 }
-                                catch ( IOException e )
+                                finally
                                 {
-                                    logger.error("Errore nello spostamento del supporto {} nella cartella di destinazione", fileCifrato.getAbsoluteFile(), e);
-                                    throw e;
+                                    DatabaseContextHolder.clear();
                                 }
+                            }
+                            catch ( IOException e )
+                            {
+                                logger.error("Errore nello spostamento del supporto {} nella cartella {}", fileCifrato.getAbsolutePath(), cartellaOutput, e);
+                                throw e;
                             }
                         }
                         catch ( IOException e )

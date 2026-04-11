@@ -113,7 +113,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      NotificaMancataConsegnaType notificaMancataConsegna) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.aggiornaDatiNotificaMancataConsegna(notificaMancataConsegna.getIdentificativoSdI().toString(), notificaMancataConsegna.getMessageId(), notificaMancataConsegna.getDataOraRicezione(), notificaMancataConsegna.getDescrizione(), fileEsitoSdi.getAbsolutePath(), FilenameUtils.getBaseName(notificaMancataConsegna.getNomeFile()).split("_")[1]);
         dao.memorizzaEsitoSdi(FilenameUtils.getBaseName(notificaMancataConsegna.getNomeFile()).split("_")[1]);
     }
@@ -121,7 +121,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      NotificaScartoType notificaScarto) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         StringBuilder strErrori = new StringBuilder("");
         if ( notificaScarto.getListaErrori().getErrore() != null && !notificaScarto.getListaErrori().getErrore().isEmpty() )
         {
@@ -142,14 +142,14 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      RicevutaConsegnaType ricevutaConsegna) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.aggiornaDatiRicevutaConsegna(ricevutaConsegna.getIdentificativoSdI().toString(), ricevutaConsegna.getMessageId(), ricevutaConsegna.getDataOraConsegna(), ricevutaConsegna.getDestinatario().getDescrizione(), fileEsitoSdi.getAbsolutePath(), FilenameUtils.getBaseName(ricevutaConsegna.getNomeFile()).split("_")[1]);
         dao.memorizzaEsitoSdi(FilenameUtils.getBaseName(ricevutaConsegna.getNomeFile()).split("_")[1]);
     }
 
     public void aggiornaDatiInvioSupporto(EsitoFTPType esitoInvio) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.aggiornaDatiInvioSupporto(esitoInvio);
     }
 
@@ -163,7 +163,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public EsitoSdiDto getEsitoInvioSdi(long idFattura,
                                         String nomeStore) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.getEsitoInvioSdi(idFattura, nomeStore);
     }
 
@@ -441,6 +441,13 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             for ( int i = 0; i < dto.getProdotti().size(); i++ )
             {
                 ProdottoDocumentoDto pdDto = dto.getProdotti().get(i);
+
+                // Se fmDescrizione è valorizzato, forziamo fuoriMagazzino a true per garantire il corretto branch XML
+                if (StringUtils.isNotBlank(pdDto.getFmDescrizione())) {
+                    pdDto.setFuoriMagazzino(true);
+                    pdDto.setProdotto(true);
+                }
+
                 RiepilogoIvaDto riDto = new RiepilogoIvaDto();
                 riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
                 riDto.setFlRitenuta(pdDto.getFlRitenuta());
@@ -452,11 +459,11 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 {
                     if ( !pdDto.isFuoriMagazzino() )
                     {
-                        dettaglioLinea.setDescrizione(pdDto.getCodiceProdotto() + " - " + pdDto.getDescProdotto());
+                        dettaglioLinea.setDescrizione(StringUtils.defaultIfBlank(pdDto.getCodiceProdotto() + " - " + pdDto.getDescProdotto(), "Articolo"));
                     }
                     else
                     {
-                        dettaglioLinea.setDescrizione(pdDto.getFmDescrizione());
+                        dettaglioLinea.setDescrizione(StringUtils.defaultIfBlank(pdDto.getFmDescrizione(), "Articolo"));
                     }
                     dettaglioLinea.setQuantita(pdDto.getQuantita());
                     dettaglioLinea.setUnitaMisura(pdDto.getDescUnitaMisura());
@@ -490,7 +497,12 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                             dettaglioLinea.getScontoMaggiorazione().add(sconto);
                         }
                     }
-                    dettaglioLinea.setPrezzoTotale(pdDto.getTotaleSenzaIva());
+                    // Ricalcoliamo il totale se quello caricato dal DB dovesse essere 0 (caso prodotti fuori magazzino FastOrder)
+                    Double totaleSenzaIva = pdDto.getTotaleSenzaIva();
+                    if ((totaleSenzaIva == null || totaleSenzaIva == 0.0) && pdDto.getPrezzo() != null && pdDto.getQuantita() != null && pdDto.getPrezzo() > 0) {
+                        totaleSenzaIva = pdDto.getPrezzo() * pdDto.getQuantita();
+                    }
+                    dettaglioLinea.setPrezzoTotale(totaleSenzaIva);
                     AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
                     riDto.setAliquotaIva(aiDto.getImposta());
                     riDto.setTipologiaIva(aiDto.getClasse());
@@ -534,7 +546,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 }
                 else
                 {
-                    dettaglioLinea.setDescrizione(pdDto.getNota());
+                    dettaglioLinea.setDescrizione(StringUtils.defaultIfBlank(pdDto.getNota(), "Articolo"));
                     dettaglioLinea.setPrezzoUnitario(0d);
                     dettaglioLinea.setPrezzoTotale(0d);
                     dettaglioLinea.setAliquotaIVA(0d);
@@ -626,24 +638,47 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             {
                 for ( ScontoMaggiorazioneType scontoMaggiorazione : datiGeneraliDocumento.getScontoMaggiorazione() )
                 {
+                    BigDecimal importoDaAggiungere = BigDecimal.ZERO;
                     if ( scontoMaggiorazione.getImporto() != null )
                     {
-                        totSconti = totSconti.add(BigDecimal.valueOf(scontoMaggiorazione.getImporto()));
+                        importoDaAggiungere = BigDecimal.valueOf(scontoMaggiorazione.getImporto());
                     }
                     else if ( scontoMaggiorazione.getPercentuale() != null )
                     {
                         BigDecimal scontoPercentuale = totRiepilogo.multiply(BigDecimal.valueOf(scontoMaggiorazione.getPercentuale())).divide(BigDecimal.valueOf(100), 2, BigDecimal.ROUND_HALF_UP);
-                        totSconti = totSconti.add(scontoPercentuale);
+                        importoDaAggiungere = scontoPercentuale;
+                    }
+
+                    if (TipoScontoDocumentoEnum.SCONTO.equals(scontoMaggiorazione.getTipo())) {
+                        totSconti = totSconti.add(importoDaAggiungere);
+                    } else {
+                        totSconti = totSconti.subtract(importoDaAggiungere);
                     }
                 }
             }
-            if ( totScadenze.compareTo(totRiepilogo.subtract(totSconti).subtract((dto.getSplitPayment() == null || dto.getSplitPayment() == 0) ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()))) != 0 )
+            BigDecimal splitPaymentAmount = (dto.getSplitPayment() == null || dto.getSplitPayment() == 0) ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva());
+            BigDecimal totDocumentoCalcolato = totRiepilogo.subtract(totSconti).subtract(splitPaymentAmount);
+            
+            if ( totScadenze.compareTo(totDocumentoCalcolato) != 0 )
             {
-                BigDecimal arrotondamento = totRiepilogo.subtract(totSconti).subtract(totScadenze).subtract((dto.getSplitPayment() == null || dto.getSplitPayment() == 0) ? BigDecimal.ZERO : BigDecimal.valueOf(dto.getTotaleIva()));
+                BigDecimal arrotondamento = totScadenze.subtract(totDocumentoCalcolato);
                 arrotondamento = arrotondamento.setScale(2, BigDecimal.ROUND_HALF_UP);
+                
+                if ( arrotondamento.abs().compareTo(BigDecimal.valueOf(0.05)) > 0 )
+                {
+                    _log.error("ERRORE CRITICO: Discrepanza totale documento superiore alla soglia tecnica (0.05€).");
+                    _log.error("Fattura ID: {}", dto.getId());
+                    _log.error("Totale Riepilogo (Lordo Linee): {}", totRiepilogo);
+                    _log.error("Totale Sconti/Maggiorazioni: {}", totSconti);
+                    _log.error("Split Payment: {}", splitPaymentAmount);
+                    _log.error("Totale Scadenze (Rate): {}", totScadenze);
+                    _log.error("Differenza (Arrotondamento richiesto): {}", arrotondamento);
+                    throw new RuntimeException("Impossibile generare XML: discrepanza totale/rate troppo elevata (" + arrotondamento + "€). Verificare le rate e il totale documento.");
+                }
+
                 if ( arrotondamento.compareTo(BigDecimal.ZERO) != 0 )
                 {
-                    _log.info("Applico arrotondamento calcolato perchè il totale delle scadenze non coincide con il totale documento meno lo sconto");
+                    _log.info("Applico arrotondamento tecnico per quadratura centesimi.");
                     _log.info("Valore arrotondamento: {}", arrotondamento.toString());
                     datiGeneraliDocumento.setArrotondamento(arrotondamento.doubleValue());
                 }
@@ -698,25 +733,31 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
     public long getIdByProgressivoFile(String progressivoFile) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.getIdByProgressivoFile(progressivoFile);
     }
 
     public List<NotificaFatturaDto> getNotificheJustDesign() throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.getNotificheJustDesign();
+    }
+
+    public List<NotificaFatturaDto> getNotificheGenericheSdi() throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
+        return dao.getNotificheGenericheSdi();
     }
 
     public List<NotificaFatturaDto> getNotificheFastOrder() throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.getNotificheFastOrder();
     }
 
     public synchronized String getProgressivoInvio() throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         String ultimoProgressivioInvio = dao.getProgressivoInvio();
         if ( StringUtils.isEmpty(ultimoProgressivioInvio) )
         {
@@ -758,27 +799,27 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
     public void impostaFattureNotificate(List<Object[]> params) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.impostaFattureNotificate(params);
     }
 
     public void impostaFattureNonNotificate(List<Object[]> params) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.impostaFattureNonNotificate(params);
     }
 
     public void impostaInviataSdi(String dbKey,
                                   long idFattura) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.impostaInviataSdi(dbKey, idFattura);
     }
 
     public void impostaNotaCreditoInviataSdi(String dbKey,
                                              long idFattura) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.impostaNotaCreditoInviataSdi(dbKey, idFattura);
     }
 
@@ -793,7 +834,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public boolean isFatturaInviabile(String dbKey,
                                       long idFattura) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.isFatturaInviabile(dbKey, idFattura);
     }
 

@@ -1813,6 +1813,14 @@
 			   AND fl_deleted = 0
 		</content>
 	</query>
+	<query name="ENTI_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT email_errori_sdi
+			  FROM d_e_enti
+			 WHERE nome_db = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
 	<query name="COMUNI_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_enti AS id,
@@ -2063,7 +2071,7 @@
 			   AND notificata = 0 
 		</content>
 	</query>
-	<query name="FATTURAELETTRONICA_S08">
+	<query name="FATTURAELETTRONICA_S09">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_fatture_elettroniche.k_d_e_fatture_elettroniche AS id,
 				   d_e_fatture_elettroniche.db_key AS dbKey,
@@ -2078,7 +2086,6 @@
 		INNER JOIN (SELECT MAX(k_d_e_fatture_elettroniche) k_d_e_fatture_elettroniche,
 						   db_key
 					  FROM d_e_fatture_elettroniche
-					 WHERE db_key IN ('Castel Romano Just', 'Ciampino','Cola di Rienzo', 'Porta di Roma', 'Roma Est', 'Terminal A', 'Terminal D', 'Terminal E')
 				  GROUP BY k_d_e_fatture, db_key) x 
 				ON d_e_fatture_elettroniche.k_d_e_fatture_elettroniche = x.k_d_e_fatture_elettroniche
 			   AND d_e_fatture_elettroniche.db_key = x.db_key
@@ -4116,7 +4123,7 @@
 			  FROM d_e_fatture
 			 WHERE fl_deleted = 0
 			   AND fl_fatturaelettronica = 1
-			   AND stato_fattura_elettronica = 'DI'
+			   AND UPPER(stato_fattura_elettronica) = 'DI'
 		  ORDER BY d_e_fatture.data_fattura,
 		  		   d_e_fatture.num_fattura,
 		  		   COALESCE(d_e_fatture.particella, '')

@@ -17,6 +17,15 @@ public class MunicipalityDelegate extends BaseDelegate {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("serviceJdbcTemplate")
+    private JdbcTemplate serviceJdbcTemplate;
+
+    public String getEmailErroriSdi(String dbKey) throws SQLException {
+        MunicipalityDao dao = new MunicipalityDao(serviceJdbcTemplate);
+        return dao.getEmailErroriSdi(dbKey);
+    }
+
     public List<MunicipalityDto> getSuggestion(String q) throws SQLException {
         MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
         return dao.getSuggestion(q);

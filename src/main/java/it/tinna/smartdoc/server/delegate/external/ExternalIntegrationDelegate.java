@@ -105,9 +105,14 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         }
         feDto.setId(idFattura);
 
+        // Ricarico l'oggetto completo dal delegate per assicurarmi che i totali calcolati 
+        // dal DAO (tramite get_totale_fattura) siano aggiornati e coerenti
+        feDto = fattureDelegate.getById(idFattura);
+
         // 4. Generazione XML Fattura Elettronica
         try {
             fatturaElettronicaDelegate.getFatturaElettronica(feDto, nomeStore);
+
             if (StringUtils.isNotEmpty(feDto.getErroreValidazioneXml())) {
                 log.warn("Fattura generata con errori di validazione XML: {}", feDto.getErroreValidazioneXml());
             }
@@ -237,7 +242,10 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
                 ProdottoDocumentoDto pdDto = new ProdottoDocumentoDto();
                 pdDto.setProdotto(true);
                 pdDto.setFuoriMagazzino(true);
-                pdDto.setFmDescrizione(StringUtils.defaultIfBlank(extPiatto.getDescrizionePiatto(), "Articolo"));
+                String desc = StringUtils.defaultIfBlank(extPiatto.getDescrizionePiatto(), "Articolo").replaceAll("\\n", " ").replaceAll("\\r", " ").trim();
+                pdDto.setFmDescrizione(desc);
+                pdDto.setDescProdotto(desc);
+                pdDto.setNota(desc); 
                 pdDto.setQuantita(Double.valueOf(extPiatto.getQuantita()));
                 
                 // Mappatura IVA (semplificata come da legacy reader)
@@ -254,6 +262,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
                 pdDto.setPrezzo(prezzoSenzaIva.doubleValue());
                 BigDecimal rigaTotaleSenzaIva = prezzoSenzaIva.multiply(BigDecimal.valueOf(extPiatto.getQuantita()));
                 pdDto.setTotaleSenzaIva(rigaTotaleSenzaIva.doubleValue());
+                pdDto.setPrezzoImponibile(rigaTotaleSenzaIva.doubleValue());
                 
                 // Calcolo IVA riga
                 BigDecimal rigaTotaleConIva = prezzoConIva.multiply(BigDecimal.valueOf(extPiatto.getQuantita()));

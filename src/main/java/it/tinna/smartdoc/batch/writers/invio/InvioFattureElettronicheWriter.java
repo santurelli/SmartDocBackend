@@ -83,18 +83,17 @@ public class InvioFattureElettronicheWriter implements ItemStreamWriter<FatturaE
 
     private static final String KEY_STORE_PASS    = "$toCazz0";
 
-    private static KeyStore loadKeyStore(File privateKeyFile) throws Exception
+    private static KeyStore loadKeyStore(InputStream inputStream) throws Exception
     {
-        final InputStream fileInputStream = new FileInputStream(privateKeyFile);
         try
         {
             final KeyStore keyStore = KeyStore.getInstance(KEY_STORE_TYPE);
-            keyStore.load(fileInputStream, KEY_STORE_PASS.toCharArray());
+            keyStore.load(inputStream, KEY_STORE_PASS.toCharArray());
             return keyStore;
         }
         finally
         {
-            IOUtils.closeQuietly(fileInputStream);
+            IOUtils.closeQuietly(inputStream);
         }
     }
 
@@ -181,7 +180,11 @@ public class InvioFattureElettronicheWriter implements ItemStreamWriter<FatturaE
         String keyInfoID = "KeyInfoId";
         String prefixNameSpaceXades = "xades:";
 
-        final KeyStore keyStore = loadKeyStore(ResourceUtils.getFile("classpath:chiavi/certificate.p12"));
+        InputStream certificateStream = this.getClass().getClassLoader().getResourceAsStream("chiavi/certificate.p12");
+        if (certificateStream == null) {
+            throw new IOException("Risorsa non trovata nel classpath: chiavi/certificate.p12");
+        }
+        final KeyStore keyStore = loadKeyStore(certificateStream);
         final Key privateKey = keyStore.getKey(PRIVATE_KEY_ALIAS, PRIVATE_KEY_PASS.toCharArray());
         final X509Certificate cert = (X509Certificate) keyStore.getCertificate(PRIVATE_KEY_ALIAS);
 

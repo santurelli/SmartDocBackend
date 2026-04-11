@@ -130,7 +130,13 @@ public class DataSourceConfig {
         return new JdbcTemplate(dataSource);
     }
 
+    @Bean(name = "serviceTransactionManager")
+    public PlatformTransactionManager serviceTransactionManager(@Qualifier("servicedbDataSource") DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
+    }
+
     @Bean
+    @Primary
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }

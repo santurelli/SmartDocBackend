@@ -5,11 +5,14 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
+
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = false, of = "nomePacchetto")
-public class DatiFatturaInviataSdiDto
+public class DatiFatturaInviataSdiDto implements Serializable
 {
+    private static final long serialVersionUID = 1L;
 
     private long              idFattura;
 
