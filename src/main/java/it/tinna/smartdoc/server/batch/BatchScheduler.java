@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import it.tinna.smartdoc.batch.constants.BatchConstants;
 import it.tinna.smartdoc.server.delegate.municipality.MunicipalityDelegate;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.shared.dto.municipality.MunicipalityDto;
 
 /**
@@ -52,6 +53,7 @@ public class BatchScheduler {
      */
     @Scheduled(cron = "${smartdoc.batch.invio.cron:0 */10 * * * *}")
     public void runInvioFatture() {
+        DatabaseContextHolder.clear();
         log.info("Inizio esecuzione pianificata: Invio Fatture Elettroniche");
         try {
             List<MunicipalityDto> activeTenants = municipalityDelegate.getAziendeConFatturazioneElettronica();
@@ -84,6 +86,7 @@ public class BatchScheduler {
      */
     @Scheduled(cron = "${smartdoc.batch.esiti.cron:0 */30 * * * *}")
     public void runRicezioneEsiti() {
+        DatabaseContextHolder.clear();
         log.info("Inizio esecuzione pianificata: Ricezione Esiti SDI");
         try {
             // Alcuni job di ricezione esiti agiscono globalmente o usano parametri specifici.
@@ -105,6 +108,7 @@ public class BatchScheduler {
      */
     @Scheduled(cron = "${smartdoc.batch.esiti_invio.cron:0 0 11,13,15,17,19,21,23 * * *}")
     public void runRicezioneEsitiInvio() {
+        DatabaseContextHolder.clear();
         log.info("Inizio esecuzione pianificata: Ricezione Esiti Invio");
         try {
             JobParameters params = new JobParametersBuilder()

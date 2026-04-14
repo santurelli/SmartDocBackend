@@ -37,6 +37,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.xml.sax.SAXException;
+import org.springframework.web.multipart.MultipartFile;
+import jakarta.xml.bind.Unmarshaller;
+import java.io.InputStream;
 
 import it.tinna.smartdoc.batch.dto.NotificaFatturaDto;
 import it.tinna.smartdoc.batch.enums.ConfigurazioneDomain;
@@ -254,7 +257,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             // Anagrafica
             AnagraficaType anagrafica = new AnagraficaType();
             datiAnagrafici.setAnagrafica(anagrafica);
-            anagrafica.setDenominazione(datiAziendaDto.getDenominazione());
+            anagrafica.setDenominazione(StringUtils.defaultIfBlank(datiAziendaDto.getDenominazione(), "AZIENDA NON SPECIFICATA"));
             if ( StringUtils.isNotBlank(nomeStore) )
             {
                 anagrafica.setDenominazione(new StringBuilder(anagrafica.getDenominazione()).append(" - Negozio ").append(nomeStore).toString());
@@ -264,10 +267,10 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             // Sede
             IndirizzoType sede = new IndirizzoType();
             cedentePrestatore.setSede(sede);
-            sede.setIndirizzo(datiAziendaDto.getIndirizzo());
-            sede.setCAP(datiAziendaDto.getCap());
-            sede.setComune(datiAziendaDto.getCitta());
-            sede.setProvincia(datiAziendaDto.getProvincia().toUpperCase());
+            sede.setIndirizzo(StringUtils.substring(StringUtils.defaultIfBlank(datiAziendaDto.getIndirizzo(), "NON SPECIFICATO"), 0, 60));
+            sede.setCAP(StringUtils.defaultIfBlank(datiAziendaDto.getCap(), "00000"));
+            sede.setComune(StringUtils.substring(StringUtils.defaultIfBlank(datiAziendaDto.getCitta(), "NON SPECIFICATO"), 0, 60));
+            sede.setProvincia(StringUtils.defaultIfBlank(datiAziendaDto.getProvincia(), "EE").toUpperCase());
             sede.setNazione("IT"); // TODO salvare la nazione azienda tramite la pagina jsp di configurazione dati azienda
             // StabileOrganizzazione non obbligatorio. Non viene valorizzato
             // IscrizioneREA non obbligatorio. Non viene valorizzato

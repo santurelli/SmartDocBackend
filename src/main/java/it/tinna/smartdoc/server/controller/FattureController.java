@@ -20,6 +20,7 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/fatture")
@@ -133,6 +134,12 @@ public class FattureController {
     public ResponseEntity<GenericResponseDto<Boolean>> sendSdi(@PathVariable long id) throws SQLException {
         fattureDelegate.sendToSdi(id);
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
+    }
+
+    @PostMapping("/import-xml")
+    public ResponseEntity<GenericResponseDto<Long>> importXml(@RequestParam("file") MultipartFile file) throws Exception {
+        Long id = fattureDelegate.importXml(file);
+        return ResponseEntity.ok(new GenericResponseDto<>(id, null));
     }
 }
 

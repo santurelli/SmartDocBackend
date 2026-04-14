@@ -164,7 +164,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         if (esito != null && esito.getEsito() != null) {
             return ExternalResponseDto.builder()
                     .success(true)
-                    .message("Esito recuperato: " + esito.getEsito())
+                    .message(esito.getEsito())
                     .build();
         } else {
             return ExternalResponseDto.builder()
@@ -212,10 +212,10 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         feDto.setIdCliente((int)internalCliente.getId());
         
         it.tinna.smartdoc.shared.dto.external.fastorder.ClienteDto extCli = extFattura.getCliente();
-        feDto.setIndirizzoIntestazione(extCli.getIndirizzo());
-        feDto.setCittaIntestazione(extCli.getCitta());
-        feDto.setCapIntestazione(extCli.getCap());
-        feDto.setProvinciaIntestazione(extCli.getProvincia());
+        feDto.setIndirizzoIntestazione(StringUtils.defaultIfBlank(extCli.getIndirizzo(), "NON SPECIFICATO"));
+        feDto.setCittaIntestazione(StringUtils.defaultIfBlank(extCli.getCitta(), "NON SPECIFICATO"));
+        feDto.setCapIntestazione(StringUtils.defaultIfBlank(extCli.getCap(), "00000"));
+        feDto.setProvinciaIntestazione(StringUtils.defaultIfBlank(extCli.getProvincia(), "EE"));
         feDto.setCodiceUfficioDestinazione(extCli.getCodiceDestinatario());
         feDto.setPec(extCli.getPec());
         feDto.setPartitaIva(extCli.getPartitaIva());

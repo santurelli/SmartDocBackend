@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.sql.DataSource;
+import com.zaxxer.hikari.HikariDataSource;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,14 +48,25 @@ public class DataSourceConfig {
     private String piufortyUrl;
     @Value("${datasource.santurelli.url}")
     private String santurelliUrl;
+    @Value("${datasource.enzaiannaccone.url}")
+    private String enzaiannacconeUrl;
 
     public DataSource createDataSource(String url) {
-        return DataSourceBuilder.create()
+        HikariDataSource dataSource = DataSourceBuilder.create()
+                .type(HikariDataSource.class)
                 .driverClassName(commonDriverClassName)
                 .url(url)
                 .username(commonUsername)
                 .password(commonPassword)
                 .build();
+        
+        // Dynamic Pool Configuration (Soluzione 1)
+        dataSource.setMaximumPoolSize(5);        // Tetto massimo per tenant
+        dataSource.setMinimumIdle(0);           // Chiudi tutte le connessioni se non usate
+        dataSource.setIdleTimeout(60000);       // 1 minuto di inattività prima della chiusura
+        dataSource.setPoolName("HikariPool-" + url.substring(url.lastIndexOf("/") + 1));
+        
+        return dataSource;
     }
 
     @Bean(name = "servicedbDataSource")
@@ -97,6 +109,11 @@ public class DataSourceConfig {
         return createDataSource(santurelliUrl);
     }
 
+    @Bean(name = "enzaiannacconeDataSource")
+    public DataSource enzaiannacconeDataSource() {
+        return createDataSource(enzaiannacconeUrl);
+    }
+
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -114,6 +131,7 @@ public class DataSourceConfig {
         targetDataSources.put("sd_justfood", justfoodDataSource());
         targetDataSources.put("sd_piuforty", piufortyDataSource());
         targetDataSources.put("sd_santurelli", santurelliDataSource());
+        targetDataSources.put("sd_enzaiannaccone", enzaiannacconeDataSource());
 
         routingDataSource.setTargetDataSources(targetDataSources);
         routingDataSource.setDefaultTargetDataSource(servicedbDataSource());

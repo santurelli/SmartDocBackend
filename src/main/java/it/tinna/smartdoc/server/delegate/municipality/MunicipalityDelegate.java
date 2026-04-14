@@ -37,7 +37,7 @@ public class MunicipalityDelegate extends BaseDelegate {
     }
 
     public List<MunicipalityDto> getAziendeConFatturazioneElettronica() throws SQLException {
-        MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
+        MunicipalityDao dao = new MunicipalityDao(serviceJdbcTemplate);
         return dao.getAziendeConFatturazioneElettronica();
     }
 }

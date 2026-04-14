@@ -18,6 +18,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.Unmarshaller;
+import org.springframework.web.multipart.MultipartFile;
+import it.tinna.smartdoc.server.constants.TipoDocumentoEnum;
+import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.*;
+import it.tinna.smartdoc.shared.dto.clienti.TipologiaClienteFornitore;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -93,7 +100,6 @@ import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
 import it.tinna.smartdoc.shared.dto.template.TemplateData;
 import it.tinna.smartdoc.shared.dto.template.fatture.FatturaTemplate;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
-import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 import net.sf.jasperreports.engine.JREmptyDataSource;
 import net.sf.jasperreports.engine.JRException;
@@ -1009,90 +1015,7 @@ public class FattureDelegate extends BaseDelegate
             {
                 scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
                 fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
-                // registrazione contabile del pagamento (se necessaria)
-                // if (scadenzaPagamentoDocumentoDto.getSaldato() != null &&
-                // scadenzaPagamentoDocumentoDto.getSaldato().intValue() == 1) {
-                // String modalita =
-                // scadenzaPagamentoDocumentoDto.getModalitaPagamento();
-                // if (!StringUtils.isEmpty(modalita)) {
-                // String causalePagamento = null;
-                // if
-                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_CONTANTI))
-                // {
-                // causalePagamento =
-                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOCONTANTI_RICEVUTO;
-                // }
-                // else if
-                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_BONIFICO))
-                // {
-                // causalePagamento =
-                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOBONIFICO_RICEVUTO;
-                // }
-                // else if
-                // (scadenzaPagamentoDocumentoDto.getModalitaPagamento().equals(ISharedConstants.PAGAMENTO_ASSEGNO))
-                // {
-                // causalePagamento =
-                // ISharedConstants.OPERAZIONECONTABILE_PAGAMENTOASSEGNO_RICEVUTO;
-                // }
-                // if (!StringUtils.isEmpty(causalePagamento)) {
-                // cDto = ccDelegate.getByOperazione(causalePagamento);
-                // if (cDto != null) {
-                // for (ContoCausaleDto contoCausaleDto :
-                // cDto.getElencoContiCausale()) {
-                // BigDecimal importo = null;
-                // if
-                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_IMPONIBILE))
-                // {
-                // importo =
-                // scadenzaPagamentoDocumentoDto.getImponibileContabilita();
-                // }
-                // else if
-                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_IMPOSTA))
-                // {
-                // importo =
-                // scadenzaPagamentoDocumentoDto.getImpostaContabilita();
-                // }
-                // else if
-                // (contoCausaleDto.getTipoImporto().equalsIgnoreCase(ISharedConstants.TIPOIMPORTO_TOTALE))
-                // {
-                // importo =
-                // scadenzaPagamentoDocumentoDto.getTotaleContabilita();
-                // }
-                // MovimentoContabileDto mcDto = new MovimentoContabileDto();
-                // if (contoCausaleDto.getParametrizzato().intValue() == 1) {
-                // // dato che sono in un documento di vendita
-                // // la parametrizzazione,
-                // // se non è sulla risorsa, sarà sul cliente
-                // if
-                // (contoCausaleDto.getTabellaRiferimento().equals(ISharedConstants.CONTO_TABELLARIFERIMENTO_RISORSE))
-                // {
-                // mcDto.setIdParametrizzazione(scadenzaPagamentoDocumentoDto.getIdParametrizzazione());
-                // }
-                // else if
-                // (contoCausaleDto.getTabellaRiferimento().equals(ISharedConstants.CONTO_TABELLARIFERIMENTO_CLIENTI))
-                // {
-                // mcDto.setIdParametrizzazione(dto.getIdParametrizzazione());
-                // }
-                // }
-                // mcDto.setIdDocumento(idPagamento);
-                // mcDto.setTipoDocumento(ISharedConstants.OPERAZIONECONTABILE_TIPODOC_PAGAMENTO_RICEVUTO);
-                // if (contoCausaleDto.getDare().intValue() == 1) {
-                // mcDto.setImportoDare(importo);
-                // }
-                // else {
-                // mcDto.setImportoAvere(importo);
-                // }
-                // mcDto.setIdCausaleContabile(cDto.getId());
-                // mcDto.setIdConto(contoCausaleDto.getIdConto());
-                // mcDto.setRiferimentoDocumento(ISharedConstants.OPERAZIONECONTABILE_TIPODOC_FATTURA);
-                // mcDao.insert(mcDto);
-                // }
-                // }
-                // }
-                // }
-                // }
             }
-            // fine registrazione contabile pagamento
         }
         if ( dto.getIdPreventivi() != null && !dto.getIdPreventivi().isEmpty() )
         {
@@ -1264,6 +1187,167 @@ public class FattureDelegate extends BaseDelegate
         
         // Imposta la fattura come "Da Inviare" (DI).
         fatturaelettronicaDelegate.aggiornaStatoFattura(id, StatoFatturaElettronica.DI);
+    }
+
+    /**
+     * Importa una fattura elettronica SDI (XML)
+     */
+    public Long importXml(MultipartFile file) throws Exception {
+        JAXBContext jaxbContext = JAXBContext.newInstance(FatturaElettronicaType.class);
+        Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();
+        
+        FatturaElettronicaType xmlFattura;
+        try (InputStream is = file.getInputStream()) {
+            Object unmarshalled = unmarshaller.unmarshal(is);
+            if (unmarshalled instanceof JAXBElement) {
+                xmlFattura = ((JAXBElement<FatturaElettronicaType>) unmarshalled).getValue();
+            } else {
+                xmlFattura = (FatturaElettronicaType) unmarshalled;
+            }
+        }
+
+        FattureDao dao = new FattureDao(jdbcTemplate);
+        DatiAziendaDao datiAziendaDao = new DatiAziendaDao(jdbcTemplate);
+        DatiAziendaDto datiAziendaDto = datiAziendaDao.getDatiAzienda();
+        if (datiAziendaDto == null || StringUtils.isBlank(datiAziendaDto.getPartitaIva())) {
+            throw new Exception("Dati Azienda non configurati. Per favore, inserisci la Partita IVA e i dati della tua azienda nelle impostazioni prima di importare fatture.");
+        }
+
+        // 1. Veridica Cedente (deve essere la nostra azienda)
+        String pivaSdi = xmlFattura.getFatturaElettronicaHeader().getCedentePrestatore().getDatiAnagrafici().getIdFiscaleIVA().getIdCodice();
+        if (!datiAziendaDto.getPartitaIva().equals(pivaSdi)) {
+            throw new Exception("L'azienda indicata come Cedente nel file XML (" + pivaSdi + ") non corrisponde alla nostra azienda.");
+        }
+
+        FatturaElettronicaBodyType body = xmlFattura.getFatturaElettronicaBody().get(0);
+        DatiGeneraliDocumentoType datiGen = body.getDatiGenerali().getDatiGeneraliDocumento();
+        
+        String dataStr = FastDateFormat.getInstance("dd/MM/yyyy").format(datiGen.getData());
+
+        // 2. Controllo Duplicati (Numero e Anno)
+        String numSdiRaw = datiGen.getNumero();
+        Integer numFattura = null;
+        String particella = null;
+        
+        if (numSdiRaw.contains("/")) {
+            String[] parts = numSdiRaw.split("/");
+            particella = parts.length > 1 ? parts[1] : null;
+            String onlyNums = parts[0].replaceAll("[^0-9]", "");
+            if (StringUtils.isNotEmpty(onlyNums)) numFattura = Integer.parseInt(onlyNums);
+        } else {
+             String onlyNums = numSdiRaw.replaceAll("[^0-9]", "");
+             if (StringUtils.isNotEmpty(onlyNums)) numFattura = Integer.parseInt(onlyNums);
+             particella = numSdiRaw.replaceAll("[0-9]", "").trim();
+             if (StringUtils.isEmpty(particella)) particella = null;
+        }
+        
+        if (numFattura == null) numFattura = 0;
+
+        TipoDocumentoEnum tipoSdi = datiGen.getTipoDocumento();
+        TipoFattura tipoSmartDoc = TipoFattura.FATTURA;
+        
+        if (dao.isExistentNumero(numFattura, particella, dataStr, 1, tipoSmartDoc, null)) {
+            throw new Exception("Fattura n. " + numSdiRaw + " del " + dataStr + " già esistente a sistema.");
+        }
+
+        // 3. Lookup/Creazione Cliente
+        CessionarioCommittenteType cessionario = xmlFattura.getFatturaElettronicaHeader().getCessionarioCommittente();
+        DatiAnagraficiCessionarioType anagCess = cessionario.getDatiAnagrafici();
+        ClientiDao clientiDao = new ClientiDao(jdbcTemplate);
+        ClienteDto clienteDto = null;
+        
+        if (anagCess.getIdFiscaleIVA() != null) {
+            clienteDto = clientiDao.getByPartitaIva(anagCess.getIdFiscaleIVA().getIdCodice());
+        }
+        if (clienteDto == null && anagCess.getCodiceFiscale() != null) {
+            clienteDto = clientiDao.getByCodiceFiscale(anagCess.getCodiceFiscale());
+        }
+        
+        if (clienteDto == null) {
+            clienteDto = new ClienteDto();
+            clienteDto.setDenominazione(anagCess.getAnagrafica().getDenominazione() != null ? anagCess.getAnagrafica().getDenominazione() : (anagCess.getAnagrafica().getNome() + " " + anagCess.getAnagrafica().getCognome()));
+            clienteDto.setPartitaIva(anagCess.getIdFiscaleIVA() != null ? anagCess.getIdFiscaleIVA().getIdCodice() : null);
+            clienteDto.setCodiceFiscale(anagCess.getCodiceFiscale());
+            clienteDto.setTipologia(TipologiaClienteFornitore.PRIVATO);
+            clienteDto.setCodice(clientiDao.generaCodice());
+            clienteDto.setUserCreated(0L);
+            clienteDto.setId(clientiDao.insert(clienteDto));
+            
+            // Inserimento Indirizzo
+            if (cessionario.getSede() != null) {
+                IndirizziDao indirizziDao = new IndirizziDao(jdbcTemplate);
+                IndirizzoDto indDto = new IndirizzoDto();
+                indDto.setIdRichiedente(clienteDto.getId());
+                indDto.setIndirizzo(cessionario.getSede().getIndirizzo());
+                indDto.setCap(cessionario.getSede().getCAP());
+                indDto.setCitta(cessionario.getSede().getComune());
+                indDto.setProvincia(cessionario.getSede().getProvincia());
+                indDto.setTipologia(IndirizzoDto.TipologiaIndirizzo.SEDE_OPERATIVA.getValore());
+                indDto.setUserCreated(0L);
+                indirizziDao.insert(IndirizzoDto.Richiedente.CLIENTI.getValore(), indDto);
+            }
+        }
+
+        // 4. Mappatura DTO
+        FatturaDto fDto = new FatturaDto();
+        fDto.setNumDocumento(numFattura);
+        fDto.setParticella(particella);
+        fDto.setDataDocumento(dataStr);
+        fDto.setIdCliente((int) clienteDto.getId());
+        if (cessionario.getSede() != null) {
+            fDto.setIndirizzoIntestazione(cessionario.getSede().getIndirizzo());
+            fDto.setCapIntestazione(cessionario.getSede().getCAP());
+            fDto.setCittaIntestazione(cessionario.getSede().getComune());
+            fDto.setProvinciaIntestazione(cessionario.getSede().getProvincia());
+        }
+        fDto.setTipoFattura(tipoSmartDoc);
+        fDto.setFlFatturaElettronica(1);
+        fDto.setStatoFatturaElettronica(StatoFatturaElettronica.IN);
+        fDto.setTotale(datiGen.getImportoTotaleDocumento());
+        fDto.setSplitPayment(0);
+        fDto.setUserCreated(0L);
+        
+        // Righe
+        AliquoteIvaDao aiDao = new AliquoteIvaDao(jdbcTemplate);
+        List<AliquotaIvaDto> aliquote = aiDao.getListForCombo();
+        
+        for (DettaglioLineeType linea : body.getDatiBeniServizi().getDettaglioLinee()) {
+            ProdottoDocumentoDto p = new ProdottoDocumentoDto();
+            p.setProdotto(true);
+            p.setFuoriMagazzino(true);
+            p.setFmDescrizione(linea.getDescrizione());
+            p.setQuantita(linea.getQuantita() != null ? linea.getQuantita() : 1.0);
+            p.setPrezzo(linea.getPrezzoUnitario());
+            p.setPrezzoImponibile(linea.getPrezzoTotale());
+            
+            Double alSdi = linea.getAliquotaIVA();
+            String naturaSdi = linea.getNatura() != null ? linea.getNatura().name() : null;
+            
+            AliquotaIvaDto match = aliquote.stream()
+                .filter(a -> a.getImposta().equals(alSdi) && (naturaSdi == null || a.getClasse().equals(naturaSdi)))
+                .findFirst().orElse(aliquote.get(0));
+            
+            p.setIdAliquotaIva((int) match.getId());
+            fDto.getProdotti().add(p);
+        }
+        
+        if (!body.getDatiPagamento().isEmpty()) {
+            DatiPagamentoType pagSdi = body.getDatiPagamento().get(0);
+            for (DettaglioPagamentoType dettPag : pagSdi.getDettaglioPagamento()) {
+                ScadenzaPagamentoDocumentoDto s = new ScadenzaPagamentoDocumentoDto();
+                s.setImporto(dettPag.getImportoPagamento());
+                if (dettPag.getDataScadenzaPagamento() != null) {
+                    s.setDtScadenza(FastDateFormat.getInstance("dd/MM/yyyy").format(dettPag.getDataScadenzaPagamento()));
+                } else {
+                    s.setDtScadenza(dataStr);
+                }
+                s.setModalitaPagamento(dettPag.getModalitaPagamento().name());
+                s.setSaldato(0);
+                fDto.getListaScadenzePagamentiDocumento().add(s);
+            }
+        }
+        
+        return this.insert(fDto);
     }
 }
 
