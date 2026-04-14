@@ -10,6 +10,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -22,6 +23,7 @@ import it.tinna.smartdoc.shared.dto.municipality.MunicipalityDto;
  * Recupera dinamicamente i tenant attivi dal database centrale.
  */
 @Component
+@ConditionalOnProperty(name = "smartdoc.batch.scheduling.enabled", havingValue = "true", matchIfMissing = true)
 public class BatchScheduler {
 
     private static final Logger log = LoggerFactory.getLogger(BatchScheduler.class);

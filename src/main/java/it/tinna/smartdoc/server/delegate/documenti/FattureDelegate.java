@@ -180,6 +180,31 @@ public class FattureDelegate extends BaseDelegate
             throw e;
         }
         list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc", null);
+        for ( MovimentiDocumentoDto mdDto : list )
+        {
+            if ( mdDto.getFlFatturaElettronica() == 1 )
+            {
+                if ( mdDto.getStatoFatturaElettronica() == StatoFatturaElettronica.NS || mdDto.getStatoFatturaElettronica() == StatoFatturaElettronica.DI )
+                {
+                    try
+                    {
+                        it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = fatturaelettronicaDelegate.getEsitoInvioSdi(mdDto.getIdDocumento(), dbKey);
+                        if ( mdDto.getStatoFatturaElettronica() == StatoFatturaElettronica.NS )
+                        {
+                            mdDto.setErroreConsegna(esito.getDescrizioneScarto());
+                        }
+                        else
+                        {
+                            mdDto.setErroreXml(esito.getErroreValidazioneXml());
+                        }
+                    }
+                    catch ( Exception e )
+                    {
+                        _log.error("Errore nel recupero esito SDI per fattura {}", mdDto.getIdDocumento(), e);
+                    }
+                }
+            }
+        }
         try
         {
             bytes = JasperRunManager.runReportToPdf(reportIs, params, new JRBeanCollectionDataSource(list));
@@ -701,6 +726,16 @@ public class FattureDelegate extends BaseDelegate
             dto.setProdotti(listProdottiDdt);
             dto.setListaSpeseIncassoFattura(dao.getListSpeseIncassoById(dto.getId()));
             dto.setListaScadenzePagamentiDocumento(dao.getScadenzePagamento(dto.getId()));
+            if ( dto.getFlFatturaElettronica() == 1 )
+            {
+                String dbKey = DatabaseContextHolder.getClientDatabase();
+                it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = fatturaelettronicaDelegate.getEsitoInvioSdi(dto.getId(), dbKey);
+                if ( esito != null )
+                {
+                    dto.setErroreValidazioneXml(esito.getErroreValidazioneXml());
+                    dto.setErroreConsegna(esito.getDescrizioneScarto());
+                }
+            }
         }
         return dto;
     }
@@ -864,6 +899,33 @@ public class FattureDelegate extends BaseDelegate
         BigDecimal totFatturato = BigDecimal.ZERO;
         BigDecimal totDaSaldare = BigDecimal.ZERO;
         BigDecimal totSaldato = BigDecimal.ZERO;
+        String dbKey = DatabaseContextHolder.getClientDatabase();
+        List<Long> idsElettroniche = new ArrayList<>();
+        for ( MovimentiDocumentoDto mdDto : list )
+        {
+            if ( mdDto.getFlFatturaElettronica() == 1 && mdDto.getIdDocumento() != null )
+            {
+                idsElettroniche.add(mdDto.getIdDocumento().longValue());
+            }
+        }
+        
+        if (!idsElettroniche.isEmpty()) {
+            List<it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto> esiti = fatturaelettronicaDelegate.getEsitiInvioSdi(idsElettroniche, dbKey);
+            Map<Long, it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto> esitiMap = new HashMap<>();
+            for (it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto e : esiti) {
+                esitiMap.put(e.getIdFattura(), e);
+            }
+            for ( MovimentiDocumentoDto mdDto : list ) {
+                if ( mdDto.getFlFatturaElettronica() == 1 && mdDto.getIdDocumento() != null ) {
+                    it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = esitiMap.get(mdDto.getIdDocumento().longValue());
+                    if (esito != null) {
+                        mdDto.setErroreXml(esito.getErroreValidazioneXml());
+                        mdDto.setErroreConsegna(esito.getDescrizioneScarto());
+                    }
+                }
+            }
+        }
+
         for ( MovimentiDocumentoDto mdDto : list )
         {
             if ( mdDto.getFlFatturaElettronica() == 0 || (mdDto.getFlFatturaElettronica() == 1 && mdDto.getStatoFatturaElettronica() != null && mdDto.getStatoFatturaElettronica() == StatoFatturaElettronica.AC) )
@@ -1195,5 +1257,13 @@ public class FattureDelegate extends BaseDelegate
         dao.aggiornaTotaliFattura(totale, totalePagato, idDocumento);
     }
 
+    public void sendToSdi(long id) throws SQLException {
+        FattureDao fattureDao = new FattureDao(jdbcTemplate);
+        // Puliamo l'XML esistente per forzare la rigenerazione al prossimo passaggio del batch
+        fattureDao.salvaXmlFatturaElettronica(id, null);
+        
+        // Imposta la fattura come "Da Inviare" (DI).
+        fatturaelettronicaDelegate.aggiornaStatoFattura(id, StatoFatturaElettronica.DI);
+    }
 }
 

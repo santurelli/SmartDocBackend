@@ -208,6 +208,10 @@ public class DocumentoDto extends BaseDto
     private String                              erroreValidazioneXml;
 
     @Expose
+    @ToString.Include
+    private String                              erroreConsegna;
+
+    @Expose
     private Integer                             esigibilitaDifferita;
 
     @Expose
@@ -324,6 +328,7 @@ public class DocumentoDto extends BaseDto
     @Expose
     private String                              provinciaIntestazione;
 
+    @Expose
     private String                              sconto;
 
     @Expose

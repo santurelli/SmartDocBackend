@@ -128,5 +128,11 @@ public class FattureController {
         fattureDelegate.updateScadenzaPagamento(dto);
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }
+
+    @PutMapping("/{id}/send-sdi")
+    public ResponseEntity<GenericResponseDto<Boolean>> sendSdi(@PathVariable long id) throws SQLException {
+        fattureDelegate.sendToSdi(id);
+        return ResponseEntity.ok(new GenericResponseDto<>(true, null));
+    }
 }
 

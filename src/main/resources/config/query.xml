@@ -2039,12 +2039,25 @@
 	<query name="FATTURAELETTRONICA_S06">
 		<content delimiterParsingDisabled="true">
 			SELECT tipo_esito_sdi AS esito,
-				   errore AS descrizioneScarto
+				   errore AS descrizioneScarto,
+				   errore_validazione_xml AS erroreValidazioneXml
 			  FROM d_e_fatture_elettroniche
 			 WHERE k_d_e_fatture = ?
 			   AND db_key = ?
 		  ORDER BY k_d_e_fatture_elettroniche DESC
 		  	 LIMIT 1 OFFSET 0
+		</content>
+	</query>
+	<query name="FATTURAELETTRONICA_S10">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_fatture AS idFattura,
+				   tipo_esito_sdi AS esito,
+				   errore AS descrizioneScarto,
+				   errore_validazione_xml AS erroreValidazioneXml
+			  FROM d_e_fatture_elettroniche
+			 WHERE db_key = ?
+			   AND k_d_e_fatture IN (:ids)
+			 ORDER BY k_d_e_fatture_elettroniche ASC
 		</content>
 	</query>
 	<query name="FATTURAELETTRONICA_S07">
@@ -3718,7 +3731,7 @@
 				   COALESCE(d_e_prodotti.tipologia, '') AS tipologia,
 				   d_e_prodotti_fatture.fl_scarica AS scarica,
 				   get_prezzoscontato_prodottofattura(d_e_prodotti_fatture.k_d_e_prodotti_fatture, 0) AS totale,
-				   get_prezzoscontato_senzaiva_prodottofattura(d_e_prodotti_fatture.k_d_e_prodotti_fatture) AS totaleSenzaIva,
+				   get_prezzoscontato_senzaiva_prodottofattura(d_e_prodotti_fatture.k_d_e_prodotti_fatture) AS totale_senza_iva,
 				   d_e_prodotti_fatture.nota,
 				   CASE (coalesce(d_e_prodotti_fatture.k_d_e_prodotti,0))
 				   WHEN 0 THEN false
@@ -4006,8 +4019,8 @@
 				  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
 				  	   get_descrizione_doccollegato(d_e_fatture.k_d_e_fatture, 'FATTURA'::character varying) AS stato,
 				  	   COALESCE(stato_fattura_elettronica, '') AS statoFatturaElettronica,
-				  	   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'NS' THEN getDescrizioneScarto(d_e_fatture.k_d_e_fatture) ELSE '' END AS erroreConsegna,
-				  	   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'DI' THEN getDescrizioneErroreXml(d_e_fatture.k_d_e_fatture) ELSE '' END AS erroreXml,
+				  	   '' AS erroreConsegna,
+				  	   '' AS erroreXml,
 				  	   COUNT(*) OVER() AS total
 				  FROM d_e_fatture
 	              JOIN d_e_clienti
@@ -6428,8 +6441,8 @@
                    d_e_notecredito.totale - d_e_notecredito.totale_pagato AS totaleDaPagare,
 			  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
 			  	   COALESCE(stato_fattura_elettronica, '') AS statoFatturaElettronica,
-			  	   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'NS' THEN getDescrizioneScartoNotaCredito(d_e_notecredito.k_d_e_notecredito) ELSE '' END AS erroreConsegna,
-				   CASE WHEN fl_fatturaelettronica = 1 AND stato_fattura_elettronica = 'DI' THEN getDescrizioneErroreXmlNotaCredito(d_e_notecredito.k_d_e_notecredito) ELSE '' END AS erroreXml,
+			  	   '' AS erroreConsegna,
+				   '' AS erroreXml,
 			  	   COUNT(*) OVER() AS total
 			  FROM d_e_notecredito
               JOIN d_e_clienti

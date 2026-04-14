@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
 import it.tinna.smartdoc.server.database.DatabaseContextHolder;
+import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
 import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
 import lombok.Setter;
@@ -28,6 +29,9 @@ public class InvioFattureElettronicheReader implements ItemStreamReader<FatturaE
 
     @Autowired
     private FattureDelegate                    fattureDelegate;
+
+    @Autowired
+    private FatturaElettronicaDelegate         fatturaElettronicaDelegate;
 
     @Setter
     private String                             dbKey;
@@ -52,12 +56,21 @@ public class InvioFattureElettronicheReader implements ItemStreamReader<FatturaE
         {
             DatabaseContextHolder.set(dbKey);
             List<Long> list = fattureDelegate.getFattureElettronicheDaInviare(idFatture);
-            logger.info("Trovate {} fatture", list.size());
+            logger.info("Trovate {} fatture elettroniche da elaborare", list.size());
             for (long idFattura : list)
             {
+                // Controllo: se la fattura è già stata inviata e stiamo aspettando l'esito SDI,
+                // non la reinviamo per evitare duplicati. La saltiamo finché non arriva la risposta.
+                boolean inTransito = !fatturaElettronicaDelegate.isFatturaInviabile(dbKey, idFattura);
+                if (inTransito) {
+                    logger.info("Fattura {} già in transito presso SDI (esito non ancora ricevuto). Salto.", idFattura);
+                    continue;
+                }
+                
                 FatturaElettronicaWrapperDto dto = fattureDelegate.getFatturaElettronica(idFattura);
                 elencoFatture.add(dto);
             }
+            logger.info("{} fatture pronte per l'invio SDI (escluse quelle già in transito)", elencoFatture.size());
         }
         catch ( SQLException e )
         {

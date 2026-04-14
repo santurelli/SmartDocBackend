@@ -27,6 +27,7 @@ import javax.xml.validation.Validator;
 
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -160,11 +161,18 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         dao.aggiornaStatoFattura(idFattura, statoFattura);
     }
 
-    public EsitoSdiDto getEsitoInvioSdi(long idFattura,
-                                        String nomeStore) throws SQLException
+    public List<EsitoSdiDto> getEsitiInvioSdi(List<Long> idFatture,
+                                              String dbKey) throws SQLException
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        return dao.getEsitoInvioSdi(idFattura, nomeStore);
+        return dao.getEsitiInvioSdi(idFatture, dbKey);
+    }
+
+    public EsitoSdiDto getEsitoInvioSdi(long idFattura,
+                                        String dbKey) throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
+        return dao.getEsitoInvioSdi(idFattura, dbKey);
     }
 
     /**
@@ -200,9 +208,18 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         idTrasmittente.setIdCodice(datiAziendaDto.getPartitaIva());
         try
         {
-            Date dt = FastDateFormat.getInstance("dd/MM/yyyy").parse(dto.getDataDocumento());
+            Date dateFattura = null;
+            try {
+                dateFattura = FastDateFormat.getInstance("dd/MM/yyyy").parse(dto.getDataDocumento());
+            } catch (Exception e) {
+                String currentErr = StringUtils.defaultString(dto.getErroreValidazioneXml());
+                dto.setErroreValidazioneXml(currentErr + "Data documento non valida o mancante; ");
+                dateFattura = new Date();
+                dto.setDataDocumento(FastDateFormat.getInstance("dd/MM/yyyy").format(dateFattura));
+            }
+            
             Calendar cal = Calendar.getInstance();
-            cal.setTime(dt);
+            cal.setTime(dateFattura);
             String progressivo = numerazioneFatturaElettronicaDelegate.getNumero(cal.get(Calendar.YEAR));
             // ProgressivoInvio
             datiTrasmissione.setProgressivoInvio(progressivo);
@@ -281,11 +298,36 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             // Sede
             IndirizzoType sedeCessionario = new IndirizzoType();
             cessionarioCommittente.setSede(sedeCessionario);
-            sedeCessionario.setIndirizzo(dto.getIndirizzoIntestazione());
-            sedeCessionario.setComune(dto.getCittaIntestazione());
-            sedeCessionario.setCAP(dto.getCapIntestazione());
-            sedeCessionario.setProvincia(dto.getProvinciaIntestazione().toUpperCase());
+            
+            StringBuilder validationErrors = new StringBuilder(StringUtils.defaultString(dto.getErroreValidazioneXml()));
+            
+            if (StringUtils.isBlank(dto.getIndirizzoIntestazione())) {
+                validationErrors.append("Indirizzo Sede cliente mancante; ");
+            }
+            sedeCessionario.setIndirizzo(StringUtils.substring(StringUtils.defaultString(dto.getIndirizzoIntestazione(), "NON SPECIFICATO"), 0, 60));
+            
+            if (StringUtils.isBlank(dto.getCittaIntestazione())) {
+                validationErrors.append("Comune Sede cliente mancante; ");
+            }
+            sedeCessionario.setComune(StringUtils.substring(StringUtils.defaultString(dto.getCittaIntestazione(), "NON SPECIFICATO"), 0, 60));
+            
+            if (StringUtils.isBlank(dto.getCapIntestazione())) {
+                validationErrors.append("CAP Sede cliente mancante; ");
+            }
+            sedeCessionario.setCAP(StringUtils.defaultString(dto.getCapIntestazione(), "00000"));
+            
+            if (StringUtils.isBlank(dto.getProvinciaIntestazione())) {
+                validationErrors.append("Provincia Sede cliente mancante; ");
+                sedeCessionario.setProvincia("EE");
+            } else {
+                sedeCessionario.setProvincia(dto.getProvinciaIntestazione().toUpperCase());
+            }
+            
             sedeCessionario.setNazione("IT");// TODO gestire la nazione mediante la pagina di configurazione del cliente. Di default impostarla a ITALIA
+            
+            if (validationErrors.length() > 0) {
+                dto.setErroreValidazioneXml(validationErrors.toString());
+            }
             // FatturaElettronicaBody
             FatturaElettronicaBodyType body = new FatturaElettronicaBodyType();
             fatturaElettronica.getFatturaElettronicaBody().add(body);
@@ -336,27 +378,38 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             {
                 datiGeneraliDocumento.setImportoTotaleDocumento(dto.getTotale());
             }
-            else
+            if ( dto.getSplitPayment() != null && dto.getSplitPayment() == 1 )
             {
-                // la funzione get_totale_fattura ritorna il totale dovuto che, nel caso di split payment, è solo l'imponibile.
-                // Pertanto, in caso di split payment devo aggiungere l'iva per indicare il totale documento
+                // In caso di split payment, il totale dovuto caricato è solo l'imponibile, aggiungiamo l'IVA per il totale documento XML
                 datiGeneraliDocumento.setImportoTotaleDocumento(dto.getTotale() + dto.getTotaleIva());
             }
-            if ( StringUtils.isNotBlank(dto.getSconto()) )
+            else
+            {
+                // Altrimenti il totale caricato è già il lordo completo
+                datiGeneraliDocumento.setImportoTotaleDocumento(dto.getTotale());
+            }
+            if ( StringUtils.isNotBlank(dto.getSconto()) && !dto.getSconto().equalsIgnoreCase("NaN"))
             {
                 ScontoMaggiorazioneType scontoMaggiorazione = new ScontoMaggiorazioneType();
                 scontoMaggiorazione.setTipo(TipoScontoDocumentoEnum.SCONTO);
                 if ( dto.getSconto().endsWith("%") )
                 {
-                    scontoMaggiorazione.setPercentuale(Double.parseDouble(dto.getSconto().replaceAll("%", "").trim()));
+                    String val = dto.getSconto().replaceAll("%", "").trim();
+                    if (NumberUtils.isCreatable(val)) {
+                       scontoMaggiorazione.setPercentuale(Double.parseDouble(val));
+                    }
                 }
                 else
                 {
-                    scontoMaggiorazione.setImporto(Double.parseDouble(dto.getSconto()));
-                    datiGeneraliDocumento.setImportoTotaleDocumento(datiGeneraliDocumento.getImportoTotaleDocumento() - scontoMaggiorazione.getImporto());
+                    if (NumberUtils.isCreatable(dto.getSconto())) {
+                        scontoMaggiorazione.setImporto(Double.parseDouble(dto.getSconto()));
+                        datiGeneraliDocumento.setImportoTotaleDocumento(datiGeneraliDocumento.getImportoTotaleDocumento() - scontoMaggiorazione.getImporto());
+                    }
                 }
 
-                datiGeneraliDocumento.getScontoMaggiorazione().add(scontoMaggiorazione);
+                if (scontoMaggiorazione.getPercentuale() != null || scontoMaggiorazione.getImporto() != null) {
+                    datiGeneraliDocumento.getScontoMaggiorazione().add(scontoMaggiorazione);
+                }
             }
             // 2.1.2 DatiOrdineAcquisto
             if ( StringUtils.isNotEmpty(dto.getNumeroOrdineAcquisto()) )
@@ -501,6 +554,8 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     Double totaleSenzaIva = pdDto.getTotaleSenzaIva();
                     if ((totaleSenzaIva == null || totaleSenzaIva == 0.0) && pdDto.getPrezzo() != null && pdDto.getQuantita() != null && pdDto.getPrezzo() > 0) {
                         totaleSenzaIva = pdDto.getPrezzo() * pdDto.getQuantita();
+                        // Se c'è uno sconto, andrebbe sottratto qui per SDI 2.2.1.11, ma per ora manteniamo la compatibilità 
+                        // con il prezzo unitario caricato. In caso di FastOrder lo sconto riga è solitamente assente.
                     }
                     dettaglioLinea.setPrezzoTotale(totaleSenzaIva);
                     AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
@@ -535,13 +590,13 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
                     if ( riepilogoIva.contains(riDto) )
                     {
-                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibile(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile() + pdDto.getTotaleSenzaIva());
+                        riepilogoIva.get(riepilogoIva.indexOf(riDto)).setTotaleImponibile(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getTotaleImponibile() + totaleSenzaIva);
                     }
                     else
                     {
                         riepilogoIva.add(riDto);
                         riDto.setAliquotaIva(aiDto.getImposta());
-                        riDto.setTotaleImponibile(pdDto.getTotaleSenzaIva());
+                        riDto.setTotaleImponibile(totaleSenzaIva);
                     }
                 }
                 else

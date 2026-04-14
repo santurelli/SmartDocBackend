@@ -38,6 +38,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String userEmail;
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            log.trace("No Bearer token found in request to {}", request.getRequestURI());
             filterChain.doFilter(request, response);
             return;
         }
@@ -45,11 +46,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             jwt = authHeader.substring(7);
             userEmail = jwtService.extractUsername(jwt);
+            log.debug("JWT Filter: extracted user {} from token", userEmail);
         } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.warn("JWT Filter: Token expired for request to {}", request.getRequestURI());
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Token expired");
             return;
         } catch (Exception e) {
+            log.error("JWT Filter: Invalid token for request to {}", request.getRequestURI(), e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.getWriter().write("Invalid token");
             return;
@@ -57,9 +61,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                // In a real app, you might want to load UserDetails from DB here to check validity/roles
-                // For now, we trust the token if valid
                 if (jwtService.isTokenValid(jwt, userEmail)) {
+                    log.debug("JWT Filter: Token is valid for user {}", userEmail);
                     // Extract dbName from token
                     String dbName = jwtService.extractClaim(jwt, claims -> claims.get("dbName", String.class));
                     Integer userId = jwtService.extractClaim(jwt, claims -> claims.get("id", Integer.class));

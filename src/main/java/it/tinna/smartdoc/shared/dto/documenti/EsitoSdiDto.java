@@ -18,10 +18,16 @@ public class EsitoSdiDto extends BaseDto
     private String descrizioneScarto;
 
     @Expose
+    private String erroreValidazioneXml;
+
+    @Expose
     private String esito;
 
     @Expose
     private String xml;
+
+    @Expose
+    private Long idFattura;
 
 }
 

@@ -3,6 +3,8 @@ package it.tinna.smartdoc.server.controller;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -22,6 +24,8 @@ import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 @RestController
 @RequestMapping("/api/tipi-pagamento")
 public class TipiPagamentoController {
+
+    private static final Logger log = LoggerFactory.getLogger(TipiPagamentoController.class);
 
     @Autowired
     private TipiPagamentoDelegate tipiPagamentoDelegate;
@@ -117,6 +121,7 @@ public class TipiPagamentoController {
         try {
             return ResponseEntity.ok(tipiPagamentoDelegate.getScadenzeDocumento(dataDocumento, id, totaleDocumento));
         } catch (Exception e) {
+            log.error("Errore nel calcolo delle scadenze documento per tipo pagamento {} con data {} e totale {}", id, dataDocumento, totaleDocumento, e);
             return ResponseEntity.internalServerError().build();
         }
     }

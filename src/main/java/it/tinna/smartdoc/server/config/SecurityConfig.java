@@ -45,7 +45,7 @@ public class SecurityConfig {
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(cachedBodyFilter, AuthorizationFilter.class)
                 .addFilterBefore(apiKeyFilter, AuthorizationFilter.class)
-                .addFilterBefore(jwtAuthFilter, AuthorizationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -197,14 +197,48 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
+    public List<EsitoSdiDto> getEsitiInvioSdi(List<Long> idFatture,
+                                              String dbKey) throws SQLException
+    {
+        if ( idFatture == null || idFatture.isEmpty() )
+        {
+            return new ArrayList<>();
+        }
+        try
+        {
+            StringBuilder sb = new StringBuilder();
+            for ( int i = 0; i < idFatture.size(); i++ )
+            {
+                if ( i > 0 )
+                {
+                    sb.append(",");
+                }
+                sb.append("?");
+            }
+            String query = FileQueryReader.getQuery("FATTURAELETTRONICA_S10").replace(":ids", sb.toString());
+            List<Object> params = new ArrayList<>();
+            params.add(dbKey);
+            params.addAll(idFatture);
+
+            BeanPropertyRowMapper<EsitoSdiDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(EsitoSdiDto.class);
+            return jdbcTemplate.query(query, rowMapper, params.toArray());
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero degli esiti sdi per le fatture {} e il dbKey {}", idFatture, dbKey, e);
+            throw new SQLException(e);
+        }
+    }
+
     public EsitoSdiDto getEsitoInvioSdi(long idFattura,
-                                        String nomeStore) throws SQLException
+                                        String dbKey) throws SQLException
     {
         try
         {
             BeanPropertyRowMapper<EsitoSdiDto> rowMapper = new BeanPropertyRowMapper<>();
             rowMapper.setMappedClass(EsitoSdiDto.class);
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURAELETTRONICA_S06"), rowMapper, idFattura, nomeStore);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURAELETTRONICA_S06"), rowMapper, idFattura, dbKey);
         }
         catch ( EmptyResultDataAccessException e )
         {
@@ -212,7 +246,7 @@ public class FatturaElettronicaDao extends BaseDao
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nel recupero dell'esito sdi per la fattura {} e lo store {}", idFattura, nomeStore, e);
+            _log.error("Errore nel recupero dell'esito sdi per la fattura {} e il dbKey {}", idFattura, dbKey, e);
             throw new SQLException(e);
         }
     }

@@ -336,8 +336,17 @@ public class ScadenzaPagamentoDocumentoDto extends ScadenzaPagamentoDto implemen
         }
         else
         {
-            setDescModalitaPagamento(ModalitaPagamentoEnum.valueOf(modalitaPagamento).getDescrizione());
+            ModalitaPagamentoEnum mpEnum = ModalitaPagamentoEnum.fromCodice(modalitaPagamento);
+            if ( mpEnum != null )
+            {
+                setDescModalitaPagamento(mpEnum.getDescrizione());
+            }
+            else
+            {
+                setDescModalitaPagamento(modalitaPagamento);
+            }
         }
+
     }
 
     public void setNote(String note)

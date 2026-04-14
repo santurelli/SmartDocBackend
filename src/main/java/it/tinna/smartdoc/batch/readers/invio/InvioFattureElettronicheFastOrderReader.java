@@ -182,8 +182,8 @@ public class InvioFattureElettronicheFastOrderReader implements ItemStreamReader
         }
         catch ( Exception e )
         {
-            logger.error("Errore nella generazione della fattura elettronica per lo il ristorante/bar {}", nomeStore, e);
-            throw e;
+            logger.error("Errore nella generazione della fattura elettronica per lo il ristorante/bar {}: {}", nomeStore, e.getMessage());
+            feDto.setErroreValidazioneXml(StringUtils.defaultString(feDto.getErroreValidazioneXml()) + "Errore imprevisto generazione: " + e.getMessage());
         }
         return feDto;
     }

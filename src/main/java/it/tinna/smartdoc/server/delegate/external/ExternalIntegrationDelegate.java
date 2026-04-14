@@ -111,7 +111,13 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
 
         // 4. Generazione XML Fattura Elettronica
         try {
-            fatturaElettronicaDelegate.getFatturaElettronica(feDto, nomeStore);
+            try {
+                fatturaElettronicaDelegate.getFatturaElettronica(feDto, nomeStore);
+            } catch (Exception e) {
+                log.error("Errore critico durante la generazione XML: ", e);
+                String msg = "Errore imprevisto durante la generazione XML: " + e.getMessage();
+                feDto.setErroreValidazioneXml(StringUtils.defaultString(feDto.getErroreValidazioneXml()) + msg);
+            }
 
             if (StringUtils.isNotEmpty(feDto.getErroreValidazioneXml())) {
                 log.warn("Fattura generata con errori di validazione XML: {}", feDto.getErroreValidazioneXml());
@@ -120,23 +126,27 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             // 5. Memorizzazione per invio SdI
             FatturaElettronicaWrapperDto wrapper = new FatturaElettronicaWrapperDto();
             wrapper.setFattura(feDto);
-            if (StringUtils.isEmpty(feDto.getErroreValidazioneXml())) {
+            
+            // Se non ci sono errori, allegato l'XML
+            if (StringUtils.isEmpty(feDto.getErroreValidazioneXml()) && feDto.getXmlFattura() != null) {
                 wrapper.setFlussoFatturaElettronica(feDto.getXmlFattura().getBytes());
                 feDto.setStatoFatturaElettronica(StatoFatturaElettronica.DI);
             }
 
+            // Memorizziamo SEMPRE (anche con errore) per permettere la sincro sul frontend
             fatturaElettronicaDelegate.memorizzaFatturaElettronica(dbKey, wrapper);
             
-            // Aggiornamento stato sul DB Tenant (DI = Da Inviare)
+            // Aggiornamento stato sul DB Tenant
             if (StringUtils.isEmpty(feDto.getErroreValidazioneXml())) {
                 fatturaElettronicaDelegate.aggiornaStatoFattura(idFattura, StatoFatturaElettronica.DI);
                 log.info("Fattura elettronica memorizzata e stato aggiornato a DI (Da Inviare) per il tenant.");
             } else {
+                // Se c'è un errore, assicuriamoci che lo stato rimanga BO (Bozza) per permettere la correzione
+                fatturaElettronicaDelegate.aggiornaStatoFattura(idFattura, StatoFatturaElettronica.BO);
                 log.warn("Fattura memorizzata in stato BO causa errori di validazione.");
             }
         } catch (Exception e) {
-            log.error("Errore durante la generazione/memorizzazione della fattura elettronica", e);
-            // Non facciamo rollback della fattura "normale", ma segnaliamo l'errore
+            log.error("Errore fatale durante il salvataggio degli esiti di generazione", e);
         }
 
         return ExternalResponseDto.builder()
@@ -147,8 +157,11 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
     }
 
     public ExternalResponseDto getEsitoInvio(Long idFattura, String nomeStore) throws SQLException {
-        it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = fatturaElettronicaDelegate.getEsitoInvioSdi(idFattura, nomeStore);
-        if (esito != null) {
+        String dbKey = DatabaseContextHolder.getClientDatabase();
+        log.info("Richiesta esito invio per fattura ID: {} (Store: {}, DB: {})", idFattura, nomeStore, dbKey);
+        
+        it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = fatturaElettronicaDelegate.getEsitoInvioSdi(idFattura, dbKey);
+        if (esito != null && esito.getEsito() != null) {
             return ExternalResponseDto.builder()
                     .success(true)
                     .message("Esito recuperato: " + esito.getEsito())
@@ -225,10 +238,12 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         }
         
         // Calcolo totali
-        feDto.setTotale(extFattura.getPagamentoComandaDto().getTotale());
+        Double totale = extFattura.getPagamentoComandaDto().getTotale();
+        feDto.setTotale((totale != null && Double.isFinite(totale)) ? totale : 0.0);
+        
         Double scontoPerc = extFattura.getPagamentoComandaDto().getSconto();
-        if (scontoPerc != null && scontoPerc > 0) {
-            feDto.setSconto(scontoPerc + "%");
+        if (scontoPerc != null && Double.isFinite(scontoPerc) && scontoPerc > 0) {
+            feDto.setSconto(String.valueOf(scontoPerc));
         }
 
 
@@ -284,6 +299,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             BigDecimal prezzoSenzaIva = prezzoConIva.divide(BigDecimal.valueOf(1.1), 2, RoundingMode.HALF_UP); // Default 10%
             pdDto.setPrezzo(prezzoSenzaIva.doubleValue());
             pdDto.setTotaleSenzaIva(pdDto.getPrezzo());
+            pdDto.setPrezzoImponibile(pdDto.getPrezzo());
             
             calcoloTotaleIva = prezzoConIva.subtract(prezzoSenzaIva);
             prodotti.add(pdDto);
