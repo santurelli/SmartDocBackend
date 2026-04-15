@@ -2080,7 +2080,7 @@
 				ON d_e_fatture_elettroniche.k_d_e_fatture_elettroniche = x.k_d_e_fatture_elettroniche
 			   AND d_e_fatture_elettroniche.db_key = x.db_key
 			 WHERE (tipo_esito_sdi = 'NS'
-			    OR progressivo_file IS NULL)
+			    OR (progressivo_file IS NULL AND errore_validazione_xml IS NOT NULL))
 			   AND notificata = 0 
 		</content>
 	</query>
@@ -2103,7 +2103,7 @@
 				ON d_e_fatture_elettroniche.k_d_e_fatture_elettroniche = x.k_d_e_fatture_elettroniche
 			   AND d_e_fatture_elettroniche.db_key = x.db_key
 			 WHERE (tipo_esito_sdi = 'NS'
-			    OR progressivo_file IS NULL)
+			    OR (progressivo_file IS NULL AND errore_validazione_xml IS NOT NULL))
 			   AND notificata = 0 
 		</content>
 	</query>
@@ -2230,6 +2230,8 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
+						codice_fiscale,
+						partita_iva,
 						acconto,
 						k_d_e_magazzini,
 						annotazione_estesa,
@@ -2237,7 +2239,7 @@
 						tipo_docassociato,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_confordine;
 		</content>
 	</query>
@@ -2338,6 +2340,8 @@
 				   d_e_confordine.citta_destinazione as cittaDestinazione,
 				   d_e_confordine.provincia_destinazione as provinciaDestinazione,
 				   d_e_confordine.nazione_destinazione as nazioneDestinazione,
+				   d_e_confordine.codice_fiscale AS codiceFiscale,
+				   d_e_confordine.partita_iva AS partitaIva,
 				   acconto,
 				   d_e_confordine.k_d_e_magazzini as idMagazzino,
 				   d_e_magazzini.descrizione AS descrMagazzino,
@@ -2518,6 +2522,8 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
+				   codice_fiscale = ?,
+				   partita_iva = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
@@ -2819,12 +2825,14 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
+						codice_fiscale,
+						partita_iva,
 						codice_ufficio_destinazione,
 						acconto,
 						k_d_e_magazzini,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_ddt;
 		</content>
 	</query>
@@ -2926,6 +2934,8 @@
 				   d_e_ddt.citta_destinazione as cittaDestinazione,
 				   d_e_ddt.provincia_destinazione as provinciaDestinazione,
 				   d_e_ddt.nazione_destinazione as nazioneDestinazione,
+				   d_e_ddt.codice_fiscale AS codiceFiscale,
+				   d_e_ddt.partita_iva AS partitaIva,
 				   d_e_ddt.codice_ufficio_destinazione AS codiceUfficioDestinazione,
 				   acconto,
 				   k_d_e_magazzini as idMagazzino
@@ -3118,6 +3128,8 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
+				   codice_fiscale = ?,
+				   partita_iva = ?,
 				   codice_ufficio_destinazione = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
@@ -3492,6 +3504,8 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
+						codice_fiscale,
+						partita_iva,
 						dt_liquidazione_provvigione,
 						fl_esigibilitadifferita,
 						k_d_e_causaliesigibilitadifferita,
@@ -3520,10 +3534,10 @@
 						user_created,
 						dt_created)
 				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
-				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- 28 placeholders for line 2
-				 	    ?,?,?,?,?,?,?,?,?,?,?, -- 11 placeholders for line 3
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?, -- 5 placeholders for line 4
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?, -- 9 placeholders for line 5 (was 8, now added 1 for sconto)
+				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- added one ? for codice_fiscale
+				 	    ?,?,?,?,?,?,?,?,?,?,?,?, -- added one ? for partita_iva
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3658,6 +3672,8 @@
 				   d_e_fatture.citta_destinazione AS cittaDestinazione,
 				   d_e_fatture.provincia_destinazione AS provinciaDestinazione,
 				   d_e_fatture.nazione_destinazione AS nazioneDestinazione,
+				   d_e_fatture.codice_fiscale AS codiceFiscale,
+				   d_e_fatture.partita_iva AS partitaIva,
 				   d_e_fatture.codice_ufficio_destinazione AS codiceUfficioDestinazione,
 				   COALESCE(d_e_fatture.pec_destinazione, '') AS pec,
 				   COALESCE(TO_CHAR(dt_liquidazione_provvigione, 'DD/MM/YYYY'), '') AS dtLiquidazioneProvvigione,
@@ -4182,6 +4198,8 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
+				   codice_fiscale = ?,
+				   partita_iva = ?,
 				   dt_liquidazione_provvigione = TO_DATE(?,'DD/MM/YYYY'),
 				   fl_esigibilitadifferita = ?,
 				   k_d_e_causaliesigibilitadifferita = ?,
@@ -6076,6 +6094,8 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
+						codice_fiscale,
+						partita_iva,
 						dt_liquidazione_provvigione,
 						fl_esigibilitadifferita,
 						k_d_e_causaliesigibilitadifferita,
@@ -6094,7 +6114,7 @@
 						stato_fattura_elettronica,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_notecredito;
 		</content>
 	</query>
@@ -6198,6 +6218,8 @@
 				   d_e_notecredito.citta_destinazione as cittaDestinazione,
 				   d_e_notecredito.provincia_destinazione as provinciaDestinazione,
 				   d_e_notecredito.nazione_destinazione as nazioneDestinazione,
+				   d_e_notecredito.codice_fiscale AS codiceFiscale,
+				   d_e_notecredito.partita_iva AS partitaIva,
 				   d_e_notecredito.codice_ufficio_destinazione as codiceUfficioDestinazione,
 				   COALESCE(fl_esigibilitadifferita, 0) AS esigibilitaDifferita,
 				   d_e_notecredito.k_d_e_causaliesigibilitadifferita AS idCausaleEsigibilitaDifferita,
@@ -6393,6 +6415,8 @@
 				   d_e_notecredito.citta_destinazione as cittaDestinazione,
 				   d_e_notecredito.provincia_destinazione as provinciaDestinazione,
 				   d_e_notecredito.nazione_destinazione as nazioneDestinazione,
+				   d_e_notecredito.codice_fiscale AS codiceFiscale,
+				   d_e_notecredito.partita_iva AS partitaIva,
 				   d_e_notecredito.codice_ufficio_destinazione as codiceUfficioDestinazione,
 				   COALESCE(fl_esigibilitadifferita, 0) AS esigibilitaDifferita,
 				   d_e_notecredito.k_d_e_causaliesigibilitadifferita AS idCausaleEsigibilitaDifferita,
@@ -6537,6 +6561,8 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
+				   codice_fiscale = ?,
+				   partita_iva = ?,
 				   dt_liquidazione_provvigione = ?,
 				   fl_esigibilitadifferita = ?,
 				   k_d_e_causaliesigibilitadifferita = ?,
@@ -7775,11 +7801,13 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
+						codice_fiscale,
+						partita_iva,
 						k_d_e_magazzini,
 						annotazione_estesa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			returning k_d_e_preventivi;
 		</content>
 	</query>
@@ -7880,6 +7908,8 @@
 				   d_e_preventivi.citta_destinazione as cittaDestinazione,
 				   d_e_preventivi.provincia_destinazione as provinciaDestinazione,
 				   d_e_preventivi.nazione_destinazione as nazioneDestinazione,
+				   d_e_preventivi.codice_fiscale AS codiceFiscale,
+				   d_e_preventivi.partita_iva AS partitaIva,
 				   k_d_e_magazzini as idMagazzino,
 				   COALESCE(annotazione_estesa,'') AS annotazioneEstesa
 			  FROM d_e_preventivi
@@ -8055,6 +8085,8 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
+				   codice_fiscale = ?,
+				   partita_iva = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
 				   user_last_update = ?,

@@ -89,6 +89,8 @@ public class InvioFattureElettronicheFastOrderReader implements ItemStreamReader
         feDto.setProvinciaIntestazione(dto.getCliente().getProvincia());
         feDto.setCodiceUfficioDestinazione(dto.getCliente().getCodiceDestinatario());
         feDto.setPec(dto.getCliente().getPec());
+        feDto.setPartitaIva(dto.getCliente().getPartitaIva());
+        feDto.setCodiceFiscale(dto.getCliente().getCodiceFiscale());
 
         feDto.setDataDocumento(dto.getData());
         feDto.setNumDocumento(dto.getNumero());

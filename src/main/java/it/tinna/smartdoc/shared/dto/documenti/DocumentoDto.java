@@ -377,6 +377,14 @@ public class DocumentoDto extends BaseDto
         if ( this.clienteDto != null )
         {
             fatturareA.append("<b>").append(clienteDto.getDenominazione()).append("</b><br>");
+            if ( StringUtils.isNotBlank(this.partitaIva) )
+            {
+                fatturareA.append("P.IVA: ").append(this.partitaIva).append("<br>");
+            }
+            if ( StringUtils.isNotBlank(this.codiceFiscale) )
+            {
+                fatturareA.append("C.F.: ").append(this.codiceFiscale).append("<br>");
+            }
         }
         if ( StringUtils.isNotBlank(this.indirizzoIntestazione) )
         {

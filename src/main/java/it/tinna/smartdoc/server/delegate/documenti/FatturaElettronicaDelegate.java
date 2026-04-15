@@ -292,17 +292,27 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             DatiAnagraficiCessionarioType datiAnagraficiCessionario = new DatiAnagraficiCessionarioType();
             cessionarioCommittente.setDatiAnagrafici(datiAnagraficiCessionario);
             // IdFiscaleIVA oppure CodiceFiscale
-            if ( StringUtils.isNotBlank(dto.getClienteDto().getPartitaIva()) )
+            // Prioritize tax data from the document header, fallback to customer card
+            String pIva = StringUtils.defaultIfBlank(dto.getPartitaIva(), (dto.getClienteDto() != null ? dto.getClienteDto().getPartitaIva() : ""));
+            String cf = StringUtils.defaultIfBlank(dto.getCodiceFiscale(), (dto.getClienteDto() != null ? dto.getClienteDto().getCodiceFiscale() : ""));
+            String nazione = StringUtils.defaultIfBlank(dto.getNazioneIntestazione(), "Italia");
+            String isoCliente = nazioniDao.getCodiceIsoByNome(nazione);
+            if (StringUtils.isBlank(isoCliente)) {
+                isoCliente = "IT";
+            }
+
+            // IdFiscaleIVA
+            if ( StringUtils.isNotBlank(pIva) )
             {
                 IdFiscaleType idFiscaleIVACessionario = new IdFiscaleType();
                 datiAnagraficiCessionario.setIdFiscaleIVA(idFiscaleIVACessionario);
-                String isoCliente = nazioniDao.getCodiceIsoByNome(dto.getNazioneIntestazione());
                 idFiscaleIVACessionario.setIdPaese(isoCliente);
-                idFiscaleIVACessionario.setIdCodice(dto.getClienteDto().getPartitaIva());
+                idFiscaleIVACessionario.setIdCodice(pIva);
             }
-            else
+            // Always set CodiceFiscale if present (SDI allows both)
+            if ( StringUtils.isNotBlank(cf) )
             {
-                datiAnagraficiCessionario.setCodiceFiscale(dto.getClienteDto().getCodiceFiscale().toUpperCase());
+                datiAnagraficiCessionario.setCodiceFiscale(cf.toUpperCase());
             }
             // Anagrafica
             AnagraficaType anagraficaCessionario = new AnagraficaType();
@@ -336,7 +346,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 sedeCessionario.setProvincia(dto.getProvinciaIntestazione().toUpperCase());
             }
             
-            sedeCessionario.setNazione(nazioniDao.getCodiceIsoByNome(dto.getNazioneIntestazione()));
+            sedeCessionario.setNazione(isoCliente);
             
             if (validationErrors.length() > 0) {
                 dto.setErroreValidazioneXml(validationErrors.toString());
@@ -775,6 +785,8 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     String formattedDate = df.format(cal.getTime());
                     dto.setNomeFileFattura(new StringBuilder("IT").append(datiAziendaDto.getPartitaIva()).append("_").append(formattedDate + StringUtils.leftPad("" + dto.getNumDocumento(), 3, "0")).toString());
                     dto.setXmlFattura(sw.toString());
+                    dto.setErroreValidazioneXml(null);
+                    dto.setXmlNonValido(null);
                     // return dto;
                 }
                 catch ( SAXException | IOException e )
@@ -998,14 +1010,23 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("    </CedentePrestatore>\n");
 
         xml.append("    <CessionarioCommittente>\n");
+        String pIva = StringUtils.defaultIfBlank(dto.getPartitaIva(), (dto.getClienteDto() != null ? dto.getClienteDto().getPartitaIva() : ""));
+        String cf = StringUtils.defaultIfBlank(dto.getCodiceFiscale(), (dto.getClienteDto() != null ? dto.getClienteDto().getCodiceFiscale() : ""));
+        String nazione = StringUtils.defaultIfBlank(dto.getNazioneIntestazione(), "Italia");
+        String isoCliente = nazioniDao.getCodiceIsoByNome(nazione);
+        if (StringUtils.isBlank(isoCliente)) {
+            isoCliente = "IT";
+        }
+
         xml.append("      <IdentificativiFiscali>\n");
-        if (StringUtils.isNotBlank(dto.getPartitaIva())) {
+        if (StringUtils.isNotBlank(pIva)) {
             xml.append("        <IdFiscaleIVA>\n");
-            xml.append("          <IdPaese>IT</IdPaese>\n");
-            xml.append("          <IdCodice>").append(dto.getPartitaIva()).append("</IdCodice>\n");
+            xml.append("          <IdPaese>").append(isoCliente).append("</IdPaese>\n");
+            xml.append("          <IdCodice>").append(pIva).append("</IdCodice>\n");
             xml.append("        </IdFiscaleIVA>\n");
-        } else if (StringUtils.isNotBlank(dto.getCodiceFiscale())) {
-            xml.append("        <CodiceFiscale>").append(dto.getCodiceFiscale()).append("</CodiceFiscale>\n");
+        }
+        if (StringUtils.isNotBlank(cf)) {
+            xml.append("        <CodiceFiscale>").append(cf.toUpperCase()).append("</CodiceFiscale>\n");
         }
         xml.append("      </IdentificativiFiscali>\n");
         xml.append("      <AltriDatiIdentificativi>\n");
@@ -1045,6 +1066,8 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("</p:FatturaElettronicaSemplificata>");
 
         dto.setXmlFattura(xml.toString());
+        dto.setErroreValidazioneXml(null);
+        dto.setXmlNonValido(null);
     }
 
     private String escapeXml(String input) {

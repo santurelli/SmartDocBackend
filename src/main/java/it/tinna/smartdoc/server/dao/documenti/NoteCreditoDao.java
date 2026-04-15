@@ -17,8 +17,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ResultSetExtractor;
 
-import java.util.ArrayList;
-import java.util.List;
 import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.database.FileQueryReader;
 import it.tinna.smartdoc.server.util.DateUtility;
@@ -91,15 +89,15 @@ public class NoteCreditoDao extends BaseDao
         }
     }
 
-    public void deleteScadenzaPagamento(long id) throws SQLException
+    public void deleteScadenzaPagamento(long idScadenzaPagamento) throws SQLException
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("NOTECREDITO_D04"), id);
+            jdbcTemplate.update(FileQueryReader.getQuery("NOTECREDITO_D04"), idScadenzaPagamento);
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nella cancellazione della scadenza di pagamento con id {} (note credito)", id, e);
+            _log.error("Errore nella cancellazione della scadenza di pagamento con id {} (note credito)", idScadenzaPagamento, e);
             throw new SQLException(e);
         }
     }
@@ -280,7 +278,7 @@ public class NoteCreditoDao extends BaseDao
     }
 
     public Integer getNextNum(String data,
-                              Integer flFatturaElettronica) throws SQLException
+                               Integer flFatturaElettronica) throws SQLException
     {
         try
         {
@@ -526,6 +524,8 @@ public class NoteCreditoDao extends BaseDao
                                                dto.getCittaDestinazione(),
                                                dto.getProvinciaDestinazione(),
                                                dto.getNazioneDestinazione(),
+                                               dto.getCodiceFiscale(),
+                                               dto.getPartitaIva(),
                                                StringUtils.isEmpty(dto.getDtLiquidazioneProvvigione()) ? null : DateUtility.toTimestamp(dto.getDtLiquidazioneProvvigione()),
                                                dto.getEsigibilitaDifferita(),
                                                dto.getIdCausaleEsigibilitaDifferita(),
@@ -640,6 +640,8 @@ public class NoteCreditoDao extends BaseDao
                                 dto.getCittaDestinazione(),
                                 dto.getProvinciaDestinazione(),
                                 dto.getNazioneDestinazione(),
+                                dto.getCodiceFiscale(),
+                                dto.getPartitaIva(),
                                 StringUtils.isEmpty(dto.getDtLiquidazioneProvvigione()) ? null : DateUtility.toTimestamp(dto.getDtLiquidazioneProvvigione()),
                                 dto.getEsigibilitaDifferita(),
                                 dto.getIdCausaleEsigibilitaDifferita(),
@@ -680,4 +682,3 @@ public class NoteCreditoDao extends BaseDao
     }
 
 }
-

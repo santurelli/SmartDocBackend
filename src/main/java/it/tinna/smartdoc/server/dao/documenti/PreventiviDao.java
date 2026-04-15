@@ -179,6 +179,8 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
+                    dto.getCodiceFiscale(),
+                    dto.getPartitaIva(),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
                     dto.getUserCreated());
@@ -231,6 +233,8 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
+                    dto.getCodiceFiscale(),
+                    dto.getPartitaIva(),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
                     dto.getUserLastUpdate(), dto.getId());
@@ -256,4 +260,3 @@ public class PreventiviDao extends BaseDao {
         }
     }
 }
-

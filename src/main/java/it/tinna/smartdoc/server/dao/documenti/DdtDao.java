@@ -199,6 +199,8 @@ public class DdtDao extends BaseDao {
                 dto.getCittaDestinazione(), 
                 dto.getProvinciaDestinazione(), 
                 dto.getNazioneDestinazione(), 
+                dto.getCodiceFiscale(),
+                dto.getPartitaIva(),
                 dto.getCodiceUfficioDestinazione(), 
                 dto.getAcconto(), 
                 dto.getIdMagazzino(), 
@@ -307,6 +309,8 @@ public class DdtDao extends BaseDao {
                 dto.getCittaDestinazione(), 
                 dto.getProvinciaDestinazione(), 
                 dto.getNazioneDestinazione(), 
+                dto.getCodiceFiscale(),
+                dto.getPartitaIva(),
                 dto.getCodiceUfficioDestinazione(), 
                 dto.getAcconto(), 
                 dto.getIdMagazzino(), 
@@ -318,4 +322,3 @@ public class DdtDao extends BaseDao {
         }
     }
 }
-
