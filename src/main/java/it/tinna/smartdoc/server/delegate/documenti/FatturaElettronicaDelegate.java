@@ -114,6 +114,9 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     @Autowired
     private NumerazioneFatturaElettronicaDelegate numerazioneFatturaElettronicaDelegate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.dao.nazioni.NazioniDao nazioniDao;
+
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      NotificaMancataConsegnaType notificaMancataConsegna) throws SQLException
     {
@@ -196,6 +199,12 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         TipiPagamentoDao tpDao = new TipiPagamentoDao(jdbcTemplate);
         DatiAziendaDao datiAziendaDao = new DatiAziendaDao(jdbcTemplate);
         DatiAziendaDto datiAziendaDto = datiAziendaDao.getDatiAzienda();
+        
+        if (dto instanceof FatturaDto && TipoFattura.FATTURA_SEMPLIFICATA.equals(((FatturaDto)dto).getTipoFattura())) {
+            getFatturaElettronicaSemplificata(dto, nomeStore);
+            return;
+        }
+
         FatturaElettronicaType fatturaElettronica = new FatturaElettronicaType();
         fatturaElettronica.setVersione(dto.getClienteDto().getTipologia() == TipologiaClienteFornitore.PUBBLICA_AMMINISTRAZIONE ? FormatoTrasmissioneEnum.FATTURA_PA : FormatoTrasmissioneEnum.FATTURA_PRIVATI);
         // FatturaElettronicaHeader
@@ -287,7 +296,8 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             {
                 IdFiscaleType idFiscaleIVACessionario = new IdFiscaleType();
                 datiAnagraficiCessionario.setIdFiscaleIVA(idFiscaleIVACessionario);
-                idFiscaleIVACessionario.setIdPaese("IT");
+                String isoCliente = nazioniDao.getCodiceIsoByNome(dto.getNazioneIntestazione());
+                idFiscaleIVACessionario.setIdPaese(isoCliente);
                 idFiscaleIVACessionario.setIdCodice(dto.getClienteDto().getPartitaIva());
             }
             else
@@ -326,7 +336,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 sedeCessionario.setProvincia(dto.getProvinciaIntestazione().toUpperCase());
             }
             
-            sedeCessionario.setNazione("IT");// TODO gestire la nazione mediante la pagina di configurazione del cliente. Di default impostarla a ITALIA
+            sedeCessionario.setNazione(nazioniDao.getCodiceIsoByNome(dto.getNazioneIntestazione()));
             
             if (validationErrors.length() > 0) {
                 dto.setErroreValidazioneXml(validationErrors.toString());
@@ -928,6 +938,122 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         dao.cancellaFatturaElettronicaCentrale(dbKey, idFattura);
+    }
+
+    /**
+     * Genera l'XML della Fattura Semplificata (TD07) manualmente, 
+     * dato che non disponiamo delle classi JAXB per lo schema FSM10.
+     */
+    private void getFatturaElettronicaSemplificata(FatturaElettronicaDto dto, String nomeStore) throws SQLException, ParseException {
+        AliquoteIvaDao aiDao = new AliquoteIvaDao(jdbcTemplate);
+        DatiAziendaDao datiAziendaDao = new DatiAziendaDao(jdbcTemplate);
+        DatiAziendaDto datiAziendaDto = datiAziendaDao.getDatiAzienda();
+
+        // 1. Calcolo Progressivo Invio
+        Date dateFattura = FastDateFormat.getInstance("dd/MM/yyyy").parse(dto.getDataDocumento());
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(dateFattura);
+        String progressivo = numerazioneFatturaElettronicaDelegate.getNumero(cal.get(Calendar.YEAR));
+
+        // 2. Costruzione manuale XML FSM10
+        StringBuilder xml = new StringBuilder();
+        xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        xml.append("<p:FatturaElettronicaSemplificata versione=\"FSM10\" ");
+        xml.append("xmlns:ds=\"http://www.w3.org/2000/09/xmldsig#\" ");
+        xml.append("xmlns:p=\"http://ivaservizi.agenziaentrate.gov.it/docs/xsd/fatture/v1.0\" ");
+        xml.append("xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\n");
+
+        // Header
+        xml.append("  <FatturaElettronicaHeader>\n");
+        xml.append("    <DatiTrasmissione>\n");
+        xml.append("      <IdTrasmittente>\n");
+        xml.append("        <IdPaese>IT</IdPaese>\n");
+        xml.append("        <IdCodice>").append(datiAziendaDto.getPartitaIva()).append("</IdCodice>\n");
+        xml.append("      </IdTrasmittente>\n");
+        xml.append("      <ProgressivoInvio>").append(progressivo).append("</ProgressivoInvio>\n");
+        xml.append("      <FormatoTrasmissione>FSM10</FormatoTrasmissione>\n");
+        String codDest = StringUtils.defaultIfBlank(dto.getCodiceUfficioDestinazione(), "0000000").toUpperCase();
+        xml.append("      <CodiceDestinatario>").append(codDest).append("</CodiceDestinatario>\n");
+        if (StringUtils.isNotBlank(dto.getPec())) {
+            xml.append("      <PECDestinatario>").append(dto.getPec()).append("</PECDestinatario>\n");
+        }
+        xml.append("    </DatiTrasmissione>\n");
+
+        xml.append("    <CedentePrestatore>\n");
+        xml.append("      <IdFiscaleIVA>\n");
+        xml.append("        <IdPaese>IT</IdPaese>\n");
+        xml.append("        <IdCodice>").append(datiAziendaDto.getPartitaIva()).append("</IdCodice>\n");
+        xml.append("      </IdFiscaleIVA>\n");
+        xml.append("      <DatiAnagrafici>\n");
+        xml.append("        <Denominazione>").append(escapeXml(datiAziendaDto.getDenominazione())).append("</Denominazione>\n");
+        xml.append("        <RegimeFiscale>RF01</RegimeFiscale>\n");
+        xml.append("      </DatiAnagrafici>\n");
+        xml.append("      <Sede>\n");
+        xml.append("        <Indirizzo>").append(escapeXml(datiAziendaDto.getIndirizzo())).append("</Indirizzo>\n");
+        xml.append("        <CAP>").append(datiAziendaDto.getCap()).append("</CAP>\n");
+        xml.append("        <Comune>").append(escapeXml(datiAziendaDto.getCitta())).append("</Comune>\n");
+        xml.append("        <Provincia>").append(datiAziendaDto.getProvincia()).append("</Provincia>\n");
+        xml.append("        <Nazione>IT</Nazione>\n");
+        xml.append("      </Sede>\n");
+        xml.append("    </CedentePrestatore>\n");
+
+        xml.append("    <CessionarioCommittente>\n");
+        xml.append("      <IdentificativiFiscali>\n");
+        if (StringUtils.isNotBlank(dto.getPartitaIva())) {
+            xml.append("        <IdFiscaleIVA>\n");
+            xml.append("          <IdPaese>IT</IdPaese>\n");
+            xml.append("          <IdCodice>").append(dto.getPartitaIva()).append("</IdCodice>\n");
+            xml.append("        </IdFiscaleIVA>\n");
+        } else if (StringUtils.isNotBlank(dto.getCodiceFiscale())) {
+            xml.append("        <CodiceFiscale>").append(dto.getCodiceFiscale()).append("</CodiceFiscale>\n");
+        }
+        xml.append("      </IdentificativiFiscali>\n");
+        xml.append("      <AltriDatiIdentificativi>\n");
+        xml.append("        <Denominazione>").append(escapeXml(dto.getClienteDto().getDenominazione())).append("</Denominazione>\n");
+        xml.append("      </AltriDatiIdentificativi>\n");
+        xml.append("    </CessionarioCommittente>\n");
+        xml.append("  </FatturaElettronicaHeader>\n");
+
+        // Body
+        xml.append("  <FatturaElettronicaBody>\n");
+        xml.append("    <DatiGenerali>\n");
+        xml.append("      <DatiGeneraliDocumento>\n");
+        xml.append("        <TipoDocumento>TD07</TipoDocumento>\n");
+        xml.append("        <Divisa>EUR</Divisa>\n");
+        xml.append("        <Data>").append(FastDateFormat.getInstance("yyyy-MM-dd").format(dateFattura)).append("</Data>\n");
+        xml.append("        <Numero>").append(dto.getNumDocumento()).append("</Numero>\n");
+        xml.append("      </DatiGeneraliDocumento>\n");
+        xml.append("    </DatiGenerali>\n");
+
+        for (ProdottoDocumentoDto p : dto.getProdotti()) {
+            AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
+            xml.append("    <DatiBeniServizi>\n");
+            xml.append("      <Descrizione>").append(escapeXml(StringUtils.defaultIfBlank(p.getFmDescrizione(), p.getDescProdotto()))).append("</Descrizione>\n");
+            xml.append("      <Importo>").append(String.format(java.util.Locale.US, "%.2f", p.getPrezzoImponibile())).append("</Importo>\n");
+            xml.append("      <DatiIVA>\n");
+            if (ai != null && ai.getImposta() != null && ai.getImposta().doubleValue() > 0) {
+                xml.append("        <Aliquota>").append(String.format(java.util.Locale.US, "%.2f", ai.getImposta())).append("</Aliquota>\n");
+            } else if (ai != null) {
+                xml.append("        <Imposta>0.00</Imposta>\n");
+                xml.append("        <Natura>").append(ai.getClasse()).append("</Natura>\n");
+            }
+            xml.append("      </DatiIVA>\n");
+            xml.append("    </DatiBeniServizi>\n");
+        }
+
+        xml.append("  </FatturaElettronicaBody>\n");
+        xml.append("</p:FatturaElettronicaSemplificata>");
+
+        dto.setXmlFattura(xml.toString());
+    }
+
+    private String escapeXml(String input) {
+        if (input == null) return "";
+        return input.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace("\"", "&quot;")
+                    .replace("'", "&apos;");
     }
 
 }

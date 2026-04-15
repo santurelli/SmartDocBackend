@@ -40,6 +40,9 @@ public class BaseClienteDto extends BaseDto {
     private String citta;
 
     // @Expose
+    private String nazione;
+
+    // @Expose
     private String codice;
 
     // @Expose

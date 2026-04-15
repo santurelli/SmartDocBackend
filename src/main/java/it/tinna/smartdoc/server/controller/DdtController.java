@@ -25,6 +25,9 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import org.springframework.security.core.context.SecurityContextHolder;
+import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
 @RestController
 @RequestMapping("/api/ddt")
@@ -32,6 +35,18 @@ public class DdtController {
 
     @Autowired
     private DdtDelegate ddtDelegate;
+
+    @Autowired
+    private LoginDelegate loginDelegate;
+
+    private UtenteDto getCurrentUser() throws SQLException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String username = ((UserDetailsImpl) principal).getUsername();
+            return loginDelegate.getUserByUsername(username);
+        }
+        return null;
+    }
 
     @PostMapping("/list")
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
@@ -77,9 +92,9 @@ public class DdtController {
     }
 
     @PostMapping
-    public GenericResponseDto<Long> insert(@RequestBody DdtDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Long> insert(@RequestBody DdtDto dto) throws SQLException {
         GenericResponseDto<Long> response = new GenericResponseDto<>();
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserCreated(user.getId());
         }
@@ -88,9 +103,9 @@ public class DdtController {
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody DdtDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody DdtDto dto) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserLastUpdate(user.getId());
         }
@@ -100,9 +115,9 @@ public class DdtController {
     }
 
     @DeleteMapping("/{id}")
-    public GenericResponseDto<Void> delete(@PathVariable long id, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> delete(@PathVariable long id) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         long userId = user != null ? user.getId() : 0;
         ddtDelegate.delete(id, userId);
         return response;

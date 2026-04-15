@@ -442,6 +442,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
             case FATTURA_DIFFERITA:
                 return "TD24";
 
+            case FATTURA_SEMPLIFICATA:
+                return "TD07";
+
         }
 
         return null;
@@ -474,6 +477,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
 
         if ( "TD24".equals(value) )
             return TipoDocumentoEnum.FATTURA_DIFFERITA;
+
+        if ( "TD07".equals(value) )
+            return TipoDocumentoEnum.FATTURA_SEMPLIFICATA;
 
         return null;
     }

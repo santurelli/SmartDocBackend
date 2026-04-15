@@ -22,6 +22,8 @@ public class ISharedConstants
     public static String  CONFIG_KEY_ABILITADIVISIONI                                                    = "DIVISIONI";
 
     public static String  CONFIG_KEY_NUM_NOTE_DEBITO_FATTURE                                             = "NUMERAZIONE_NOTE_DEBITO_UGUALE_FATTURE";                         // se vale 1 la numerazione delle note debito è la stessa delle fatture
+    
+    public static String  CONFIG_KEY_ABILITA_FATTURE_SEMPLIFICATE                                       = "ABILITA_FATTURE_SEMPLIFICATE";
 
     public static String  CONFIG_KEY_PARTICELLE                                                          = "PARTICELLE";
 
@@ -559,6 +561,8 @@ public class ISharedConstants
     public static String  FATTURAELETTRONICA_DOWNLOADXML                                                 = "DOWNLOADXML";
 
     public static String  FATTURAELETTRONICA_TIPODOCUMENTO_FATTURA                                       = "TD01";
+
+    public static String  FATTURAELETTRONICA_TIPODOCUMENTO_FATTURA_SEMPLIFICATA                          = "TD07";
 
     public static String  FATTURAELETTRONICA_TIPODOCUMENTO_NOTACREDITO                                   = "TD04";
 

@@ -29,6 +29,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
 import it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao;
+import it.tinna.smartdoc.server.dao.nazioni.NazioniDao;
 import it.tinna.smartdoc.server.dao.tipipagamento.TipiPagamentoDao;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
@@ -58,6 +59,9 @@ public class FatturaElettronicaDelegateTest {
 
     @Mock
     private NumerazioneFatturaElettronicaDelegate numerazioneDelegate;
+    
+    @Mock
+    private NazioniDao nazioniDao;
 
     @BeforeEach
     public void setUp() {
@@ -95,6 +99,7 @@ public class FatturaElettronicaDelegateTest {
         dto.setCittaIntestazione("Milano");
         dto.setCapIntestazione("20100");
         dto.setProvinciaIntestazione("MI");
+        dto.setNazioneIntestazione("Italia");
         
         List<ProdottoDocumentoDto> prodotti = new ArrayList<>();
         ProdottoDocumentoDto p = new ProdottoDocumentoDto();
@@ -135,6 +140,7 @@ public class FatturaElettronicaDelegateTest {
         })) {
             
             when(numerazioneDelegate.getNumero(2026)).thenReturn("00001");
+            when(nazioniDao.getCodiceIsoByNome(anyString())).thenReturn("IT");
             
             fatturaElettronicaDelegate.getFatturaElettronica(dto, null);
             

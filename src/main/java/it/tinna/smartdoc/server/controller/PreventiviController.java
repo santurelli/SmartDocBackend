@@ -33,6 +33,9 @@ import it.tinna.smartdoc.shared.dto.documenti.PreventivoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import org.springframework.security.core.context.SecurityContextHolder;
+import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
 @RestController
 @RequestMapping("/api/preventivi")
@@ -40,6 +43,18 @@ public class PreventiviController {
 
     @Autowired
     private PreventiviDelegate preventiviDelegate;
+
+    @Autowired
+    private LoginDelegate loginDelegate;
+
+    private UtenteDto getCurrentUser() throws SQLException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String username = ((UserDetailsImpl) principal).getUsername();
+            return loginDelegate.getUserByUsername(username);
+        }
+        return null;
+    }
 
     @PostMapping("/list")
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
@@ -83,10 +98,9 @@ public class PreventiviController {
     }
 
     @PostMapping
-    public GenericResponseDto<Integer> insert(@RequestBody PreventivoDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Integer> insert(@RequestBody PreventivoDto dto) throws SQLException {
         GenericResponseDto<Integer> response = new GenericResponseDto<>();
-        //UtenteDto user = (UtenteDto) request.getSession().getAttribute(ISessionConstants.USER_LOGGED_IN);
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserCreated(user.getId());
         }
@@ -95,10 +109,9 @@ public class PreventiviController {
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody PreventivoDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody PreventivoDto dto) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
-        //UtenteDto user = (UtenteDto) request.getSession().getAttribute(ISessionConstants.USER_LOGGED_IN);
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserLastUpdate(user.getId());
         }
@@ -108,10 +121,9 @@ public class PreventiviController {
     }
 
     @DeleteMapping("/{id}")
-    public GenericResponseDto<Void> delete(@PathVariable long id, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> delete(@PathVariable long id) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
-        //UtenteDto user = (UtenteDto) request.getSession().getAttribute(ISessionConstants.USER_LOGGED_IN);
-        UtenteDto user = null; // TODO: restore user from security context
+        UtenteDto user = getCurrentUser();
         long userId = user != null ? user.getId() : 0;
         preventiviDelegate.delete(id, userId);
         return response;

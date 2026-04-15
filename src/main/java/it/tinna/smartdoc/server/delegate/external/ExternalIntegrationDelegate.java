@@ -27,6 +27,7 @@ import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica;
 import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
+import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 import it.tinna.smartdoc.shared.dto.response.ExternalResponseDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import lombok.RequiredArgsConstructor;
@@ -193,10 +194,20 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             internal.setCodiceFiscale(extCliente.getCodiceFiscale());
             internal.setCitta(extCliente.getCitta());
             internal.setPecPrincipale(extCliente.getPec());
+            internal.setNazione(extCliente.getNazione());
             internal.setTipologia(TipologiaClienteFornitore.PRIVATO);
             internal.setCodice(clientiDelegate.generaCodice());
             
-            Integer id = clientiDelegate.insert(internal, Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+            // Creiamo l'indirizzo di Sede Legale per conformità SDI
+            IndirizzoDto legale = new IndirizzoDto();
+            legale.setTipologia(IndirizzoDto.TipologiaIndirizzo.SEDE_LEGALE.getValore());
+            legale.setIndirizzo(extCliente.getIndirizzo());
+            legale.setCitta(extCliente.getCitta());
+            legale.setCap(extCliente.getCap());
+            legale.setProvincia(extCliente.getProvincia());
+            legale.setNazione(extCliente.getNazione());
+            
+            Integer id = clientiDelegate.insert(internal, Collections.singletonList(legale), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
             internal.setId(id.longValue());
         }
         return internal;
@@ -216,6 +227,8 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         feDto.setCittaIntestazione(StringUtils.defaultIfBlank(extCli.getCitta(), "NON SPECIFICATO"));
         feDto.setCapIntestazione(StringUtils.defaultIfBlank(extCli.getCap(), "00000"));
         feDto.setProvinciaIntestazione(StringUtils.defaultIfBlank(extCli.getProvincia(), "EE"));
+        feDto.setNazioneIntestazione(StringUtils.defaultIfBlank(extCli.getNazione(), "Italia"));
+        
         feDto.setCodiceUfficioDestinazione(extCli.getCodiceDestinatario());
         feDto.setPec(extCli.getPec());
         feDto.setPartitaIva(extCli.getPartitaIva());
@@ -240,6 +253,18 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         // Calcolo totali
         Double totale = extFattura.getPagamentoComandaDto().getTotale();
         feDto.setTotale((totale != null && Double.isFinite(totale)) ? totale : 0.0);
+
+        // --- LOGICA FATTURA SEMPLIFICATA (TD07) ---
+        // Se importo < 400€ e manca anche solo un dato dell'indirizzo cliente, passiamo a Semplificata
+        if (feDto.getTotale() < 400 && (
+                StringUtils.isBlank(extCli.getIndirizzo()) || 
+                StringUtils.isBlank(extCli.getCitta()) || 
+                StringUtils.isBlank(extCli.getCap()) || 
+                StringUtils.isBlank(extCli.getProvincia())
+            )) {
+            feDto.setTipoFattura(TipoFattura.FATTURA_SEMPLIFICATA);
+            log.info("Fattura auto-impostata come SEMPLIFICATA (TD07) causa dati indirizzo mancanti e totale < 400€");
+        }
         
         Double scontoPerc = extFattura.getPagamentoComandaDto().getSconto();
         if (scontoPerc != null && Double.isFinite(scontoPerc) && scontoPerc > 0) {

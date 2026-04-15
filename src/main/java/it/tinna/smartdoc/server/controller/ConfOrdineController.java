@@ -27,6 +27,9 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import org.springframework.security.core.context.SecurityContextHolder;
+import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
 @RestController
 @RequestMapping("/api/conf-ordine")
@@ -34,6 +37,18 @@ public class ConfOrdineController {
 
     @Autowired
     private ConfOrdineDelegate confOrdineDelegate;
+
+    @Autowired
+    private LoginDelegate loginDelegate;
+
+    private UtenteDto getCurrentUser() throws SQLException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String username = ((UserDetailsImpl) principal).getUsername();
+            return loginDelegate.getUserByUsername(username);
+        }
+        return null;
+    }
 
     @PostMapping("/list")
     public DatatablesResponseDto<MovimentiDocumentoDto> getList(@RequestBody Map<String, Object> p) throws SQLException {
@@ -76,26 +91,34 @@ public class ConfOrdineController {
     }
 
     @PostMapping
-    public GenericResponseDto<Integer> insert(@RequestBody ConfOrdineDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Integer> insert(@RequestBody ConfOrdineDto dto) throws SQLException {
         GenericResponseDto<Integer> response = new GenericResponseDto<>();
-        // TODO: get user from context
+        UtenteDto user = getCurrentUser();
+        if (user != null) {
+            dto.setUserCreated(user.getId());
+        }
         response.setPayload(confOrdineDelegate.save(dto));
         return response;
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody ConfOrdineDto dto, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody ConfOrdineDto dto) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
+        UtenteDto user = getCurrentUser();
+        if (user != null) {
+            dto.setUserLastUpdate(user.getId());
+        }
         dto.setId(id);
         confOrdineDelegate.save(dto);
         return response;
     }
 
     @DeleteMapping("/{id}")
-    public GenericResponseDto<Void> delete(@PathVariable long id, HttpServletRequest request) throws SQLException {
+    public GenericResponseDto<Void> delete(@PathVariable long id) throws SQLException {
         GenericResponseDto<Void> response = new GenericResponseDto<>();
-        // TODO: get user from context
-        confOrdineDelegate.delete(id, 0L);
+        UtenteDto user = getCurrentUser();
+        long userId = user != null ? user.getId() : 0;
+        confOrdineDelegate.delete(id, userId);
         return response;
     }
 

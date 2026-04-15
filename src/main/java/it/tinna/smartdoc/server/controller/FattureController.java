@@ -21,6 +21,10 @@ import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.security.core.context.SecurityContextHolder;
+import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.shared.dto.login.UtenteDto;
+import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
 @RestController
 @RequestMapping("/api/fatture")
@@ -28,11 +32,22 @@ public class FattureController {
 
     private final FattureDelegate fattureDelegate;
     private final StatisticheDelegate statisticheDelegate;
+    private final LoginDelegate loginDelegate;
 
     @Autowired
-    public FattureController(FattureDelegate fattureDelegate, StatisticheDelegate statisticheDelegate) {
+    public FattureController(FattureDelegate fattureDelegate, StatisticheDelegate statisticheDelegate, LoginDelegate loginDelegate) {
         this.fattureDelegate = fattureDelegate;
         this.statisticheDelegate = statisticheDelegate;
+        this.loginDelegate = loginDelegate;
+    }
+
+    private UtenteDto getCurrentUser() throws SQLException {
+        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if (principal instanceof UserDetailsImpl) {
+            String username = ((UserDetailsImpl) principal).getUsername();
+            return loginDelegate.getUserByUsername(username);
+        }
+        return null;
     }
 
     @GetMapping
@@ -79,15 +94,31 @@ public class FattureController {
 
     @PostMapping
     public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody FatturaDto dto) throws SQLException {
-        long id = fattureDelegate.insert(dto);
-        return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        if (dto.getId() > 0) {
+            UtenteDto user = getCurrentUser();
+            if (user != null) {
+                dto.setUserLastUpdate(user.getId());
+            }
+            fattureDelegate.update(user, dto);
+            return ResponseEntity.ok(new GenericResponseDto<>(dto.getId(), null));
+        } else {
+            UtenteDto user = getCurrentUser();
+            if (user != null) {
+                dto.setUserCreated(user.getId());
+            }
+            long id = fattureDelegate.insert(dto);
+            return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        }
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<GenericResponseDto<Boolean>> delete(@PathVariable long id, @RequestParam Long user) throws SQLException {
+    public ResponseEntity<GenericResponseDto<Boolean>> delete(@PathVariable long id) throws SQLException {
+        UtenteDto user = getCurrentUser();
         FatturaDto dto = new FatturaDto();
         dto.setId(id);
-        dto.setUserLastUpdate(user);
+        if (user != null) {
+            dto.setUserLastUpdate(user.getId());
+        }
         fattureDelegate.delete(java.util.Collections.singletonList(dto));
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }

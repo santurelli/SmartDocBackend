@@ -23,5 +23,6 @@ public class ClienteDto extends BaseDto {
     private String partitaIva;
     private String pec;
     private String provincia;
+    private String nazione;
     private String telefono;
 }
