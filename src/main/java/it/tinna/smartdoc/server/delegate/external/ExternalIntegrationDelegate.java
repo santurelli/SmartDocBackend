@@ -162,17 +162,53 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         log.info("Richiesta esito invio per fattura ID: {} (Store: {}, DB: {})", idFattura, nomeStore, dbKey);
         
         it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto esito = fatturaElettronicaDelegate.getEsitoInvioSdi(idFattura, dbKey);
-        if (esito != null && esito.getEsito() != null) {
-            return ExternalResponseDto.builder()
-                    .success(true)
-                    .message(esito.getEsito())
-                    .build();
-        } else {
-            return ExternalResponseDto.builder()
-                    .success(false)
-                    .message("Esito non ancora disponibile")
-                    .build();
+        
+        if (esito != null) {
+            String message = null;
+            
+            if (StringUtils.isNotBlank(esito.getErroreValidazioneXml())) {
+                message = "Errore XML: " + esito.getErroreValidazioneXml();
+            } else if (StringUtils.isNotBlank(esito.getEsito())) {
+                switch (esito.getEsito()) {
+                    case "NS":
+                        message = "Scartata SDI: " + StringUtils.defaultString(esito.getDescrizioneScarto(), "Dettaglio non disponibile");
+                        break;
+                    case "RC":
+                        message = "Consegnata";
+                        break;
+                    case "MC":
+                        message = "Mancata Consegna (messo a disposizione)";
+                        break;
+                    case "DT":
+                        message = "Decorrenza Termini";
+                        break;
+                    case "CP":
+                        message = "Accettata dal destinatario";
+                        break;
+                    case "SP":
+                        message = "Rifiutata dal destinatario";
+                        break;
+                    case "DI":
+                        message = "Inviata (in attesa di esito)";
+                        break;
+                    default:
+                        message = "Stato SDI: " + esito.getEsito();
+                        break;
+                }
+            }
+
+            if (message != null) {
+                return ExternalResponseDto.builder()
+                        .success(true)
+                        .message(message)
+                        .build();
+            }
         }
+        
+        return ExternalResponseDto.builder()
+                .success(false)
+                .message("Esito non ancora disponibile")
+                .build();
     }
 
     private ClienteDto findOrCreateCliente(it.tinna.smartdoc.shared.dto.external.fastorder.ClienteDto extCliente) throws SQLException {

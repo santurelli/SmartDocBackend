@@ -77,6 +77,12 @@ public class MovimentiDocumentoDto extends BaseDto
     @Expose
     private Double                     totalePagato;
 
+    @Expose
+    private Integer                    scadenzeCount;
+
+    @Expose
+    private Integer                    scadenzePagateCount;
+
     public String getAgente()
     {
         return agente;
@@ -308,6 +314,26 @@ public class MovimentiDocumentoDto extends BaseDto
     public void setTotalePagato(Double totalePagato)
     {
         this.totalePagato = totalePagato;
+    }
+
+    public Integer getScadenzeCount()
+    {
+        return scadenzeCount;
+    }
+
+    public void setScadenzeCount(Integer scadenzeCount)
+    {
+        this.scadenzeCount = scadenzeCount;
+    }
+
+    public Integer getScadenzePagateCount()
+    {
+        return scadenzePagateCount;
+    }
+
+    public void setScadenzePagateCount(Integer scadenzePagateCount)
+    {
+        this.scadenzePagateCount = scadenzePagateCount;
     }
 
 }

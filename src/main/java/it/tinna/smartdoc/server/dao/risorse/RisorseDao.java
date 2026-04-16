@@ -92,13 +92,18 @@ public class RisorseDao extends BaseDao
         params.add(StringUtils.isEmpty(tipologia) ? null : tipologia);
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
         Map<String, String> valuesMap = new HashMap<>();
-        if ( orderColumn == 0 )
+        String safeOrderDir = StringUtils.defaultIfEmpty(orderDir, "asc");
+        if ( orderColumn != null && orderColumn == 0 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("tipologia ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("tipologia ").append(safeOrderDir).toString());
         }
-        else if ( orderColumn == 1 )
+        else if ( orderColumn != null && orderColumn == 1 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(safeOrderDir).toString());
+        }
+        else
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(safeOrderDir).toString()); // Default sorting
         }
         if ( length != null && start != null )
         {

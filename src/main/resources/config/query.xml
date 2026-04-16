@@ -3346,8 +3346,8 @@
 				           d_e_fatture.num_fattura || COALESCE('/' || d_e_fatture.particella, '') AS numeroDocumento,
 				           d_e_clienti.denominazione AS soggetto,
 				       	   TO_CHAR(data_fattura, 'DD/MM/YYYY') AS dataDocumento,
-				       	   d_e_fatture.fl_fatturaelettronica,
-				       	   d_e_fatture.stato_fattura_elettronica
+				       	   d_e_fatture.fl_fatturaelettronica AS flFatturaElettronica,
+				       	   d_e_fatture.stato_fattura_elettronica AS statoFatturaElettronica
 		  			  FROM d_e_fatture,
 		  			  	   d_e_clienti
  					 WHERE d_e_fatture.k_d_e_clienti = d_e_clienti.k_d_e_clienti
@@ -3504,8 +3504,6 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
-						codice_fiscale,
-						partita_iva,
 						dt_liquidazione_provvigione,
 						fl_esigibilitadifferita,
 						k_d_e_causaliesigibilitadifferita,
@@ -3534,10 +3532,10 @@
 						user_created,
 						dt_created)
 				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
-				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, -- added one ? for codice_fiscale
-				 	    ?,?,?,?,?,?,?,?,?,?,?,?, -- added one ? for partita_iva
+				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+				 	    ?,?,?,?,?,?,?,?,?,
 				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,
-				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,
+				 	    TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3672,8 +3670,8 @@
 				   d_e_fatture.citta_destinazione AS cittaDestinazione,
 				   d_e_fatture.provincia_destinazione AS provinciaDestinazione,
 				   d_e_fatture.nazione_destinazione AS nazioneDestinazione,
-				   d_e_fatture.codice_fiscale AS codiceFiscale,
-				   d_e_fatture.partita_iva AS partitaIva,
+				   d_e_clienti.codice_fiscale AS codiceFiscale,
+				   d_e_clienti.partita_iva AS partitaIva,
 				   d_e_fatture.codice_ufficio_destinazione AS codiceUfficioDestinazione,
 				   COALESCE(d_e_fatture.pec_destinazione, '') AS pec,
 				   COALESCE(TO_CHAR(dt_liquidazione_provvigione, 'DD/MM/YYYY'), '') AS dtLiquidazioneProvvigione,
@@ -3976,6 +3974,8 @@
 				   d_e_fatture.citta_destinazione as cittaDestinazione,
 				   d_e_fatture.provincia_destinazione as provinciaDestinazione,
 				   d_e_fatture.nazione_destinazione as nazioneDestinazione,
+				   d_e_clienti.codice_fiscale AS codiceFiscale,
+				   d_e_clienti.partita_iva AS partitaIva,
 				   d_e_fatture.codice_ufficio_destinazione as codiceUfficioDestinazione,
 				   COALESCE(TO_CHAR(dt_liquidazione_provvigione, 'DD/MM/YYYY'), '') AS dtLiquidazioneProvvigione,
 				   COALESCE(d_e_fatture.fl_esigibilitadifferita, 0) AS esigibilitaDifferita,
@@ -4034,15 +4034,24 @@
 	                   d_e_fatture.totale - d_e_fatture.totale_pagato AS totaleDaPagare,
 				  	   COALESCE(d_e_agenti.denominazione, '') AS agente,
 				  	   get_descrizione_doccollegato(d_e_fatture.k_d_e_fatture, 'FATTURA'::character varying) AS stato,
-				  	   COALESCE(stato_fattura_elettronica, '') AS statoFatturaElettronica,
+				  	   d_e_fatture.stato_fattura_elettronica AS statoFatturaElettronica,
 				  	   '' AS erroreConsegna,
 				  	   '' AS erroreXml,
+				  	   COALESCE(scadenze_info.scadenze_tot, 0) AS scadenzeCount,
+				  	   COALESCE(scadenze_info.scadenze_pagate, 0) AS scadenzePagateCount,
 				  	   COUNT(*) OVER() AS total
 				  FROM d_e_fatture
 	              JOIN d_e_clienti
 	                ON d_e_fatture.k_d_e_clienti = d_e_clienti.k_d_e_clienti
 	         LEFT JOIN d_e_agenti
 	         		ON d_e_fatture.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+			 LEFT JOIN (
+					   SELECT k_d_e_fatture, 
+							  COUNT(*) AS scadenze_tot, 
+							  SUM(CASE WHEN saldato = 1 THEN 1 ELSE 0 END) AS scadenze_pagate 
+						 FROM d_e_scadenzepagamentifatture 
+					 GROUP BY k_d_e_fatture
+					) AS scadenze_info ON scadenze_info.k_d_e_fatture = d_e_fatture.k_d_e_fatture
 				 WHERE data_fattura &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_fattura)
 				   AND data_fattura &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_fattura)
 				   AND d_e_fatture.k_d_e_clienti = COALESCE(?, d_e_fatture.k_d_e_clienti)
@@ -4198,8 +4207,6 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
-				   codice_fiscale = ?,
-				   partita_iva = ?,
 				   dt_liquidazione_provvigione = TO_DATE(?,'DD/MM/YYYY'),
 				   fl_esigibilitadifferita = ?,
 				   k_d_e_causaliesigibilitadifferita = ?,

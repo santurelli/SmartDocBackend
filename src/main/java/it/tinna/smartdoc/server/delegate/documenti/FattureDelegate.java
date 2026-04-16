@@ -1087,7 +1087,12 @@ public class FattureDelegate extends BaseDelegate
             {
                 if ( utenteDto.getFatturaElettronica() == 1 )
                 {
-                    dto.setStatoFatturaElettronica(existentDto.getStatoFatturaElettronica());
+                    // Aggiorno lo stato solo se in DB è nullo (caso di migrazione o record incompleti)
+                    if (existentDto.getStatoFatturaElettronica() == null) {
+                        dto.setStatoFatturaElettronica(dto.getStatoFatturaElettronica());
+                    } else {
+                        dto.setStatoFatturaElettronica(existentDto.getStatoFatturaElettronica());
+                    }
                 }
             }
         }
