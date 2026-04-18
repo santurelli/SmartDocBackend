@@ -21,6 +21,11 @@ import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
 
+import it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum;
+import it.tinna.smartdoc.shared.dto.tipipagamento.ModalitaSdiDto;
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/api/tipi-pagamento")
 public class TipiPagamentoController {
@@ -124,6 +129,18 @@ public class TipiPagamentoController {
             log.error("Errore nel calcolo delle scadenze documento per tipo pagamento {} con data {} e totale {}", id, dataDocumento, totaleDocumento, e);
             return ResponseEntity.internalServerError().build();
         }
+    }
+
+    @GetMapping("/modalita-sdi")
+    public ResponseEntity<List<ModalitaSdiDto>> getModalitaSdi() {
+        List<ModalitaSdiDto> list = Arrays.stream(ModalitaPagamentoEnum.values())
+                .map(m -> ModalitaSdiDto.builder()
+                        .nome(m.name())
+                        .descrizione(m.getDescrizione())
+                        .codiceSdi(m.getCodiceSdi())
+                        .build())
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(list);
     }
 }
 

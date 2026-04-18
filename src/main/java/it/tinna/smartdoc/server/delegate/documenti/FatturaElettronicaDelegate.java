@@ -677,10 +677,11 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 DettaglioPagamentoType dettaglioPagamento = new DettaglioPagamentoType();
                 datiPagamento.getDettaglioPagamento().add(dettaglioPagamento);
                 TipoPagamentoDto tpDto = tpDao.getById(dto.getIdTipoPagamento());
-                dettaglioPagamento.setModalitaPagamento(ModalitaPagamentoEnum.valueOf(StringUtils.isNotBlank(scadenzaDto.getModalitaPagamento()) ? scadenzaDto.getModalitaPagamento() : tpDto.getModalita()));
+                ModalitaPagamentoEnum modalita = ModalitaPagamentoEnum.fromCodice(StringUtils.isNotBlank(scadenzaDto.getModalitaPagamento()) ? scadenzaDto.getModalitaPagamento() : tpDto.getModalita());
+                dettaglioPagamento.setModalitaPagamento(modalita != null ? modalita : ModalitaPagamentoEnum.CONTANTI);
                 dettaglioPagamento.setDataScadenzaPagamento(FastDateFormat.getInstance("dd/MM/yyyy").parse(scadenzaDto.getDtScadenza()));
                 dettaglioPagamento.setImportoPagamento(scadenzaDto.getImporto());
-                if ( tpDto != null && tpDto.getModalita().equals(ModalitaPagamentoEnum.BONIFICO.name()) && StringUtils.isNotBlank(dto.getIbanNsBanca()) )
+                if ( tpDto != null && ModalitaPagamentoEnum.BONIFICO.equals(ModalitaPagamentoEnum.fromCodice(tpDto.getModalita())) && StringUtils.isNotBlank(dto.getIbanNsBanca()) )
                 {
                     dettaglioPagamento.setIBAN(dto.getIbanNsBanca());
                 }
@@ -996,10 +997,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("        <IdPaese>IT</IdPaese>\n");
         xml.append("        <IdCodice>").append(datiAziendaDto.getPartitaIva()).append("</IdCodice>\n");
         xml.append("      </IdFiscaleIVA>\n");
-        xml.append("      <DatiAnagrafici>\n");
-        xml.append("        <Denominazione>").append(escapeXml(datiAziendaDto.getDenominazione())).append("</Denominazione>\n");
-        xml.append("        <RegimeFiscale>RF01</RegimeFiscale>\n");
-        xml.append("      </DatiAnagrafici>\n");
+        xml.append("      <Denominazione>").append(escapeXml(datiAziendaDto.getDenominazione())).append("</Denominazione>\n");
         xml.append("      <Sede>\n");
         xml.append("        <Indirizzo>").append(escapeXml(datiAziendaDto.getIndirizzo())).append("</Indirizzo>\n");
         xml.append("        <CAP>").append(datiAziendaDto.getCap()).append("</CAP>\n");
@@ -1007,6 +1005,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("        <Provincia>").append(datiAziendaDto.getProvincia()).append("</Provincia>\n");
         xml.append("        <Nazione>IT</Nazione>\n");
         xml.append("      </Sede>\n");
+        xml.append("      <RegimeFiscale>RF01</RegimeFiscale>\n");
         xml.append("    </CedentePrestatore>\n");
 
         xml.append("    <CessionarioCommittente>\n");
@@ -1031,6 +1030,13 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("      </IdentificativiFiscali>\n");
         xml.append("      <AltriDatiIdentificativi>\n");
         xml.append("        <Denominazione>").append(escapeXml(dto.getClienteDto().getDenominazione())).append("</Denominazione>\n");
+        xml.append("        <Sede>\n");
+        xml.append("          <Indirizzo>").append(escapeXml(StringUtils.defaultIfBlank(dto.getIndirizzoIntestazione(), "NON SPECIFICATO"))).append("</Indirizzo>\n");
+        xml.append("          <CAP>").append(StringUtils.defaultIfBlank(dto.getCapIntestazione(), "00000")).append("</CAP>\n");
+        xml.append("          <Comune>").append(escapeXml(StringUtils.defaultIfBlank(dto.getCittaIntestazione(), "NON SPECIFICATO"))).append("</Comune>\n");
+        xml.append("          <Provincia>").append(StringUtils.defaultIfBlank(dto.getProvinciaIntestazione(), "EE").toUpperCase()).append("</Provincia>\n");
+        xml.append("          <Nazione>").append(isoCliente).append("</Nazione>\n");
+        xml.append("        </Sede>\n");
         xml.append("      </AltriDatiIdentificativi>\n");
         xml.append("    </CessionarioCommittente>\n");
         xml.append("  </FatturaElettronicaHeader>\n");

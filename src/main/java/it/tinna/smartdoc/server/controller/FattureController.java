@@ -20,6 +20,7 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
+import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
@@ -171,6 +172,27 @@ public class FattureController {
     public ResponseEntity<GenericResponseDto<Long>> importXml(@RequestParam("file") MultipartFile file) throws Exception {
         Long id = fattureDelegate.importXml(file);
         return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+    }
+
+    @GetMapping("/download-xml/{id}")
+    public ResponseEntity<byte[]> downloadXml(@PathVariable long id) {
+        try {
+            FatturaElettronicaWrapperDto doc = fattureDelegate.getFatturaElettronica(id);
+            if (doc == null || doc.getFlussoFatturaElettronica() == null) return ResponseEntity.notFound().build();
+            
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_XML);
+            String filename = doc.getFattura() != null && doc.getFattura().getNomeFileFattura() != null ? 
+                             doc.getFattura().getNomeFileFattura() : "fattura_" + id;
+            if (!filename.toLowerCase().endsWith(".xml")) filename += ".xml";
+            
+            headers.add("Content-Disposition", "attachment; filename=" + filename);
+            
+            return ResponseEntity.ok().headers(headers).body(doc.getFlussoFatturaElettronica());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
 

@@ -380,13 +380,6 @@
 					<rightPen lineWidth="0.5"/>
 				</box>
 			</frame>
-			<staticText>
-				<reportElement positionType="Float" x="0" y="242" width="555" height="20" uuid="7215d429-5fbe-488c-bbcf-06a9cdde8da2"/>
-				<textElement textAlignment="Center" verticalAlignment="Middle">
-					<font fontName="Arial" size="9" isBold="true"/>
-				</textElement>
-				<text><![CDATA[Contributo CONAI assolto ove dovuto]]></text>
-			</staticText>
 			<image onErrorType="Blank">
 				<reportElement x="0" y="2" width="276" height="58" uuid="99d4571a-dc1c-4fc1-9bda-db02f1dc2c52"/>
 				<imageExpression><![CDATA[$P{logopath}]]></imageExpression>

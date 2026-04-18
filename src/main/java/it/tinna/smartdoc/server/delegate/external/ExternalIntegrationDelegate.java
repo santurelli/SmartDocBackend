@@ -276,14 +276,30 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         feDto.setFlRitenutaAcconto(0);
         feDto.setEsigibilitaDifferita(0);
 
-        // Recupero ID Tipo Pagamento "Pagato"
+        // Identificazione modalità pagamento da FastOrder
+        it.tinna.smartdoc.shared.dto.external.fastorder.PagamentoComandaDto pag = extFattura.getPagamentoComandaDto();
+        ModalitaPagamentoEnum mode = ModalitaPagamentoEnum.CONTANTI;
+        if (pag != null && pag.getCartaCredito() != null && pag.getCartaCredito() > 0) {
+            mode = ModalitaPagamentoEnum.CARTA_CREDITO;
+        }
+
+        // Recupero ID Tipo Pagamento corrispondente alla modalità
         try {
+            // Ricerca robusta: proviamo sia con il codice interno (es. CC) che con il codice SDI (es. MP08)
             Integer idTipoPagamento = jdbcTemplate.queryForObject(
-                "SELECT k_d_e_tipipagamento FROM d_e_tipipagamento WHERE descrizione = 'Pagato' AND fl_deleted = 0 LIMIT 1", 
-                Integer.class);
+                "SELECT k_d_e_tipipagamento FROM d_e_tipipagamento WHERE (modalita = ? OR modalita = ?) AND fl_salda_subito = 1 AND fl_deleted = 0 LIMIT 1", 
+                Integer.class, mode.getCodice(), mode.getCodiceSdi());
             feDto.setIdTipoPagamento(idTipoPagamento);
         } catch (Exception e) {
-            log.warn("Impossibile trovare il tipo pagamento 'Pagato'. Le scadenze potrebbero non essere calcolate correttamente.");
+            log.warn("Impossibile trovare un tipo pagamento per modalità {}. Provo con il default 'Pagato'.", mode.getCodice());
+            try {
+                Integer idTipoPagamento = jdbcTemplate.queryForObject(
+                    "SELECT k_d_e_tipipagamento FROM d_e_tipipagamento WHERE descrizione = 'Pagato' AND fl_deleted = 0 LIMIT 1", 
+                    Integer.class);
+                feDto.setIdTipoPagamento(idTipoPagamento);
+            } catch (Exception e1) {
+                log.warn("Nessun tipo pagamento trovato.");
+            }
         }
         
         // Calcolo totali
@@ -371,7 +387,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
 
         // Scadenze
         ScadenzaPagamentoDocumentoDto scadenzaDto = new ScadenzaPagamentoDocumentoDto();
-        scadenzaDto.setModalitaPagamento(ModalitaPagamentoEnum.CONTANTI.name());
+        scadenzaDto.setModalitaPagamento(mode.getCodiceSdi());
         scadenzaDto.setDtScadenza(extFattura.getData());
         scadenzaDto.setImporto(extFattura.getPagamentoComandaDto().getTotale());
         scadenzaDto.setSaldato(1);

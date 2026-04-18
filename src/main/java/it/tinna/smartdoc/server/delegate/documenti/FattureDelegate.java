@@ -596,7 +596,7 @@ public class FattureDelegate extends BaseDelegate
             String coordinate = "";
             if ( !StringUtils.isEmpty(dto.getModalitaPagamento()) )
             {
-                ModalitaPagamentoEnum pagamentoEnum = ModalitaPagamentoEnum.valueOf(dto.getModalitaPagamento());
+                ModalitaPagamentoEnum pagamentoEnum = ModalitaPagamentoEnum.fromCodice(dto.getModalitaPagamento());
                 if ( pagamentoEnum == ModalitaPagamentoEnum.RIBA )
                 {
                     if ( !StringUtils.isEmpty(dto.getDescrizioneBanca()) )
