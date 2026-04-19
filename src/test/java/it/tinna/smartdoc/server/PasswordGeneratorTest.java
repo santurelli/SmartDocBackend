@@ -12,7 +12,7 @@ public class PasswordGeneratorTest {
         PasswordEncoder encoder = new BCryptPasswordEncoder();
         
         // Sostituisci "admin" con la tua password in chiaro
-        String rawPassword = "admin";
+        String rawPassword = "Supp0rt@";
         
         String encodedPassword = encoder.encode(rawPassword);
         

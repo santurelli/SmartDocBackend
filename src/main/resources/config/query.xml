@@ -187,8 +187,8 @@
 				   fl_predefinita AS predefinita,
 				   COUNT(*) OVER() AS total
 			  FROM d_e_aliquoteiva
-		     WHERE (   LOWER(codice) LIKE LOWER(?)
-		   	   		OR LOWER(descrizione) LIKE LOWER(?))
+		     WHERE (   LOWER(codice) LIKE COALESCE(LOWER(?), LOWER(codice))
+		   	   		OR LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione)))
 			   AND fl_deleted = 0
 		  ORDER BY ${ORDER_BY}
 				   ${LIMIT}

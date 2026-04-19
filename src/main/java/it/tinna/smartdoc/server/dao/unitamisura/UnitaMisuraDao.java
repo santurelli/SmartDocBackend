@@ -70,9 +70,14 @@ public class UnitaMisuraDao extends BaseDao
         List<Object> params = new ArrayList<>();
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
         Map<String, String> valuesMap = new HashMap<>();
-        if ( orderColumn == 0 )
+        String dir = StringUtils.isEmpty(orderDir) ? "asc" : orderDir;
+        if ( orderColumn != null && orderColumn == 0 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(dir).toString());
+        }
+        else
+        {
+            valuesMap.put("ORDER_BY", new StringBuilder("descrizione ").append(dir).toString());
         }
         if ( length != null && start != null )
         {

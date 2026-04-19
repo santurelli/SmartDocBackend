@@ -129,5 +129,118 @@ public class RegistriIvaDelegate extends BaseDelegate
         return dto;
     }
 
+    public byte[] exportRegistroIva(Periodi periodo, int anno, String tipoRegistro) throws Exception
+    {
+        Map<String, Object> params = new HashMap<>();
+
+        // 1. Fetch Dati Azienda
+        DatiAziendaDao daDao = new DatiAziendaDao(jdbcTemplate);
+        DatiAziendaDto daDto = daDao.getDatiAzienda();
+        params.put("datiazienda", daDto);
+
+        // 2. Definizione Periodo
+        String periodoStr = periodo.getDescrizione() + " " + anno;
+        params.put("periodo", periodoStr);
+
+        // 3. Fetch Documenti
+        RegistriIvaDao dao = new RegistriIvaDao(jdbcTemplate);
+        List<IvaDocumentoDto> allDocs = dao.getListIvaDocumenti(periodo, anno, null, null, 0, "ASC");
+
+        // 4. Filter by tipoRegistro ("vendite", "acquisti", "differita")
+        List<IvaDocumentoDto> filteredDocs = new ArrayList<>();
+        double totaleImponibileNum = 0d;
+        double totaleIvaNum = 0d;
+
+        int rowNum = 1;
+
+        for (IvaDocumentoDto doc : allDocs)
+        {
+            boolean matches = false;
+            if (doc.getGruppoDocumento() != null) {
+                String gruppo = doc.getGruppoDocumento().toLowerCase();
+                if ("vendite".equals(tipoRegistro) && gruppo.contains("vendit") && doc.getEsigibilitaDifferita() != 1) {
+                    matches = true;
+                } else if ("differita".equals(tipoRegistro) && gruppo.contains("vendit") && doc.getEsigibilitaDifferita() == 1) {
+                    matches = true;
+                } else if ("acquisti".equals(tipoRegistro) && gruppo.contains("acquist")) {
+                    matches = true;
+                }
+            }
+
+            if (matches) {
+                doc.setnProgr(rowNum++);
+                doc.setDescrTipoDocumento((doc.getTipoDocumento() != null ? doc.getTipoDocumento() : "") + " n. " + 
+                                          (doc.getNumeroDocumento() != null ? doc.getNumeroDocumento() : "") + " del " + 
+                                          (doc.getDataDocumento() != null ? doc.getDataDocumento() : ""));
+                doc.setTotaleFormattato(NumberUtils.formatAsCurrency(doc.getTotale().doubleValue()));
+                double ivaVal = "acquisti".equals(tipoRegistro) ? 
+                    (doc.getIvaCredito() != null ? doc.getIvaCredito().doubleValue() : doc.getIva()) : 
+                    (doc.getIvaDebito() != null ? doc.getIvaDebito().doubleValue() : doc.getIva());
+                
+                doc.setIvaDebitoFormattato(NumberUtils.formatAsCurrency(ivaVal));
+                doc.setIvaCreditoFormattato(NumberUtils.formatAsCurrency(ivaVal));
+
+                // Since we don't fetch granular aliquota details in the main query, wrap it up for the DTO
+                filteredDocs.add(doc);
+                
+                totaleImponibileNum += doc.getTotale().doubleValue();
+                totaleIvaNum += ivaVal;
+            }
+        }
+
+        params.put("totaleImponibile", NumberUtils.formatAsCurrency(totaleImponibileNum));
+        params.put("totaleImposta", NumberUtils.formatAsCurrency(totaleIvaNum));
+
+        // 5. Creazione riepilogo generico (visto che i dettagli non ci sono nella query principale)
+        List<it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto> riepilogoList = new ArrayList<>();
+        it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto riep = new it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto();
+        riep.setAliquotaIvaFormattata("Misto");
+        riep.setDescrizioneAliquota("Consultare i documenti");
+        riep.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(totaleImponibileNum));
+        riep.setImportoIvaFormattato(NumberUtils.formatAsCurrency(totaleIvaNum));
+        riepilogoList.add(riep);
+        
+        params.put("riepilogo", riepilogoList);
+
+        // 6. Caricamento del template dal Classpath (invece che dal file system legacy)
+        String templateName = "acquisti".equals(tipoRegistro) ? "iva_acquisti.jrxml" : "iva_vendite.jrxml";
+        InputStream reportIs = null;
+        try
+        {
+            org.springframework.core.io.ClassPathResource resource = new org.springframework.core.io.ClassPathResource("report_stampa/" + templateName);
+            if (!resource.exists()) {
+                _log.error("Template di stampa non trovato in classpath: report_stampa/" + templateName);
+                throw new Exception("Template non trovato");
+            }
+            reportIs = resource.getInputStream();
+        }
+        catch ( IOException e )
+        {
+            _log.error("Errore nell'apertura dello stream per il template", e);
+            throw e;
+        }
+
+        byte[] bytes = null;
+        try
+        {
+            net.sf.jasperreports.engine.data.JRBeanCollectionDataSource ds = new net.sf.jasperreports.engine.data.JRBeanCollectionDataSource(filteredDocs);
+            
+            // If the report is a .jrxml, we must compile it on the fly. JasperRunManager mostly expects .jasper. Let's use JasperCompileManager if it's .jrxml
+            if (templateName.endsWith(".jrxml")) {
+                net.sf.jasperreports.engine.JasperReport jasperReport = net.sf.jasperreports.engine.JasperCompileManager.compileReport(reportIs);
+                bytes = net.sf.jasperreports.engine.JasperRunManager.runReportToPdf(jasperReport, params, ds);
+            } else {
+                bytes = net.sf.jasperreports.engine.JasperRunManager.runReportToPdf(reportIs, params, ds);
+            }
+        }
+        catch ( JRException e )
+        {
+            _log.error("Errore nella generazione del report IVA", e);
+            throw e;
+        }
+
+        return bytes;
+    }
+
 }
 

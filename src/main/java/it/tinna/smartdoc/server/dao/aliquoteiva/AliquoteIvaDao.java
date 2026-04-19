@@ -90,21 +90,22 @@ public class AliquoteIvaDao extends BaseDao
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
         Map<String, String> valuesMap = new HashMap<>();
-        if ( orderColumn == 1 )
+        String dir = StringUtils.isEmpty(orderDir) ? "asc" : orderDir;
+        if ( orderColumn != null && orderColumn == 1 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(dir).toString());
         }
-        else if ( orderColumn == 2 )
+        else if ( orderColumn != null && orderColumn == 2 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("imposta ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("imposta ").append(dir).toString());
         }
-        else if ( orderColumn == 3 )
+        else if ( orderColumn != null && orderColumn == 3 )
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("indetraibilita ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("indetraibilita ").append(dir).toString());
         }
         else
         {
-            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(orderDir).toString());
+            valuesMap.put("ORDER_BY", new StringBuilder("codice ").append(dir).toString());
         }
         if ( length != null && start != null )
         {

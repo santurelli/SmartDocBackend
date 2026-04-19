@@ -34,8 +34,6 @@ public class DataSourceConfig {
     private String serviceDbUrl;
 
     // Tenant DBs
-    @Value("${datasource.riggiolandia.url}")
-    private String riggiolandiaUrl;
     @Value("${datasource.romax.url}")
     private String romaxUrl;
     @Value("${datasource.justdesign.url}")
@@ -44,8 +42,6 @@ public class DataSourceConfig {
     private String justeatUrl;
     @Value("${datasource.justfood.url}")
     private String justfoodUrl;
-    @Value("${datasource.piuforty.url}")
-    private String piufortyUrl;
     @Value("${datasource.santurelli.url}")
     private String santurelliUrl;
     @Value("${datasource.enzaiannaccone.url}")
@@ -74,11 +70,6 @@ public class DataSourceConfig {
         return createDataSource(serviceDbUrl);
     }
 
-    @Bean(name = "riggiolandiaDataSource")
-    public DataSource riggiolandiaDataSource() {
-        return createDataSource(riggiolandiaUrl);
-    }
-
     @Bean(name = "romaxDataSource")
     public DataSource romaxDataSource() {
         return createDataSource(romaxUrl);
@@ -99,11 +90,6 @@ public class DataSourceConfig {
         return createDataSource(justfoodUrl);
     }
 
-    @Bean(name = "piufortyDataSource")
-    public DataSource piufortyDataSource() {
-        return createDataSource(piufortyUrl);
-    }
-
     @Bean(name = "santurelliDataSource")
     public DataSource santurelliDataSource() {
         return createDataSource(santurelliUrl);
@@ -121,15 +107,13 @@ public class DataSourceConfig {
         Map<Object, Object> targetDataSources = new HashMap<>();
         
         targetDataSources.put("servicedb", servicedbDataSource());
-        targetDataSources.put("sd_riggiolandia", riggiolandiaDataSource());
         targetDataSources.put("sd_romax", romaxDataSource());
         // Assuming keys match the 'dbName' column in 'd_e_entita'.
-        // User asked for: Riggiolandia, Romax, JustDesign, JustEat, JustFood, PiuForty, Santurelli.
+        // User asked for: Romax, JustDesign, JustEat, JustFood, Santurelli.
         // I will map them as requested. I should double check logic or keys if possible but for now:
         targetDataSources.put("sd_justdesign", justdesignDataSource());
         targetDataSources.put("sd_justeat", justeatDataSource());
         targetDataSources.put("sd_justfood", justfoodDataSource());
-        targetDataSources.put("sd_piuforty", piufortyDataSource());
         targetDataSources.put("sd_santurelli", santurelliDataSource());
         targetDataSources.put("sd_enzaiannaccone", enzaiannacconeDataSource());
 
