@@ -5668,11 +5668,13 @@
 	<query name="LOGIN_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_utenti.k_d_e_utenti AS id,
-				   k_d_e_gruppi AS gruppo,
-				   nome,
-				   cognome,
-				   COALESCE(TO_CHAR(last_login,'DD/MM/YYYY HH24:MI:SS'), 'Mai') AS lastLogin
+				   d_e_utenti.k_d_e_gruppi AS gruppo,
+				   d_e_gruppi.descrizione AS nomeGruppo,
+				   d_e_utenti.nome,
+				   d_e_utenti.cognome,
+				   COALESCE(TO_CHAR(d_e_utenti.last_login,'DD/MM/YYYY HH24:MI:SS'), 'Mai') AS lastLogin
 			  FROM d_e_utenti
+			  LEFT JOIN d_e_gruppi ON d_e_utenti.k_d_e_gruppi = d_e_gruppi.k_d_e_gruppi
 		     WHERE username = ? 
 			   AND password = ?
 			   AND d_e_utenti.fl_deleted = 0
@@ -5690,15 +5692,17 @@
 	<query name="LOGIN_S03">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_utenti.k_d_e_utenti AS id,
-				   k_d_e_gruppi AS gruppo,
-				   nome,
-				   cognome,
-				   username,
-				   password,
-				   COALESCE(TO_CHAR(last_login,'DD/MM/YYYY HH24:MI:SS'), 'Mai') AS lastLogin
+				   d_e_utenti.k_d_e_gruppi AS gruppo,
+				   d_e_gruppi.descrizione AS nomeGruppo,
+				   d_e_utenti.nome,
+				   d_e_utenti.cognome,
+				   d_e_utenti.username,
+				   d_e_utenti.password,
+				   COALESCE(TO_CHAR(d_e_utenti.last_login,'DD/MM/YYYY HH24:MI:SS'), 'Mai') AS lastLogin
 			  FROM d_e_utenti
+			  LEFT JOIN d_e_gruppi ON d_e_utenti.k_d_e_gruppi = d_e_gruppi.k_d_e_gruppi
 		     WHERE username = ? 
-			   AND fl_deleted = 0
+			   AND d_e_utenti.fl_deleted = 0
 		</content>
 	</query>
 	<query name="LOGIN_U01">
@@ -10796,24 +10800,30 @@
 	<query name="UTENTI_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_utenti.k_d_e_utenti AS id,
-				   k_d_e_gruppi AS gruppo,
-				   nome,
-				   cognome,
-				   username,
-				   password
+				   d_e_utenti.k_d_e_gruppi AS gruppo,
+				   d_e_gruppi.descrizione AS nomeGruppo,
+				   d_e_utenti.nome,
+				   d_e_utenti.cognome,
+				   d_e_utenti.username,
+				   d_e_utenti.password,
+				   d_e_utenti.email
 			  FROM d_e_utenti
+			  LEFT JOIN d_e_gruppi ON d_e_utenti.k_d_e_gruppi = d_e_gruppi.k_d_e_gruppi
 		     WHERE k_d_e_utenti = ?
 		</content>
 	</query>
 	<query name="UTENTI_S02">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_utenti.k_d_e_utenti AS id,
-				   k_d_e_gruppi AS gruppo,
-				   nome,
-				   cognome,
-				   username,
-				   password
+				   d_e_utenti.k_d_e_gruppi AS gruppo,
+				   d_e_gruppi.descrizione AS nomeGruppo,
+				   d_e_utenti.nome,
+				   d_e_utenti.cognome,
+				   d_e_utenti.username,
+				   d_e_utenti.password,
+				   d_e_utenti.email
 			  FROM d_e_utenti
+			  LEFT JOIN d_e_gruppi ON d_e_utenti.k_d_e_gruppi = d_e_gruppi.k_d_e_gruppi
 		     WHERE username = ?
 		       AND fl_deleted = 0
 		</content>
@@ -10823,6 +10833,73 @@
 			UPDATE d_e_utenti
 			   SET password = ?
 			 WHERE k_d_e_utenti = ?
+		</content>
+	</query>
+	<query name="UTENTI_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT d_e_utenti.k_d_e_utenti AS id,
+				   d_e_utenti.k_d_e_gruppi AS gruppo,
+				   d_e_gruppi.descrizione AS nomeGruppo,
+				   d_e_utenti.nome,
+				   d_e_utenti.cognome,
+				   d_e_utenti.username,
+				   d_e_utenti.email,
+				   COUNT(*) OVER() AS total
+			  FROM d_e_utenti
+			  LEFT JOIN d_e_gruppi ON d_e_utenti.k_d_e_gruppi = d_e_gruppi.k_d_e_gruppi
+		     WHERE (LOWER(d_e_utenti.nome) LIKE COALESCE(LOWER(?), LOWER(d_e_utenti.nome))
+		            OR LOWER(d_e_utenti.cognome) LIKE COALESCE(LOWER(?), LOWER(d_e_utenti.cognome))
+		            OR LOWER(d_e_utenti.username) LIKE COALESCE(LOWER(?), LOWER(d_e_utenti.username)))
+		       AND fl_deleted = 0
+		  ORDER BY ${ORDER_BY}
+				   ${LIMIT}
+		</content>
+	</query>
+	<query name="UTENTI_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_e_utenti
+		     WHERE LOWER(username) = LOWER(?)
+		       AND k_d_e_utenti != COALESCE(?, 0) 
+		       AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="UTENTI_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_utenti
+				 	   (nome, 
+				 	    cognome, 
+				 	    username, 
+				 	    password, 
+				 	    email, 
+				 	    k_d_e_gruppi)
+				 VALUES(?,?,?,?,?,?)
+		</content>
+	</query>
+	<query name="UTENTI_U02">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_utenti
+			   SET nome = ?, 
+				   cognome = ?,
+				   username = ?,
+				   email = ?,
+				   k_d_e_gruppi = ?
+			 WHERE k_d_e_utenti = ?
+		</content>
+	</query>
+	<query name="UTENTI_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_utenti
+			   SET fl_deleted = 1
+			 WHERE k_d_e_utenti = ?
+		</content>
+	</query>
+	<query name="GRUPPI_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_gruppi AS id,
+				   descrizione AS value
+			  FROM d_e_gruppi
+		  ORDER BY descrizione
 		</content>
 	</query>
 	<query name="VETTORI_D01">

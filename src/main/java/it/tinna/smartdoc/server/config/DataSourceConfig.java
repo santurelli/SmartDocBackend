@@ -40,8 +40,6 @@ public class DataSourceConfig {
     private String justdesignUrl;
     @Value("${datasource.justeat.url}")
     private String justeatUrl;
-    @Value("${datasource.justfood.url}")
-    private String justfoodUrl;
     @Value("${datasource.santurelli.url}")
     private String santurelliUrl;
     @Value("${datasource.enzaiannaccone.url}")
@@ -85,11 +83,6 @@ public class DataSourceConfig {
         return createDataSource(justeatUrl);
     }
 
-    @Bean(name = "justfoodDataSource")
-    public DataSource justfoodDataSource() {
-        return createDataSource(justfoodUrl);
-    }
-
     @Bean(name = "santurelliDataSource")
     public DataSource santurelliDataSource() {
         return createDataSource(santurelliUrl);
@@ -113,7 +106,6 @@ public class DataSourceConfig {
         // I will map them as requested. I should double check logic or keys if possible but for now:
         targetDataSources.put("sd_justdesign", justdesignDataSource());
         targetDataSources.put("sd_justeat", justeatDataSource());
-        targetDataSources.put("sd_justfood", justfoodDataSource());
         targetDataSources.put("sd_santurelli", santurelliDataSource());
         targetDataSources.put("sd_enzaiannaccone", enzaiannacconeDataSource());
 

@@ -44,6 +44,8 @@ public class JwtService {
 
     private String buildToken(Map<String, Object> extraClaims, UtenteDto userDetails, long expiration) {
         extraClaims.put("id", userDetails.getId());
+        String role = userDetails.getNomeGruppo() != null ? "ROLE_" + userDetails.getNomeGruppo().toUpperCase() : "ROLE_USER";
+        extraClaims.put("role", role);
         return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())

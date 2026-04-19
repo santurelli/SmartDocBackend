@@ -165,10 +165,13 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         
         if (esito != null) {
             String message = null;
+            String errorCode = null;
             
             if (StringUtils.isNotBlank(esito.getErroreValidazioneXml())) {
                 message = "Errore XML: " + esito.getErroreValidazioneXml();
+                errorCode = "XML_ERROR";
             } else if (StringUtils.isNotBlank(esito.getEsito())) {
+                errorCode = esito.getEsito();
                 switch (esito.getEsito()) {
                     case "NS":
                         message = "Scartata SDI: " + StringUtils.defaultString(esito.getDescrizioneScarto(), "Dettaglio non disponibile");
@@ -196,18 +199,22 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
                         break;
                 }
             }
-
+    
             if (message != null) {
                 return ExternalResponseDto.builder()
                         .success(true)
                         .message(message)
+                        .errorCode(errorCode)
+                        .id(idFattura)
                         .build();
             }
         }
         
         return ExternalResponseDto.builder()
-                .success(false)
+                .success(true)
                 .message("Esito non ancora disponibile")
+                .errorCode("PENDING")
+                .id(idFattura)
                 .build();
     }
 

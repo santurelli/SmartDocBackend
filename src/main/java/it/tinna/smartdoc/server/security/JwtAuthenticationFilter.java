@@ -66,6 +66,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     // Extract dbName from token
                     String dbName = jwtService.extractClaim(jwt, claims -> claims.get("dbName", String.class));
                     Integer userId = jwtService.extractClaim(jwt, claims -> claims.get("id", Integer.class));
+                    String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
+                    if (role == null) {
+                        role = "ROLE_USER";
+                    }
                     
                     if (dbName != null) {
                         log.info("Setting Database Context to: {}", dbName);
@@ -79,7 +83,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             userId,
                             userEmail,
                             "",
-                            java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_USER"))
+                            java.util.Collections.singletonList(new org.springframework.security.core.authority.SimpleGrantedAuthority(role))
                     );
 
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
