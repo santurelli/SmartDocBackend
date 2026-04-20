@@ -2230,8 +2230,6 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
-						codice_fiscale,
-						partita_iva,
 						acconto,
 						k_d_e_magazzini,
 						annotazione_estesa,
@@ -2239,7 +2237,7 @@
 						tipo_docassociato,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_confordine;
 		</content>
 	</query>
@@ -2340,8 +2338,8 @@
 				   d_e_confordine.citta_destinazione as cittaDestinazione,
 				   d_e_confordine.provincia_destinazione as provinciaDestinazione,
 				   d_e_confordine.nazione_destinazione as nazioneDestinazione,
-				   d_e_confordine.codice_fiscale AS codiceFiscale,
-				   d_e_confordine.partita_iva AS partitaIva,
+				   d_e_clienti.codice_fiscale AS codiceFiscale,
+				   d_e_clienti.partita_iva AS partitaIva,
 				   acconto,
 				   d_e_confordine.k_d_e_magazzini as idMagazzino,
 				   d_e_magazzini.descrizione AS descrMagazzino,
@@ -2522,8 +2520,6 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
-				   codice_fiscale = ?,
-				   partita_iva = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
@@ -2825,14 +2821,12 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
-						codice_fiscale,
-						partita_iva,
 						codice_ufficio_destinazione,
 						acconto,
 						k_d_e_magazzini,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_ddt;
 		</content>
 	</query>
@@ -2934,8 +2928,8 @@
 				   d_e_ddt.citta_destinazione as cittaDestinazione,
 				   d_e_ddt.provincia_destinazione as provinciaDestinazione,
 				   d_e_ddt.nazione_destinazione as nazioneDestinazione,
-				   d_e_ddt.codice_fiscale AS codiceFiscale,
-				   d_e_ddt.partita_iva AS partitaIva,
+				   d_e_clienti.codice_fiscale AS codiceFiscale,
+				   d_e_clienti.partita_iva AS partitaIva,
 				   d_e_ddt.codice_ufficio_destinazione AS codiceUfficioDestinazione,
 				   acconto,
 				   k_d_e_magazzini as idMagazzino
@@ -3128,8 +3122,6 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
-				   codice_fiscale = ?,
-				   partita_iva = ?,
 				   codice_ufficio_destinazione = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
@@ -4052,8 +4044,8 @@
 						 FROM d_e_scadenzepagamentifatture 
 					 GROUP BY k_d_e_fatture
 					) AS scadenze_info ON scadenze_info.k_d_e_fatture = d_e_fatture.k_d_e_fatture
-				 WHERE data_fattura &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_fattura)
-				   AND data_fattura &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_fattura)
+				 WHERE data_fattura &gt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_fattura)
+				   AND data_fattura &lt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_fattura)
 				   AND d_e_fatture.k_d_e_clienti = COALESCE(?, d_e_fatture.k_d_e_clienti)
 				   AND COALESCE(d_e_fatture.k_d_e_agenti, 0) = COALESCE(?, d_e_fatture.k_d_e_agenti, 0)
 				   AND CASE WHEN tipo_fattura IN ('FATTURA','NOTA_DEBITO') THEN COALESCE(stato_fattura_elettronica,'') = COALESCE(?,stato_fattura_elettronica,'') ELSE 1=1 END
@@ -5927,50 +5919,47 @@
 	</query>
 	<query name="MOVIMENTIMAGAZZINO_S01">
 		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_movimenti_magazzino as id,
-				   d_e_movimenti_magazzino.k_d_e_prodotti as idProdotto,
-				   tipo_movimento as tipoMovimento,
-				   d_e_causalimovimentiprodotti.descrizione as causale,
-				   d_e_causalimovimentiprodotti.k_d_e_causalimovimentiprodotti as idCausale,
-				   quantita,
-				   k_d_e_unitamisura as idUnitaMisura,
-				   TO_CHAR(data,'DD/MM/YYYY') as dataMovimento,
-				   d_e_aliquoteiva.k_d_e_aliquoteiva as idAliquotaIva,
-				   d_e_aliquoteiva.descrizione as descrAliquotaIva,
-				   prezzo_unitario as prezzoUnitario,
-				   d_e_taglie.k_d_e_taglie as idTaglia,
-				   d_e_taglie.descrizione as descrTaglia,
-				   d_e_colori.k_d_e_colori as idColore,
-				   d_e_colori.descrizione as descrColore,
-				   d_e_toni.k_d_e_toni as idTono,
-				   d_e_toni.descrizione as descrTono,
-				   d_e_scelte.k_d_e_scelte as idScelta,
-				   d_e_scelte.descrizione as descrScelta
-			  FROM d_e_movimenti_magazzino
-			  LEFT JOIN d_e_causalimovimentiprodotti
-			    ON d_e_causalimovimentiprodotti.k_d_e_causalimovimentiprodotti = d_e_movimenti_magazzino.k_d_e_causalimovimentiprodotti
-			   AND d_e_causalimovimentiprodotti.fl_deleted = 0
-			 LEFT JOIN d_e_aliquoteiva
-			    ON d_e_aliquoteiva.k_d_e_aliquoteiva = d_e_movimenti_magazzino.k_d_e_aliquoteiva
-			   AND d_e_aliquoteiva.fl_deleted = 0
-			 LEFT JOIN d_e_taglie
-			    ON d_e_taglie.k_d_e_taglie = d_e_movimenti_magazzino.k_d_e_taglie
-			   AND d_e_taglie.fl_deleted = 0
-			 LEFT JOIN d_e_colori
-			    ON d_e_colori.k_d_e_colori = d_e_movimenti_magazzino.k_d_e_colori
-			   AND d_e_colori.fl_deleted = 0
-			 LEFT JOIN d_e_toni
-			    ON d_e_toni.k_d_e_toni = d_e_movimenti_magazzino.k_d_e_toni
-			   AND d_e_toni.fl_deleted = 0
-			 LEFT JOIN d_e_scelte
-			    ON d_e_scelte.k_d_e_scelte = d_e_movimenti_magazzino.k_d_e_scelte
-			   AND d_e_scelte.fl_deleted = 0
-			 
-			   AND d_e_movimenti_magazzino.k_d_e_prodotti = ?
-			   AND tipo_movimento = coalesce(?,tipo_movimento)
-			   AND idmagazzino = coalesce(?, idmagazzino)
-			   AND d_e_movimenti_magazzino.fl_deleted = 0
-		  ORDER BY data DESC
+			SELECT m.k_d_e_movimenti_magazzino as id,
+				   m.k_d_e_prodotti as idProdotto,
+				   p.descrizione as descrizioneProdotto,
+				   p.descrizione as descrizioneProdottoExcel,
+				   m.tipo_movimento as tipoMovimento,
+				   COALESCE(c.denominazione, f.denominazione, '') as clienteFornitore,
+				   CASE WHEN m.tipo_movimento = 'I' THEN m.quantita ELSE 0 END as quantitaCarico,
+				   CASE WHEN m.tipo_movimento = 'U' THEN m.quantita ELSE 0 END as quantitaScarico,
+				   m.quantita as quantitaBase,
+				   TO_CHAR(m.data,'DD/MM/YYYY') as dataMovimento,
+				   COALESCE(cp.descrizione, m.desc_causale, '') as causale,
+				   cp.k_d_e_causalimovimentiprodotti as idCausale,
+				   m.quantita,
+				   m.k_d_e_unitamisura as idUnitaMisura,
+				   m.k_d_e_aliquoteiva as idAliquotaIva,
+				   iva.descrizione as descrAliquotaIva,
+				   m.prezzo_unitario as prezzoUnitario,
+				   m.k_d_e_taglie as idTaglia,
+				   t.descrizione as descrTaglia,
+				   m.k_d_e_colori as idColore,
+				   col.descrizione as descrColore,
+				   m.k_d_e_toni as idTono,
+				   ton.descrizione as descrTono,
+				   m.k_d_e_scelte as idScelta,
+				   sce.descrizione as descrScelta
+			  FROM d_e_movimenti_magazzino m
+			  JOIN d_e_prodotti p ON p.k_d_e_prodotti = m.k_d_e_prodotti
+			  LEFT JOIN d_e_causalimovimentiprodotti cp ON cp.k_d_e_causalimovimentiprodotti = m.k_d_e_causalimovimentiprodotti AND cp.fl_deleted = 0
+			  LEFT JOIN d_e_clienti c ON c.k_d_e_clienti = m.k_d_e_clienti AND c.fl_deleted = 0
+			  LEFT JOIN d_e_fornitori f ON f.k_d_e_fornitori = m.k_d_e_fornitori AND f.fl_deleted = 0
+			  LEFT JOIN d_e_aliquoteiva iva ON iva.k_d_e_aliquoteiva = m.k_d_e_aliquoteiva AND iva.fl_deleted = 0
+			  LEFT JOIN d_e_taglie t ON t.k_d_e_taglie = m.k_d_e_taglie AND t.fl_deleted = 0
+			  LEFT JOIN d_e_colori col ON col.k_d_e_colori = m.k_d_e_colori AND col.fl_deleted = 0
+			  LEFT JOIN d_e_toni ton ON ton.k_d_e_toni = m.k_d_e_toni AND ton.fl_deleted = 0
+			  LEFT JOIN d_e_scelte sce ON sce.k_d_e_scelte = m.k_d_e_scelte AND sce.fl_deleted = 0
+			 WHERE m.fl_deleted = 0
+			   AND m.data &gt;= COALESCE(TO_DATE(CAST(? AS TEXT),'DD/MM/YYYY'), m.data)
+			   AND m.data &lt;= COALESCE(TO_DATE(CAST(? AS TEXT),'DD/MM/YYYY'), m.data)
+			   AND (m.k_d_e_prodotti = ? OR CAST(? AS INTEGER) IS NULL)
+		  ORDER BY m.data DESC
+		  LIMIT CAST(? AS INTEGER) OFFSET CAST(? AS INTEGER)
 		</content>
 	</query>
 	<query name="MOVIMENTIMAGAZZINO_S02">
@@ -7812,13 +7801,11 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
-						codice_fiscale,
-						partita_iva,
 						k_d_e_magazzini,
 						annotazione_estesa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			returning k_d_e_preventivi;
 		</content>
 	</query>
@@ -7919,8 +7906,7 @@
 				   d_e_preventivi.citta_destinazione as cittaDestinazione,
 				   d_e_preventivi.provincia_destinazione as provinciaDestinazione,
 				   d_e_preventivi.nazione_destinazione as nazioneDestinazione,
-				   d_e_preventivi.codice_fiscale AS codiceFiscale,
-				   d_e_preventivi.partita_iva AS partitaIva,
+
 				   k_d_e_magazzini as idMagazzino,
 				   COALESCE(annotazione_estesa,'') AS annotazioneEstesa
 			  FROM d_e_preventivi
@@ -8096,8 +8082,6 @@
 				   citta_destinazione = ?,
 				   provincia_destinazione = ?,
 				   nazione_destinazione = ?,
-				   codice_fiscale = ?,
-				   partita_iva = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
 				   user_last_update = ?,

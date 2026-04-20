@@ -1,5 +1,6 @@
 package it.tinna.smartdoc.shared.dto.template;
 
+import java.util.Objects;
 import it.tinna.smartdoc.shared.dto.BaseDto;
 
 @SuppressWarnings("serial")
@@ -59,7 +60,7 @@ public class RiepilogoIvaDto extends BaseDto
         if ( obj instanceof RiepilogoIvaDto )
         {
             // return ((RiepilogoIvaDto) obj).getAliquotaIva().equals(this.getAliquotaIva()) && ((RiepilogoIvaDto) obj).getTipologiaIva().equals(this.getTipologiaIva());
-            return ((RiepilogoIvaDto) obj).getIdAliquotaIva().equals(this.getIdAliquotaIva());
+            return Objects.equals(((RiepilogoIvaDto) obj).getIdAliquotaIva(), this.getIdAliquotaIva());
         }
         return false;
     }

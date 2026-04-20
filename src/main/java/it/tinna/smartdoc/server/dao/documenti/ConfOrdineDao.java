@@ -143,8 +143,6 @@ public class ConfOrdineDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
-                    dto.getCodiceFiscale(),
-                    dto.getPartitaIva(),
                     dto.getAcconto(), dto.getIdMagazzino(),
                     dto.getAnnotazioneEstesa(),
                     dto.getIdDocAssociato(), dto.getTipoDocAssociato(),
@@ -200,8 +198,6 @@ public class ConfOrdineDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
-                    dto.getCodiceFiscale(),
-                    dto.getPartitaIva(),
                     dto.getAcconto(), dto.getIdMagazzino(),
                     dto.getAnnotazioneEstesa(),
                     dto.getUserLastUpdate(), dto.getId());

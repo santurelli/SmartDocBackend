@@ -96,8 +96,8 @@ public class PreventiviDao extends BaseDao {
             Integer length, Integer start, String orderColumn, String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("PREVENTIVI_S07");
         List<Object> params = new ArrayList<>();
-        params.add(formatDate(dtFrom));
-        params.add(formatDate(dtTo));
+        params.add(dtFrom);
+        params.add(dtTo);
         params.add(idCliente);
         params.add(idAgente);
         
@@ -179,8 +179,6 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
-                    dto.getCodiceFiscale(),
-                    dto.getPartitaIva(),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
                     dto.getUserCreated());
@@ -233,8 +231,6 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getCittaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getProvinciaDestinazione(), null),
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
-                    dto.getCodiceFiscale(),
-                    dto.getPartitaIva(),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
                     dto.getUserLastUpdate(), dto.getId());

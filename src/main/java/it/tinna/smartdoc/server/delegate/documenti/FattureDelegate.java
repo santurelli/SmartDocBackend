@@ -305,8 +305,15 @@ public class FattureDelegate extends BaseDelegate
                 if ( pdDto.isProdotto() || pdDto.isFuoriMagazzino() )
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
+                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva() == null ? 0 : pdDto.getIdAliquotaIva());
                     AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
+                    if ( aiDto == null )
+                    {
+                        aiDto = new AliquotaIvaDto();
+                        aiDto.setImposta(0.0);
+                        aiDto.setCodice("N.D.");
+                        aiDto.setDescrizione("Aliquota non definita");
+                    }
                     if ( riepilogoIva.contains(riDto) )
                     {
                         riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileMerce(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileMerce() + pdDto.getTotaleSenzaIva());
@@ -454,8 +461,15 @@ public class FattureDelegate extends BaseDelegate
                 else
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
+                    riDto.setIdAliquotaIva(siDto.getIdAliquotaIva() == null ? 0 : siDto.getIdAliquotaIva());
                     AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                    if ( aiDto == null )
+                    {
+                        aiDto = new AliquotaIvaDto();
+                        aiDto.setImposta(0.0);
+                        aiDto.setCodice("N.D.");
+                        aiDto.setDescrizione("Aliquota non definita");
+                    }
                     pdDto.setPercentualeIvaFormattata(NumberUtils.formatAsPercentage(aiDto.getImposta()));
                     if ( riepilogoIva.contains(riDto) )
                     {

@@ -328,8 +328,8 @@ public class FattureDao extends BaseDao
         
         if ( StringUtils.isNotBlank(numDocumento) )
         {
-            valuesMap.put("NUM_DOCUMENTO", "AND num_fattura LIKE ?");
-            params.add("%" + numDocumento + "%");
+            valuesMap.put("NUM_DOCUMENTO", "AND num_fattura::text = ?");
+            params.add(numDocumento);
         }
         else
         {
