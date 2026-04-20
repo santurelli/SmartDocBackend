@@ -11,7 +11,9 @@ public enum DatoDaMostrare
  IMPORTO_PRODOTTI_IVATO("Importo ivato"),
  PREZZO_MEDIO_PRODOTTI("Prezzo medio"),
  PREZZO_MASSIMO_PRODOTTI("Prezzo massimo"),
- PREZZO_MINIMO_PRODOTTI("Prezzo minimo");
+ PREZZO_MINIMO_PRODOTTI("Prezzo minimo"),
+ MARGINALITA("Margine di profitto"),
+ RICARICO("% Ricarico");
 
     private String descrizione;
 

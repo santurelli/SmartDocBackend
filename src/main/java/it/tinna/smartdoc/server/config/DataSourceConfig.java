@@ -44,6 +44,8 @@ public class DataSourceConfig {
     private String santurelliUrl;
     @Value("${datasource.enzaiannaccone.url}")
     private String enzaiannacconeUrl;
+    @Value("${datasource.riggiolandia.url}")
+    private String riggiolandiaUrl;
 
     public DataSource createDataSource(String url) {
         HikariDataSource dataSource = DataSourceBuilder.create()
@@ -93,6 +95,11 @@ public class DataSourceConfig {
         return createDataSource(enzaiannacconeUrl);
     }
 
+    @Bean(name = "riggiolandiaDataSource")
+    public DataSource riggiolandiaDataSource() {
+        return createDataSource(riggiolandiaUrl);
+    }
+
     @Bean
     @Primary
     public DataSource dataSource() {
@@ -108,6 +115,7 @@ public class DataSourceConfig {
         targetDataSources.put("sd_justeat", justeatDataSource());
         targetDataSources.put("sd_santurelli", santurelliDataSource());
         targetDataSources.put("sd_enzaiannaccone", enzaiannacconeDataSource());
+        targetDataSources.put("sd_riggiolandia", riggiolandiaDataSource());
 
         routingDataSource.setTargetDataSources(targetDataSources);
         routingDataSource.setDefaultTargetDataSource(servicedbDataSource());

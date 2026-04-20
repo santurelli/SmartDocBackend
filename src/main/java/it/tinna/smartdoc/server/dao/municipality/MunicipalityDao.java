@@ -10,6 +10,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import it.tinna.smartdoc.server.dao.BaseDao;
 import it.tinna.smartdoc.server.database.FileQueryReader;
 import it.tinna.smartdoc.server.util.StringUtility;
@@ -18,7 +19,7 @@ import it.tinna.smartdoc.shared.dto.municipality.MunicipalityDto;
 @Repository
 public class MunicipalityDao extends BaseDao {
 
-    public MunicipalityDao(JdbcTemplate jdbcTemplate) {
+    public MunicipalityDao(@Qualifier("serviceJdbcTemplate") JdbcTemplate jdbcTemplate) {
         super(jdbcTemplate);
     }
 

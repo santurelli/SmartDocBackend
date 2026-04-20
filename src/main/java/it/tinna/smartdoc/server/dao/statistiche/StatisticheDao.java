@@ -42,12 +42,39 @@ public class StatisticheDao extends BaseDao
         String query = null;
         ArrayList<Object> params = new ArrayList<>();
         Map<String, String> valuesMap = new HashMap<>();
+        
+        boolean isProductQuery = (raggruppa == TipoRaggruppamento.PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.CATEGORIA_PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.SOTTOCATEGORIA_PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.DIVISIONE);
+
         if ( raggruppa == TipoRaggruppamento.MESE )
         {
             query = FileQueryReader.getQuery("STATISTICHE_S05");
             valuesMap.put("COL_1", "DATE_TRUNC('month', data_documento)");
             valuesMap.put("GROUP_BY", "DATE_TRUNC('month', data_documento)");
             valuesMap.put("ORDER_BY", "DATE_TRUNC('month', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.GIORNO )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "DATE_TRUNC('day', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('day', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('day', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.TRIMESTRE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "DATE_TRUNC('quarter', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('quarter', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('quarter', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.ANNOTEMPORALE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "DATE_TRUNC('year', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('year', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('year', data_documento)");
         }
         else if ( raggruppa == TipoRaggruppamento.FORNITORE )
         {
@@ -91,30 +118,34 @@ public class StatisticheDao extends BaseDao
             valuesMap.put("GROUP_BY", "descrizione_divisione");
             valuesMap.put("ORDER_BY", "descrizione_divisione");
         }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_DOCUMENTO) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "tipo_documento");
-        // valuesMap.put("GROUP_BY", "tipo_documento");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_CITTA) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "citta");
-        // valuesMap.put("GROUP_BY", "citta");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_PROVINCIA) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "provincia");
-        // valuesMap.put("GROUP_BY", "provincia");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_NAZIONE) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "nazione");
-        // valuesMap.put("GROUP_BY", "nazione");
-        // }
+        else if ( raggruppa == TipoRaggruppamento.CITTA )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "citta");
+            valuesMap.put("GROUP_BY", "citta");
+            valuesMap.put("ORDER_BY", "citta");
+        }
+        else if ( raggruppa == TipoRaggruppamento.PROVINCIA )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "provincia");
+            valuesMap.put("GROUP_BY", "provincia");
+            valuesMap.put("ORDER_BY", "provincia");
+        }
+        else if ( raggruppa == TipoRaggruppamento.NAZIONE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "nazione");
+            valuesMap.put("GROUP_BY", "nazione");
+            valuesMap.put("ORDER_BY", "nazione");
+        }
+        else if ( raggruppa == TipoRaggruppamento.TIPO_DOCUMENTO )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S05");
+            valuesMap.put("COL_1", "tipo_documento");
+            valuesMap.put("GROUP_BY", "tipo_documento");
+            valuesMap.put("ORDER_BY", "tipo_documento");
+        }
         else if ( raggruppa == TipoRaggruppamento.PAGAMENTO )
         {
             query = FileQueryReader.getQuery("STATISTICHE_S05");
@@ -129,24 +160,19 @@ public class StatisticheDao extends BaseDao
         }
         else if ( mostra == DatoDaMostrare.IMPONIBILE )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(totale - iva_credito) else (totale - iva_credito) end), 0)");
+            String col = isProductQuery ? "prezzoimponibile" : "(totale - iva_credito)";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(" + col + ") else (" + col + ") end), 0)");
         }
         else if ( mostra == DatoDaMostrare.IVA )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(iva_credito) else (iva_credito) end), 0)");
+            String col = isProductQuery ? "(prezzototale - prezzoimponibile)" : "iva_credito";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(" + col + ") else (" + col + ") end), 0)");
         }
         else if ( mostra == DatoDaMostrare.TOTALE_DOCUMENTO )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(totale) else (totale) end), 0)");
+            String col = isProductQuery ? "prezzototale" : "totale";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCF' then -(" + col + ") else (" + col + ") end), 0)");
         }
-        // else if ( mostra.equals(ISharedConstants.STATISTICHE_VENDITE_MOSTRA_MEDIAIMPONIBILE) )
-        // {
-        // valuesMap.put("COL_2", "coalesce(AVG(case when tipo_documento = 'NCC' then -(totale - iva_debito) else (totale - iva_debito) end), 0)");
-        // }
-        // else if ( mostra.equals(ISharedConstants.STATISTICHE_VENDITE_MOSTRA_MEDIADOCUMENTO) )
-        // {
-        // valuesMap.put("COL_2", "coalesce(AVG(case when tipo_documento = 'NCC' then -(totale) else (totale) end), 0)");
-        // }
         else if ( mostra == DatoDaMostrare.QUANTITA_PRODOTTI )
         {
             valuesMap.put("COL_2", "SUM(CASE WHEN tipo_documento = 'NCF' THEN -(quantita_movimento) ELSE (quantita_movimento) END)");
@@ -184,23 +210,35 @@ public class StatisticheDao extends BaseDao
                                             int rowNum) throws SQLException
                 {
                     StatisticaDto dto = new StatisticaDto();
-                    if ( raggruppa == TipoRaggruppamento.MESE )
+                    if ( raggruppa == TipoRaggruppamento.MESE || raggruppa == TipoRaggruppamento.GIORNO || raggruppa == TipoRaggruppamento.TRIMESTRE || raggruppa == TipoRaggruppamento.ANNOTEMPORALE )
                     {
                         Timestamp dt = rs.getTimestamp("descrizione");
-                        String monthText = DateUtility.getMonthText(dt).substring(0, 3);
-                        String year = StringUtils.substring(DateUtility.getYear(dt), -2);
-                        dto.setDescrizione(new StringBuilder(monthText).append(" ").append(year).toString());
+                        if ( raggruppa == TipoRaggruppamento.GIORNO ) {
+                            dto.setDescrizione(DateUtility.format(dt, "dd/MM/yyyy"));
+                        } else if ( raggruppa == TipoRaggruppamento.TRIMESTRE ) {
+                            try {
+                                int month = Integer.parseInt(DateUtility.getMonth(dt));
+                                int quarter = (month - 1) / 3 + 1;
+                                dto.setDescrizione("Q" + quarter + " " + DateUtility.getYear(dt));
+                            } catch (Exception e) {
+                                dto.setDescrizione("");
+                            }
+                        } else if ( raggruppa == TipoRaggruppamento.ANNOTEMPORALE ) {
+                            dto.setDescrizione(DateUtility.getYear(dt));
+                        } else {
+                            String monthText = DateUtility.getMonthText(dt).substring(0, 3);
+                            String year = StringUtils.substring(DateUtility.getYear(dt), -2);
+                            dto.setDescrizione(new StringBuilder(monthText).append(" ").append(year).toString());
+                        }
                     }
-                    // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_DOCUMENTO) )
-                    // {
-                    // if ( rs.getString("descrizione") != null )
-                    // {
-                    // dto.setDescrizione(DocumentoDto.TipoDoc.getDescrizioneByValue(rs.getString("descrizione")).getDescrizione());
-                    // }
-                    // }
                     else
                     {
-                        dto.setDescrizione(rs.getString("descrizione"));
+                        String desc = rs.getString("descrizione");
+                        if ( raggruppa == TipoRaggruppamento.TIPO_DOCUMENTO )
+                        {
+                            desc = formatTipoDocumento(desc);
+                        }
+                        dto.setDescrizione(desc);
                     }
                     if ( mostra == DatoDaMostrare.NUMERO_DOCUMENTI )
                     {
@@ -246,10 +284,6 @@ public class StatisticheDao extends BaseDao
             valuesMap.put("GROUP_BY_FATTUREFORNITORE", "DATE_TRUNC('month', COALESCE(d_e_scadenzepagamentifatturefornitore.dt_pagamento, d_e_scadenzepagamentifatturefornitore.data))");
             valuesMap.put("COL_NOTECREDITOFORNITORE", "DATE_TRUNC('month', COALESCE(d_e_scadenzepagamentinotecreditofornitore.dt_pagamento, d_e_scadenzepagamentinotecreditofornitore.data))");
             valuesMap.put("GROUP_BY_NOTECREDITOFORNITORE", "DATE_TRUNC('month', COALESCE(d_e_scadenzepagamentinotecreditofornitore.dt_pagamento, d_e_scadenzepagamentinotecreditofornitore.data))");
-            // valuesMap.put("ORDER_BY", "DATE_TRUNC('month', data)");
-            // params.add(dtDal);
-            // params.add(dtAl);
-            // params.add(StringUtils.defaultIfEmpty(soggetto, null));
         }
         else
         {
@@ -264,13 +298,9 @@ public class StatisticheDao extends BaseDao
             valuesMap.put("COL_NOTECREDITOFORNITORE", "COALESCE(d_e_divisioni.descrizione, '<Vuoto>')");
             valuesMap.put("GROUP_BY_NOTECREDITOFORNITORE", "COALESCE(d_e_divisioni.descrizione, '<Vuoto>')");
         }
-        // tipo raggruppamento = TipoRaggruppamento.DIVISIONE
-        // query = FileQueryReader.getQuery("STATISTICHE_S08");
-        // parametri per la prima query in union (v_prima_nota)
         params.add(dtDal);
         params.add(dtAl);
         params.add(StringUtils.defaultIfEmpty(soggetto, null));
-        // parametri per la seconda query in union (d_e_fatture)
         params.add(dtDal);
         params.add(dtAl);
         if ( StringUtils.isNotEmpty(soggetto) )
@@ -281,8 +311,6 @@ public class StatisticheDao extends BaseDao
             }
             else
             {
-                // se il soggetto è passato ma non comincia per C-, la query sulle fatture deve essere esclusa
-                // quindi imposto una condizione sul cliente che sarà sicuramente false
                 params.add(-1l);
             }
         }
@@ -290,7 +318,6 @@ public class StatisticheDao extends BaseDao
         {
             params.add(null);
         }
-        // parametri per la terza query in union (d_e_notecredito)
         params.add(dtDal);
         params.add(dtAl);
         if ( StringUtils.isNotEmpty(soggetto) )
@@ -301,8 +328,6 @@ public class StatisticheDao extends BaseDao
             }
             else
             {
-                // se il soggetto è passato ma non comincia per C-, la query sulle fatture deve essere esclusa
-                // quindi imposto una condizione sul cliente che sarà sicuramente false
                 params.add(-1l);
             }
         }
@@ -310,7 +335,6 @@ public class StatisticheDao extends BaseDao
         {
             params.add(null);
         }
-        // parametri per la quarta query in union (d_e_fatturefornitore)
         params.add(dtDal);
         params.add(dtAl);
         if ( StringUtils.isNotEmpty(soggetto) )
@@ -321,8 +345,6 @@ public class StatisticheDao extends BaseDao
             }
             else
             {
-                // se il soggetto è passato ma non comincia per C-, la query sulle fatture deve essere esclusa
-                // quindi imposto una condizione sul fornitore che sarà sicuramente false
                 params.add(-1l);
             }
         }
@@ -330,7 +352,6 @@ public class StatisticheDao extends BaseDao
         {
             params.add(null);
         }
-        // parametri per la quinta query in union (d_e_notecreditofornitore)
         params.add(dtDal);
         params.add(dtAl);
         if ( StringUtils.isNotEmpty(soggetto) )
@@ -341,8 +362,6 @@ public class StatisticheDao extends BaseDao
             }
             else
             {
-                // se il soggetto è passato ma non comincia per C-, la query sulle note credito fornitore deve essere esclusa
-                // quindi imposto una condizione sul fornitore che sarà sicuramente false
                 params.add(-1l);
             }
         }
@@ -414,12 +433,39 @@ public class StatisticheDao extends BaseDao
         String query = null;
         ArrayList<Object> params = new ArrayList<>();
         Map<String, String> valuesMap = new HashMap<>();
+
+        boolean isProductQuery = (raggruppa == TipoRaggruppamento.PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.CATEGORIA_PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.SOTTOCATEGORIA_PRODOTTO || 
+                                raggruppa == TipoRaggruppamento.DIVISIONE);
+
         if ( raggruppa == TipoRaggruppamento.MESE )
         {
             query = FileQueryReader.getQuery("STATISTICHE_S01");
             valuesMap.put("COL_1", "DATE_TRUNC('month', data_documento)");
             valuesMap.put("GROUP_BY", "DATE_TRUNC('month', data_documento)");
             valuesMap.put("ORDER_BY", "DATE_TRUNC('month', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.GIORNO )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "DATE_TRUNC('day', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('day', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('day', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.TRIMESTRE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "DATE_TRUNC('quarter', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('quarter', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('quarter', data_documento)");
+        }
+        else if ( raggruppa == TipoRaggruppamento.ANNOTEMPORALE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "DATE_TRUNC('year', data_documento)");
+            valuesMap.put("GROUP_BY", "DATE_TRUNC('year', data_documento)");
+            valuesMap.put("ORDER_BY", "DATE_TRUNC('year', data_documento)");
         }
         else if ( raggruppa == TipoRaggruppamento.CLIENTE )
         {
@@ -463,30 +509,34 @@ public class StatisticheDao extends BaseDao
             valuesMap.put("GROUP_BY", "descrizione_divisione");
             valuesMap.put("ORDER_BY", "descrizione_divisione");
         }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_DOCUMENTO) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "tipo_documento");
-        // valuesMap.put("GROUP_BY", "tipo_documento");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_CITTA) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "citta");
-        // valuesMap.put("GROUP_BY", "citta");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_PROVINCIA) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "provincia");
-        // valuesMap.put("GROUP_BY", "provincia");
-        // }
-        // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_NAZIONE) )
-        // {
-        // query = FileQueryReader.getQuery("STATISTICHE_S01");
-        // valuesMap.put("COL_1", "nazione");
-        // valuesMap.put("GROUP_BY", "nazione");
-        // }
+        else if ( raggruppa == TipoRaggruppamento.CITTA )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "citta");
+            valuesMap.put("GROUP_BY", "citta");
+            valuesMap.put("ORDER_BY", "citta");
+        }
+        else if ( raggruppa == TipoRaggruppamento.PROVINCIA )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "provincia");
+            valuesMap.put("GROUP_BY", "provincia");
+            valuesMap.put("ORDER_BY", "provincia");
+        }
+        else if ( raggruppa == TipoRaggruppamento.NAZIONE )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "nazione");
+            valuesMap.put("GROUP_BY", "nazione");
+            valuesMap.put("ORDER_BY", "nazione");
+        }
+        else if ( raggruppa == TipoRaggruppamento.TIPO_DOCUMENTO )
+        {
+            query = FileQueryReader.getQuery("STATISTICHE_S01");
+            valuesMap.put("COL_1", "tipo_documento");
+            valuesMap.put("GROUP_BY", "tipo_documento");
+            valuesMap.put("ORDER_BY", "tipo_documento");
+        }
         else if ( raggruppa == TipoRaggruppamento.PAGAMENTO )
         {
             query = FileQueryReader.getQuery("STATISTICHE_S01");
@@ -501,24 +551,19 @@ public class StatisticheDao extends BaseDao
         }
         else if ( mostra == DatoDaMostrare.IMPONIBILE )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(totale - iva_debito) else (totale - iva_debito) end), 0)");
+            String col = isProductQuery ? "prezzoimponibile" : "(totale - iva_debito)";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(" + col + ") else (" + col + ") end), 0)");
         }
         else if ( mostra == DatoDaMostrare.IVA )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(iva_debito) else (iva_debito) end), 0)");
+            String col = isProductQuery ? "(prezzototale - prezzoimponibile)" : "iva_debito";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(" + col + ") else (" + col + ") end), 0)");
         }
         else if ( mostra == DatoDaMostrare.TOTALE_DOCUMENTO )
         {
-            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(totale) else (totale) end), 0)");
+            String col = isProductQuery ? "prezzototale" : "totale";
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(" + col + ") else (" + col + ") end), 0)");
         }
-        // else if ( mostra.equals(ISharedConstants.STATISTICHE_VENDITE_MOSTRA_MEDIAIMPONIBILE) )
-        // {
-        // valuesMap.put("COL_2", "coalesce(AVG(case when tipo_documento = 'NCC' then -(totale - iva_debito) else (totale - iva_debito) end), 0)");
-        // }
-        // else if ( mostra.equals(ISharedConstants.STATISTICHE_VENDITE_MOSTRA_MEDIADOCUMENTO) )
-        // {
-        // valuesMap.put("COL_2", "coalesce(AVG(case when tipo_documento = 'NCC' then -(totale) else (totale) end), 0)");
-        // }
         else if ( mostra == DatoDaMostrare.QUANTITA_PRODOTTI )
         {
             valuesMap.put("COL_2", "SUM(CASE WHEN tipo_documento = 'NCC' THEN -(quantita_movimento) ELSE (quantita_movimento) END)");
@@ -543,6 +588,14 @@ public class StatisticheDao extends BaseDao
         {
             valuesMap.put("COL_2", "MIN(prezzoimponibile)");
         }
+        else if ( mostra == DatoDaMostrare.MARGINALITA )
+        {
+            valuesMap.put("COL_2", "coalesce(SUM(case when tipo_documento = 'NCC' then -(prezzoimponibile - coalesce(prezzo_acquisto, 0) * quantita_movimento) else (prezzoimponibile - coalesce(prezzo_acquisto, 0) * quantita_movimento) end), 0)");
+        }
+        else if ( mostra == DatoDaMostrare.RICARICO )
+        {
+            valuesMap.put("COL_2", "coalesce((SUM(prezzoimponibile) / NULLIF(SUM(prezzo_acquisto * quantita_movimento), 0) - 1) * 100, 0)");
+        }
         params.add(dtDal);
         params.add(dtAl);
         params.add(cliente);
@@ -556,23 +609,35 @@ public class StatisticheDao extends BaseDao
                                             int rowNum) throws SQLException
                 {
                     StatisticaDto dto = new StatisticaDto();
-                    if ( raggruppa == TipoRaggruppamento.MESE )
+                    if ( raggruppa == TipoRaggruppamento.MESE || raggruppa == TipoRaggruppamento.GIORNO || raggruppa == TipoRaggruppamento.TRIMESTRE || raggruppa == TipoRaggruppamento.ANNOTEMPORALE )
                     {
                         Timestamp dt = rs.getTimestamp("descrizione");
-                        String monthText = DateUtility.getMonthText(dt).substring(0, 3);
-                        String year = StringUtils.substring(DateUtility.getYear(dt), -2);
-                        dto.setDescrizione(new StringBuilder(monthText).append(" ").append(year).toString());
+                        if ( raggruppa == TipoRaggruppamento.GIORNO ) {
+                            dto.setDescrizione(DateUtility.format(dt, "dd/MM/yyyy"));
+                        } else if ( raggruppa == TipoRaggruppamento.TRIMESTRE ) {
+                            try {
+                                int month = Integer.parseInt(DateUtility.getMonth(dt));
+                                int quarter = (month - 1) / 3 + 1;
+                                dto.setDescrizione("Q" + quarter + " " + DateUtility.getYear(dt));
+                            } catch (Exception e) {
+                                dto.setDescrizione("");
+                            }
+                        } else if ( raggruppa == TipoRaggruppamento.ANNOTEMPORALE ) {
+                            dto.setDescrizione(DateUtility.getYear(dt));
+                        } else {
+                            String monthText = DateUtility.getMonthText(dt).substring(0, 3);
+                            String year = StringUtils.substring(DateUtility.getYear(dt), -2);
+                            dto.setDescrizione(new StringBuilder(monthText).append(" ").append(year).toString());
+                        }
                     }
-                    // else if ( raggruppa.equals(ISharedConstants.STATISTICHE_VENDITE_RAGGRUPPA_DOCUMENTO) )
-                    // {
-                    // if ( rs.getString("descrizione") != null )
-                    // {
-                    // dto.setDescrizione(DocumentoDto.TipoDoc.getDescrizioneByValue(rs.getString("descrizione")).getDescrizione());
-                    // }
-                    // }
                     else
                     {
-                        dto.setDescrizione(rs.getString("descrizione"));
+                        String desc = rs.getString("descrizione");
+                        if ( raggruppa == TipoRaggruppamento.TIPO_DOCUMENTO )
+                        {
+                            desc = formatTipoDocumento(desc);
+                        }
+                        dto.setDescrizione(desc);
                     }
                     if ( mostra == DatoDaMostrare.NUMERO_DOCUMENTI )
                     {
@@ -612,5 +677,24 @@ public class StatisticheDao extends BaseDao
         }
     }
 
-}
+    private String formatTipoDocumento(String code)
+    {
+        if ( code == null ) return "";
+        switch ( code )
+        {
+            case "F":
+                return "Fattura";
+            case "S":
+                return "Scontrino / Fatt. Acc.";
+            case "NCC":
+                return "Nota Credito Cliente";
+            case "FF":
+                return "Fattura Fornitore";
+            case "NCF":
+                return "Nota Credito Fornitore";
+            default:
+                return code;
+        }
+    }
 
+}

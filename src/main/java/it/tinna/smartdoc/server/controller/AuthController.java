@@ -42,7 +42,7 @@ public class AuthController {
             UtenteDto user = loginDelegate.getUserByUsername(loginRequest.getUsername());
 
             if (user == null || !passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-                return ResponseEntity.status(401).body("Invalid username or password");
+                return ResponseEntity.status(401).body(java.util.Collections.singletonMap("erroreUtenteNonTrovato", true));
             }
 
             // Generate Token
