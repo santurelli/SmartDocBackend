@@ -36,6 +36,15 @@ public class DdtDao extends BaseDao {
         }
         return date;
     }
+    
+    private String formatDataOraTrasporto(DdtDto dto) {
+        if (StringUtils.isNotBlank(dto.getDataOraTrasporto())) return dto.getDataOraTrasporto();
+        if (StringUtils.isBlank(dto.getDataTrasporto())) return null;
+        
+        String data = formatDate(dto.getDataTrasporto());
+        String ora = StringUtils.isNotBlank(dto.getOraTrasporto()) ? dto.getOraTrasporto() : "00:00";
+        return data + " " + ora;
+    }
 
     public void delete(DdtDto dto) throws SQLException {
         try {
@@ -170,7 +179,7 @@ public class DdtDao extends BaseDao {
                 dto.getIdAgente(), 
                 dto.getIdProgetto(), 
                 dto.getIdCausaleTrasporto(), 
-                dto.getDataOraTrasporto(), // Warning: legacy used TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI')
+                formatDataOraTrasporto(dto), 
                 StringUtils.defaultIfEmpty(dto.getTarga(), null), 
                 dto.getIdTipoPorto(), 
                 dto.getIdVettore(), 
@@ -278,7 +287,7 @@ public class DdtDao extends BaseDao {
                 dto.getIdAgente(), 
                 dto.getIdProgetto(), 
                 dto.getIdCausaleTrasporto(), 
-                dto.getDataOraTrasporto(), 
+                formatDataOraTrasporto(dto), 
                 StringUtils.defaultIfEmpty(dto.getTarga(), null), 
                 dto.getIdTipoPorto(), 
                 dto.getIdVettore(), 

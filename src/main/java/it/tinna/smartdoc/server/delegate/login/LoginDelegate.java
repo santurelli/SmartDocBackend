@@ -18,6 +18,9 @@ public class LoginDelegate extends BaseDelegate {
     @Autowired
     private ConfigurazioneDelegate configurazioneDelegate;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     public UtenteDto getUserByUsername(String username) throws SQLException {
         LoginDao dao = new LoginDao(jdbcTemplate);
         UtenteDto user = dao.getUserByUsername(username);
@@ -43,6 +46,12 @@ public class LoginDelegate extends BaseDelegate {
     public void setDtLastLogin(UtenteDto utente) throws SQLException {
         LoginDao dao = new LoginDao(jdbcTemplate);
         dao.setDtLastLogin(utente);
+    }
+
+    public void updatePassword(Integer userId, String newPassword) throws SQLException {
+        LoginDao dao = new LoginDao(jdbcTemplate);
+        String hashed = passwordEncoder.encode(newPassword);
+        dao.updatePassword(userId, hashed);
     }
 
 }

@@ -114,7 +114,7 @@ public class InviaSupportiSdiTasklet implements Tasklet, StepExecutionListener
         DatabaseContextHolder.clear();
         try
         {
-            comandoFirma = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_COMANDO_FIRMA);
+            comandoFirma = configurazioneDelegate.getByKeyFromServiceDb(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_COMANDO_FIRMA);
         }
         catch ( SQLException e )
         {
@@ -122,21 +122,21 @@ public class InviaSupportiSdiTasklet implements Tasklet, StepExecutionListener
         Assert.notNull(comandoFirma, "Il comando di firma non può essere null");
         try
         {
-            comandoCifratura = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_COMANDO_CIFRATURA);
+            comandoCifratura = configurazioneDelegate.getByKeyFromServiceDb(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_COMANDO_CIFRATURA);
         }
         catch ( SQLException e )
         {
         }
         try
         {
-            cartellaOutput = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_CARTELLA_OUTPUT);
+            cartellaOutput = configurazioneDelegate.getByKeyFromServiceDb(BatchConstants.CONFIG_DOMAIN_BATCH_INVIO_SDI, BatchConstants.CONFIG_KEY_CARTELLA_OUTPUT);
         }
         catch ( SQLException e )
         {
         }
         try
         {
-            test = Integer.parseInt(configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.CONFIG_KEY_TEST));
+            test = Integer.parseInt(configurazioneDelegate.getByKeyFromServiceDb(BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.CONFIG_KEY_TEST));
         }
         catch ( SQLException e )
         {

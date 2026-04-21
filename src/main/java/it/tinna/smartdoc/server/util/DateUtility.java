@@ -21,7 +21,7 @@ public class DateUtility {
 	private static String[] parsePatterns;
 	
 	static {
-		parsePatterns = new String[]{"dd/MM/yyyy"};
+		parsePatterns = new String[]{"dd/MM/yyyy", "yyyy-MM-dd"};
 	}
 	
 	public static String add(Date date, int quantity) {

@@ -286,6 +286,8 @@ public class DdtDelegate extends BaseDelegate {
             String stampaAgente = StringUtils.defaultIfEmpty(configurazioneDelegate.getByKey(ISharedConstants.CONFIGURAZIONE_DOMINIO_STAMPA, ISharedConstants.CONFIG_KEY_STAMPA_AGENTE), "0");
             params.put("print_codagente", "1".equals(stampaAgente) || "true".equalsIgnoreCase(stampaAgente));
 
+            String tipoStore = StringUtils.defaultString(configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_GLOBAL, ISharedConstants.CONFIG_KEY_TIPOSTORE));
+            
             if (dto.getProdotti() != null) {
                 _log.info("Formattazione di {} prodotti", dto.getProdotti().size());
                 for (ProdottoDocumentoDto pdDto : dto.getProdotti()) {
@@ -298,9 +300,19 @@ public class DdtDelegate extends BaseDelegate {
                         pdDto.setDescrTono(StringUtils.defaultString(pdDto.getFmTono()));
                         pdDto.setDescrCalibro(StringUtils.defaultString(pdDto.getFmTaglia()));
                     } else {
+                        pdDto.setCodiceProdotto(StringUtils.defaultString(pdDto.getCodiceProdotto()));
                         pdDto.setDescrizione(StringUtils.defaultString(pdDto.getDescProdotto()));
-                        // CodiceProdotto should be handled by DAO but let's ensure it's not null for the report
-                        if (pdDto.getCodiceProdotto() == null) pdDto.setCodiceProdotto("");
+                    }
+
+                    // Se è un'azienda di ceramica, aggiungiamo i dettagli alla descrizione se non è un inserimento manuale
+                    if ("CERAMICA".equals(tipoStore) && !pdDto.isFuoriMagazzino()) {
+                        StringBuilder sb = new StringBuilder(pdDto.getDescrizione());
+                        boolean added = false;
+                        if (StringUtils.isNotBlank(pdDto.getDescrFormato())) { sb.append("\nFormato: ").append(pdDto.getDescrFormato()); added = true; }
+                        if (StringUtils.isNotBlank(pdDto.getDescrScelta())) { sb.append(added ? " - " : "\n").append("Scelta: ").append(pdDto.getDescrScelta()); added = true; }
+                        if (StringUtils.isNotBlank(pdDto.getDescrTono())) { sb.append(added ? " - " : "\n").append("Tono: ").append(pdDto.getDescrTono()); added = true; }
+                        if (StringUtils.isNotBlank(pdDto.getDescrCalibro())) { sb.append(added ? " - " : "\n").append("Calibro: ").append(pdDto.getDescrCalibro()); added = true; }
+                        pdDto.setDescrizione(sb.toString());
                     }
                 }
             }

@@ -591,7 +591,7 @@ public class FattureDao extends BaseDao
                                                Long.class,
                                                dto.getNumDocumento(),
                                                StringUtils.defaultIfBlank(dto.getParticella(), null),
-                                               StringUtils.defaultIfEmpty(dto.getDataDocumento(), null),
+                                               formatDateForQuery(dto.getDataDocumento()),
                                                dto.getIdListino(),
                                                dto.getIdAgente(),
                                                dto.getIdProgetto(),
@@ -636,12 +636,12 @@ public class FattureDao extends BaseDao
                                                dto.getFlFatturaElettronica(),
                                                StringUtils.defaultIfEmpty(dto.getCausale(), null),
                                                StringUtils.defaultIfEmpty(dto.getNumeroOrdineAcquisto(), null),
-                                               StringUtils.defaultIfEmpty(dto.getDataOrdineAcquisto(), null),
+                                               formatDateForQuery(dto.getDataOrdineAcquisto()),
                                                StringUtils.defaultIfEmpty(dto.getCig(), null),
                                                StringUtils.defaultIfEmpty(dto.getCup(), null),
                                                StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
                                                dto.getNumeroScontrino(),
-                                               StringUtils.defaultIfEmpty(dto.getDataScontrino(), null),
+                                               formatDateForQuery(dto.getDataScontrino()),
                                                dto.getTipoFattura().name(),
                                                dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
                                                dto.getIdFatturaCollegata() == 0L ? null : dto.getIdFatturaCollegata(),
@@ -676,7 +676,7 @@ public class FattureDao extends BaseDao
     {
         try
         {
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_I04"), Integer.class, dto.getIdDocumento(), dto.getDtScadenza(), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), StringUtils.isEmpty(dto.getDtPagamento()) ? null : dto.getDtPagamento());
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_I04"), Integer.class, dto.getIdDocumento(), formatDateForQuery(dto.getDtScadenza()), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), formatDateForQuery(dto.getDtPagamento()));
         }
         catch ( DataAccessException e )
         {
@@ -738,7 +738,7 @@ public class FattureDao extends BaseDao
             jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U01"),
                                 dto.getNumDocumento(),
                                 StringUtils.defaultIfBlank(dto.getParticella(), null),
-                                StringUtils.defaultIfEmpty(dto.getDataDocumento(), null),
+                                formatDateForQuery(dto.getDataDocumento()),
                                 dto.getIdListino(),
                                 dto.getIdAgente(),
                                 dto.getIdProgetto(),
@@ -784,12 +784,12 @@ public class FattureDao extends BaseDao
                                 dto.getFlFatturaElettronica(),
                                 StringUtils.defaultIfEmpty(dto.getCausale(), null),
                                 StringUtils.defaultIfEmpty(dto.getNumeroOrdineAcquisto(), null),
-                                StringUtils.defaultIfEmpty(dto.getDataOrdineAcquisto(), null),
+                                formatDateForQuery(dto.getDataOrdineAcquisto()),
                                 StringUtils.defaultIfEmpty(dto.getCig(), null),
                                 StringUtils.defaultIfEmpty(dto.getCup(), null),
                                 StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
                                 dto.getNumeroScontrino(),
-                                StringUtils.defaultIfEmpty(dto.getDataScontrino(), null),
+                                formatDateForQuery(dto.getDataScontrino()),
                                 dto.getTipoFattura().name(),
                                 dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
                                 dto.getIdFatturaCollegata() == 0L ? null : dto.getIdFatturaCollegata(),
@@ -811,12 +811,26 @@ public class FattureDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U02"), dto.getDtScadenza(), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), StringUtils.isEmpty(dto.getDtPagamento()) ? null : dto.getDtPagamento(), dto.getId());
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURE_U02"), formatDateForQuery(dto.getDtScadenza()), dto.getImporto(), dto.getIdRisorsa(), dto.getModalitaPagamento(), dto.getImportoSpeseIncasso(), dto.getIvaSpeseIncasso(), dto.getRifPagamento(), dto.getNote(), dto.getSaldato(), dto.getAcconto(), formatDateForQuery(dto.getDtPagamento()), dto.getId());
         }
         catch ( DataAccessException e )
         {
             _log.error("Errore nell'aggiornamento della scadenza di pagamento {}", dto.getId(), e);
             throw new SQLException(e);
+        }
+    }
+
+    private String formatDateForQuery(String date)
+    {
+        if ( StringUtils.isBlank(date) ) return null;
+        try
+        {
+            return DateUtility.format(DateUtility.parse(date), "dd/MM/yyyy");
+        }
+        catch ( Exception e )
+        {
+            _log.error("Errore durante la normalizzazione della data {}", date, e);
+            return date;
         }
     }
 

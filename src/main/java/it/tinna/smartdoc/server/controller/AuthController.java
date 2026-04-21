@@ -84,5 +84,42 @@ public class AuthController {
             return ResponseEntity.internalServerError().body("Database error: " + e.getMessage());
         }
     }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody it.tinna.smartdoc.server.payload.ChangePasswordRequest request) {
+        try {
+            // Context should be already set by the filter, but if it came with ente in request, set it to be sure
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(request.getEnte())) {
+                DatabaseContextHolder.setClientDatabase(request.getEnte());
+            }
+
+            // Get current user from security context or token?
+            // AuthController is public, but change-password should be protected
+            // Assuming current password check is enough to verify intent
+            
+            // For now, let's assume we need the user to be identified.
+            // Since we don't have an easy way to get the authenticated user ID here without looking at the token,
+            // we can ask the frontend to send the username or ID, or better, look at the SecurityContext.
+            
+            Object principal = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            String username;
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                username = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+            } else {
+                username = principal.toString();
+            }
+
+            UtenteDto user = loginDelegate.getUserByUsername(username);
+            if (user == null || !passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+                return ResponseEntity.status(401).body("Password attuale errata");
+            }
+
+            loginDelegate.updatePassword(user.getId(), request.getNewPassword());
+            return ResponseEntity.ok("Password aggiornata con successo");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Errore durante l'aggiornamento della password: " + e.getMessage());
+        }
+    }
 }
 

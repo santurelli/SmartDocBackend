@@ -54,7 +54,7 @@ public class InvioFattureSdiPathCreatorTasklet implements Tasklet, InitializingB
         try
         {
             DatabaseContextHolder.set(BatchConstants.DB_KEY_SERVICE_DB);
-            templateDir = configurazioneDelegate.getByKey(BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.CONFIG_KEY_WORKDIR);
+            templateDir = configurazioneDelegate.getByKeyFromServiceDb(BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.CONFIG_KEY_WORKDIR);
             if (templateDir == null) {
                 logger.error("ATTENZIONE: Configurazione WORK_DIR (dominio {}) non trovata nel database {}. Il job per il tenant {} potrebbe fallire.", 
                              BatchConstants.CONFIG_DOMAIN_BATCH, BatchConstants.DB_KEY_SERVICE_DB, dbKey);

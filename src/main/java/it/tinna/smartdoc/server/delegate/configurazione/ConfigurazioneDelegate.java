@@ -3,6 +3,9 @@ package it.tinna.smartdoc.server.delegate.configurazione;
 import java.sql.SQLException;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +15,10 @@ import it.tinna.smartdoc.shared.dto.configurazione.ConfigurazioneDto;
 
 @Service(value = "configurazioneDelegate")
 public class ConfigurazioneDelegate extends BaseDelegate {
+    
+    @Autowired
+    @Qualifier("serviceJdbcTemplate")
+    private JdbcTemplate serviceJdbcTemplate;
 
     public String[] getAsArray(String dominio, String chiave) {
         ConfigurazioneDao dao = new ConfigurazioneDao(jdbcTemplate);
@@ -20,6 +27,11 @@ public class ConfigurazioneDelegate extends BaseDelegate {
 
     public String getByKey(String dominio, String chiave) throws SQLException {
         ConfigurazioneDao dao = new ConfigurazioneDao(jdbcTemplate);
+        return dao.getByKey(dominio, chiave);
+    }
+
+    public String getByKeyFromServiceDb(String dominio, String chiave) throws SQLException {
+        ConfigurazioneDao dao = new ConfigurazioneDao(serviceJdbcTemplate);
         return dao.getByKey(dominio, chiave);
     }
 

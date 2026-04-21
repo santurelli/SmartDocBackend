@@ -54,5 +54,14 @@ public class LoginDao extends BaseDao {
         }
     }
 
+    public void updatePassword(Integer userId, String newPasswordHash) throws SQLException {
+        try {
+            jdbcTemplate.update(FileQueryReader.getQuery("LOGIN_U02"), newPasswordHash, userId);
+        } catch (DataAccessException e) {
+            _log.error("Errore nell'aggiornamento della password per l'utente {}", userId, e);
+            throw new SQLException(e);
+        }
+    }
+
 }
 
