@@ -542,6 +542,10 @@ public class NoteCreditoDao extends BaseDao
                                                StringUtils.defaultIfEmpty(dto.getCup(), null),
                                                StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
                                                dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
+                                               dto.getFlRivalsaInps(),
+                                               dto.getPercRivalsaInps(),
+                                               dto.getImportoRivalsaInps(),
+                                               dto.getTipoCassaInps(),
                                                dto.getUserCreated());
         }
         catch ( DataAccessException | ParseException e )
@@ -658,6 +662,10 @@ public class NoteCreditoDao extends BaseDao
                                 StringUtils.defaultIfEmpty(dto.getCup(), null),
                                 StringUtils.defaultIfEmpty(dto.getDatiCommessa(), null),
                                 dto.getStatoFatturaElettronica() == null ? null : dto.getStatoFatturaElettronica().name(),
+                                dto.getFlRivalsaInps(),
+                                dto.getPercRivalsaInps(),
+                                dto.getImportoRivalsaInps(),
+                                dto.getTipoCassaInps(),
                                 dto.getUserLastUpdate(),
                                 dto.getId());
         }

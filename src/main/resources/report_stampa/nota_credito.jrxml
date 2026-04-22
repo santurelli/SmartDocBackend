@@ -98,6 +98,9 @@
 	<parameter name="documento" class="it.tinna.smartdoc.shared.dto.documenti.NotaCreditoDto" isForPrompting="false">
 		<parameterDescription><![CDATA[Oggetto che rappresenta il documento]]></parameterDescription>
 	</parameter>
+	<parameter name="annotazioni" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="importoRivalsaInps" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="importoRitenutaAcconto" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="totalemerce" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="spesetrasporto" class="java.lang.String" isForPrompting="false"/>
 	<parameter name="spesealtre" class="java.lang.String" isForPrompting="false"/>
@@ -1198,6 +1201,54 @@
 					<rightPen lineWidth="0.5"/>
 				</box>
 			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="164" width="368" height="31" uuid="eb60980e-3cae-4581-9f93-1823126f2942"/>
+				<box leftPadding="4" bottomPadding="2" rightPadding="4"/>
+				<textElement markup="html">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{annotazioni}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="23" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292i">
+					<printWhenExpression><![CDATA[$P{importoRivalsaInps} != null && !$P{importoRivalsaInps}.equals("€ 0,00") && !$P{importoRivalsaInps}.equals("0,00")]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="2" leftPadding="4"/>
+				<textElement>
+					<font fontName="Arial" size="6" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Rivalsa INPS:]]></text>
+			</staticText>
+			<textField>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="31" width="92" height="13" uuid="8aec3ee5-78f3-4872-abfb-924f84e91470">
+					<printWhenExpression><![CDATA[$P{importoRivalsaInps} != null && !$P{importoRivalsaInps}.equals("€ 0,00") && !$P{importoRivalsaInps}.equals("0,00")]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="1" rightPadding="5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{importoRivalsaInps}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="44" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292j">
+					<printWhenExpression><![CDATA[$P{importoRitenutaAcconto} != null && !$P{importoRitenutaAcconto}.equals("€ 0,00") && !$P{importoRitenutaAcconto}.equals("0,00")]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="2" leftPadding="4"/>
+				<textElement>
+					<font fontName="Arial" size="6" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Ritenuta d'acconto:]]></text>
+			</staticText>
+			<textField>
+				<reportElement positionType="FixRelativeToBottom" x="0" y="52" width="92" height="13" uuid="8aec3ee5-78f3-4872-abfb-924f84e91471">
+					<printWhenExpression><![CDATA[$P{importoRitenutaAcconto} != null && !$P{importoRitenutaAcconto}.equals("€ 0,00") && !$P{importoRitenutaAcconto}.equals("0,00")]]></printWhenExpression>
+				</reportElement>
+				<box topPadding="1" rightPadding="5"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{importoRitenutaAcconto}]]></textFieldExpression>
+			</textField>
 		</band>
 	</lastPageFooter>
 </jasperReport>

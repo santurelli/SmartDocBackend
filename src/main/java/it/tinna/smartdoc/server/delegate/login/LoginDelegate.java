@@ -48,7 +48,7 @@ public class LoginDelegate extends BaseDelegate {
         dao.setDtLastLogin(utente);
     }
 
-    public void updatePassword(Integer userId, String newPassword) throws SQLException {
+    public void updatePassword(long userId, String newPassword) throws SQLException {
         LoginDao dao = new LoginDao(jdbcTemplate);
         String hashed = passwordEncoder.encode(newPassword);
         dao.updatePassword(userId, hashed);

@@ -54,6 +54,8 @@ import it.tinna.smartdoc.server.constants.TipoPagamentoEnum;
 import it.tinna.smartdoc.server.constants.TipoRitenutaEnum;
 import it.tinna.smartdoc.server.constants.CausalePagamentoEnum;
 import it.tinna.smartdoc.server.constants.TipoScontoDocumentoEnum;
+import it.tinna.smartdoc.server.constants.TipoCassaEnum;
+import it.tinna.smartdoc.server.xml.sdi.SdiFormatter;
 import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.dao.configurazione.ConfigurazioneDao;
 import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
@@ -79,6 +81,7 @@ import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiPagamentoType
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRiepilogoType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRitenutaType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiTrasmissioneType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiCassaPrevidenzialeType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioLineeType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioPagamentoType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.FatturaElettronicaBodyType;
@@ -103,6 +106,7 @@ import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
 import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
+import it.tinna.smartdoc.server.xml.sdi.SdiFormatter;
 
 @Service(value = "fatturaelettronicaDelegate")
 public class FatturaElettronicaDelegate extends BaseDelegate
@@ -629,6 +633,59 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     dettaglioLinea.setPrezzoTotale(0d);
                     dettaglioLinea.setAliquotaIVA(0d);
                 }
+            }
+            // 2.1.1.9 DatiCassaPrevidenziale (Rivalsa INPS)
+            if ( dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps().intValue() == 1 )
+            {
+                DatiCassaPrevidenzialeType datiCassa = new DatiCassaPrevidenzialeType();
+                datiCassa.setTipoCassa(SdiFormatter.parseTipoCassa(dto.getTipoCassaInps()));
+                datiCassa.setAlCassa(dto.getPercRivalsaInps());
+                datiCassa.setImportoContributoCassa(dto.getImportoRivalsaInps() != null ? dto.getImportoRivalsaInps().doubleValue() : 0.0);
+                
+                // L'imponibile cassa è la somma degli imponibili delle linee soggette a ritenuta (di solito tutte)
+                double imponibileCassa = 0;
+                for (ProdottoDocumentoDto pd : dto.getProdotti()) {
+                    if (pd.isProdotto()) {
+                        imponibileCassa += (pd.getTotaleSenzaIva() != null ? pd.getTotaleSenzaIva() : 0.0);
+                    }
+                }
+                datiCassa.setImponibileCassa(imponibileCassa);
+                
+                // Aliquota IVA: prendiamo quella della prima riga prodotto, o 22% come fallback
+                double aliquotaIvaCassa = 22.0;
+                String naturaCassa = null;
+                if (!dto.getProdotti().isEmpty()) {
+                    AliquotaIvaDto aiDto = aiDao.getById(dto.getProdotti().get(0).getIdAliquotaIva());
+                    aliquotaIvaCassa = aiDto.getImposta();
+                    naturaCassa = aiDto.getClasse();
+                }
+                datiCassa.setAliquotaIVA(aliquotaIvaCassa);
+                if (aliquotaIvaCassa == 0 && StringUtils.isNotBlank(naturaCassa)) {
+                    datiCassa.setNatura(SdiFormatter.parseNaturaEsenzione(naturaCassa));
+                }
+                
+                if (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1) {
+                    datiCassa.setRitenuta(true);
+                }
+                
+                datiGeneraliDocumento.getDatiCassaPrevidenziale().add(datiCassa);
+                
+                // Aggiorniamo il riepilogo IVA: la rivalsa INPS fa cumulo sull'imponibile IVA
+                RiepilogoIvaDto riDtoCassa = new RiepilogoIvaDto();
+                riDtoCassa.setAliquotaIva(aliquotaIvaCassa);
+                riDtoCassa.setTipologiaIva(naturaCassa);
+                
+                int index = riepilogoIva.indexOf(riDtoCassa);
+                if (index >= 0) {
+                    riepilogoIva.get(index).setTotaleImponibile(riepilogoIva.get(index).getTotaleImponibile() + datiCassa.getImportoContributoCassa());
+                } else {
+                    riDtoCassa.setTotaleImponibile(datiCassa.getImportoContributoCassa());
+                    riepilogoIva.add(riDtoCassa);
+                }
+                
+                // Aggiorniamo il totale documento per includere la cassa (che non era nel totale items caricato dal DB)
+                double importoIvatoCassa = datiCassa.getImportoContributoCassa() * (1 + aliquotaIvaCassa / 100.0);
+                datiGeneraliDocumento.setImportoTotaleDocumento(datiGeneraliDocumento.getImportoTotaleDocumento() + importoIvatoCassa);
             }
             // 2.2.2 DatiRiepilogo
             for ( int i = 0; i < riepilogoIva.size(); i++ )

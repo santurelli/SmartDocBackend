@@ -86,8 +86,8 @@ public class ConfOrdineDao extends BaseDao {
             Integer length, Integer start, String orderColumn, String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("CONFORDINE_S07");
         List<Object> params = new ArrayList<>();
-        params.add(formatDate(dtFrom));
-        params.add(formatDate(dtTo));
+        params.add(dtFrom);
+        params.add(dtTo);
         params.add(idCliente);
         params.add(idAgente);
         
@@ -146,6 +146,10 @@ public class ConfOrdineDao extends BaseDao {
                     dto.getAcconto(), dto.getIdMagazzino(),
                     dto.getAnnotazioneEstesa(),
                     dto.getIdDocAssociato(), dto.getTipoDocAssociato(),
+                    dto.getFlRivalsaInps(),
+                    dto.getPercRivalsaInps(),
+                    dto.getImportoRivalsaInps(),
+                    dto.getTipoCassaInps(),
                     dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nel salvataggio della conferma d'ordine", e);
@@ -200,6 +204,10 @@ public class ConfOrdineDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
                     dto.getAcconto(), dto.getIdMagazzino(),
                     dto.getAnnotazioneEstesa(),
+                    dto.getFlRivalsaInps(),
+                    dto.getPercRivalsaInps(),
+                    dto.getImportoRivalsaInps(),
+                    dto.getTipoCassaInps(),
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
             _log.error("Errore nell'aggiornamento della conferma d'ordine {}", dto.getId(), e);

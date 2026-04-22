@@ -98,8 +98,8 @@ public class DdtDao extends BaseDao {
                                                String orderDir) throws SQLException {
         String query = FileQueryReader.getQuery("DDT_S06");
         List<Object> params = new ArrayList<>();
-        params.add(formatDate(dtFrom));
-        params.add(formatDate(dtTo));
+        params.add(dtFrom);
+        params.add(dtTo);
         params.add(idCliente);
         params.add(idAgente);
         params.add(idDocumento);
@@ -211,6 +211,10 @@ public class DdtDao extends BaseDao {
                 dto.getCodiceUfficioDestinazione(), 
                 dto.getAcconto(), 
                 dto.getIdMagazzino(), 
+                dto.getFlRivalsaInps(), 
+                dto.getPercRivalsaInps(), 
+                dto.getImportoRivalsaInps(), 
+                dto.getTipoCassaInps(), 
                 dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nell'inserimento del ddt", e);
@@ -319,6 +323,10 @@ public class DdtDao extends BaseDao {
                 dto.getCodiceUfficioDestinazione(), 
                 dto.getAcconto(), 
                 dto.getIdMagazzino(), 
+                dto.getFlRivalsaInps(), 
+                dto.getPercRivalsaInps(), 
+                dto.getImportoRivalsaInps(), 
+                dto.getTipoCassaInps(), 
                 dto.getUserLastUpdate(), 
                 dto.getId());
         } catch (DataAccessException e) {

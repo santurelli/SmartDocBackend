@@ -266,6 +266,7 @@ public class DdtDelegate extends BaseDelegate {
             Map<String, Object> params = new HashMap<>();
             params.put("documento", dto);
             params.put("datiazienda", daDto);
+            params.put("annotazioni", dto.getAnnotazioneEstesa());
             
             if (daDto != null && daDto.getByteLogo() != null) {
                 params.put("logopath", new java.io.ByteArrayInputStream(daDto.getByteLogo()));

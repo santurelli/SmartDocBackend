@@ -2235,9 +2235,13 @@
 						annotazione_estesa,
 						k_d_e_docassociato,
 						tipo_docassociato,
+						fl_rivalsa_inps,
+						perc_rivalsa_inps,
+						importo_rivalsa_inps,
+						tipo_cassa_inps,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_confordine;
 		</content>
 	</query>
@@ -2343,7 +2347,11 @@
 				   acconto,
 				   d_e_confordine.k_d_e_magazzini as idMagazzino,
 				   d_e_magazzini.descrizione AS descrMagazzino,
-				   d_e_confordine.annotazione_estesa as annotazioneEstesa
+				   d_e_confordine.annotazione_estesa as annotazioneEstesa,
+				   d_e_confordine.fl_rivalsa_inps AS flRivalsaInps,
+				   d_e_confordine.perc_rivalsa_inps AS percRivalsaInps,
+				   d_e_confordine.importo_rivalsa_inps AS importoRivalsaInps,
+				   d_e_confordine.tipo_cassa_inps AS tipoCassaInps
 			  FROM d_e_confordine
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_confordine.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -2523,6 +2531,10 @@
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
+				   fl_rivalsa_inps = ?,
+				   perc_rivalsa_inps = ?,
+				   importo_rivalsa_inps = ?,
+				   tipo_cassa_inps = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_confordine = ?
@@ -2824,9 +2836,13 @@
 						codice_ufficio_destinazione,
 						acconto,
 						k_d_e_magazzini,
+						fl_rivalsa_inps,
+						perc_rivalsa_inps,
+						importo_rivalsa_inps,
+						tipo_cassa_inps,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_ddt;
 		</content>
 	</query>
@@ -2932,7 +2948,11 @@
 				   d_e_clienti.partita_iva AS partitaIva,
 				   d_e_ddt.codice_ufficio_destinazione AS codiceUfficioDestinazione,
 				   acconto,
-				   k_d_e_magazzini as idMagazzino
+				   k_d_e_magazzini as idMagazzino,
+				   d_e_ddt.fl_rivalsa_inps AS flRivalsaInps,
+				   d_e_ddt.perc_rivalsa_inps AS percRivalsaInps,
+				   d_e_ddt.importo_rivalsa_inps AS importoRivalsaInps,
+				   d_e_ddt.tipo_cassa_inps AS tipoCassaInps
 			  FROM d_e_ddt
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_ddt.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -3073,8 +3093,8 @@
                 ON d_e_ddt.k_d_e_clienti = d_e_clienti.k_d_e_clienti
          LEFT JOIN d_e_agenti
          		ON d_e_ddt.k_d_e_agenti = d_e_agenti.k_d_e_agenti
-			 WHERE data_ddt &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_ddt)
-			   AND data_ddt &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data_ddt)
+			 WHERE data_ddt &gt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_ddt)
+			   AND data_ddt &lt;= COALESCE(TO_DATE(?, 'YYYY-MM-DD'), data_ddt)
 			   AND d_e_ddt.k_d_e_clienti = COALESCE(?, d_e_ddt.k_d_e_clienti)
 			   AND COALESCE(d_e_ddt.k_d_e_agenti, 0) = COALESCE(?, d_e_ddt.k_d_e_agenti, 0)
 			   AND COALESCE(d_e_ddt.num_ddt, 0) = COALESCE(?, d_e_ddt.num_ddt, 0)
@@ -3125,6 +3145,10 @@
 				   codice_ufficio_destinazione = ?,
 				   acconto = ?,
 				   k_d_e_magazzini = ?,
+				   fl_rivalsa_inps = ?,
+				   perc_rivalsa_inps = ?,
+				   importo_rivalsa_inps = ?,
+				   tipo_cassa_inps = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_ddt = ?
@@ -3520,6 +3544,10 @@
 						perc_ritenuta_acconto,
 						importo_ritenuta_acconto,
 						tipo_ritenuta,
+						fl_rivalsa_inps,
+						perc_rivalsa_inps,
+						importo_rivalsa_inps,
+						tipo_cassa_inps,
 						sconto,
 						user_created,
 						dt_created)
@@ -3527,7 +3555,7 @@
 				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 				 	    ?,?,?,?,?,?,?,?,?,
 				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,
-				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,
+				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3692,6 +3720,10 @@
 				   d_e_fatture.perc_ritenuta_acconto AS percRitenutaAcconto,
 				   d_e_fatture.importo_ritenuta_acconto AS importoRitenutaAcconto,
 				   d_e_fatture.tipo_ritenuta AS tipoRitenuta,
+				   d_e_fatture.fl_rivalsa_inps AS flRivalsaInps,
+				   d_e_fatture.perc_rivalsa_inps AS percRivalsaInps,
+				   d_e_fatture.importo_rivalsa_inps AS importoRivalsaInps,
+				   d_e_fatture.tipo_cassa_inps AS tipoCassaInps,
 				   d_e_fatture.sconto
 			  FROM d_e_fatture
 		 LEFT JOIN d_e_tipipagamento
@@ -4223,6 +4255,10 @@
 				   perc_ritenuta_acconto = ?,
 				   importo_ritenuta_acconto = ?,
 				   tipo_ritenuta = ?,
+				   fl_rivalsa_inps = ?,
+				   perc_rivalsa_inps = ?,
+				   importo_rivalsa_inps = ?,
+				   tipo_cassa_inps = ?,
 				   dt_sent = NULL,
 				   xml_fatturaelettronica = NULL,
 				   -- tipo_fattura = CASE WHEN ? = 1 THEN 'FATTURA' ELSE tipo_fattura END,
@@ -6119,9 +6155,13 @@
 						cup,
 						dati_commessa,
 						stato_fattura_elettronica,
+						fl_rivalsa_inps,
+						perc_rivalsa_inps,
+						importo_rivalsa_inps,
+						tipo_cassa_inps,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_notecredito;
 		</content>
 	</query>
@@ -6246,7 +6286,11 @@
 				   COALESCE(TO_CHAR(data_ordine_acquisto,'DD/MM/YYYY'), '') AS dataOrdineAcquisto,
 				   COALESCE(cig, '') AS cig,
 				   COALESCE(cup, '') AS cup,
-				   COALESCE(dati_commessa, '') AS datiCommessa
+				   COALESCE(dati_commessa, '') AS datiCommessa,
+				   d_e_notecredito.fl_rivalsa_inps AS flRivalsaInps,
+				   d_e_notecredito.perc_rivalsa_inps AS percRivalsaInps,
+				   d_e_notecredito.importo_rivalsa_inps AS importoRivalsaInps,
+				   d_e_notecredito.tipo_cassa_inps AS tipoCassaInps
 			  FROM d_e_notecredito
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_notecredito.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -6586,6 +6630,10 @@
 				   cup = ?,
 				   dati_commessa = ?,
 				   stato_fattura_elettronica = ?,
+				   fl_rivalsa_inps = ?,
+				   perc_rivalsa_inps = ?,
+				   importo_rivalsa_inps = ?,
+				   tipo_cassa_inps = ?,
 				   xml_fatturaelettronica = NULL,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
@@ -7810,9 +7858,13 @@
 						nazione_destinazione,
 						k_d_e_magazzini,
 						annotazione_estesa,
+						fl_rivalsa_inps,
+						perc_rivalsa_inps,
+						importo_rivalsa_inps,
+						tipo_cassa_inps,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			returning k_d_e_preventivi;
 		</content>
 	</query>
@@ -7915,7 +7967,11 @@
 				   d_e_preventivi.nazione_destinazione as nazioneDestinazione,
 
 				   k_d_e_magazzini as idMagazzino,
-				   COALESCE(annotazione_estesa,'') AS annotazioneEstesa
+				   COALESCE(annotazione_estesa,'') AS annotazioneEstesa,
+				   d_e_preventivi.fl_rivalsa_inps AS flRivalsaInps,
+				   d_e_preventivi.perc_rivalsa_inps AS percRivalsaInps,
+				   d_e_preventivi.importo_rivalsa_inps AS importoRivalsaInps,
+				   d_e_preventivi.tipo_cassa_inps AS tipoCassaInps
 			  FROM d_e_preventivi
 		 LEFT JOIN d_e_tipipagamento
 				ON d_e_preventivi.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -8091,6 +8147,10 @@
 				   nazione_destinazione = ?,
 				   k_d_e_magazzini = ?,
 				   annotazione_estesa = ?,
+				   fl_rivalsa_inps = ?,
+				   perc_rivalsa_inps = ?,
+				   importo_rivalsa_inps = ?,
+				   tipo_cassa_inps = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_preventivi = ?

@@ -258,7 +258,29 @@ public class DocumentoDto extends BaseDto
     @Expose
     private Integer                             idVettore;
 
+    @Expose
+    private Integer                             flRitenutaAcconto;
+
+    @Expose
+    private Double                              percRitenutaAcconto;
+
+    @Expose
     private BigDecimal                          importoRitenutaAcconto;
+
+    @Expose
+    private String                              tipoRitenuta;
+
+    @Expose
+    private Integer                             flRivalsaInps;
+
+    @Expose
+    private Double                              percRivalsaInps;
+
+    @Expose
+    private BigDecimal                          importoRivalsaInps;
+
+    @Expose
+    private String                              tipoCassaInps;
 
     @Expose
     private String                              indirizzoDestinazione;

@@ -181,6 +181,10 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
+                    dto.getFlRivalsaInps(),
+                    dto.getPercRivalsaInps(),
+                    dto.getImportoRivalsaInps(),
+                    dto.getTipoCassaInps(),
                     dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nel salvataggio del preventivo", e);
@@ -233,6 +237,10 @@ public class PreventiviDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getNazioneDestinazione(), null),
                     dto.getIdMagazzino(),
                     StringUtils.defaultIfEmpty(dto.getAnnotazioneEstesa(), null),
+                    dto.getFlRivalsaInps(),
+                    dto.getPercRivalsaInps(),
+                    dto.getImportoRivalsaInps(),
+                    dto.getTipoCassaInps(),
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
             throw new SQLException(e);

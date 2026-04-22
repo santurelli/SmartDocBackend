@@ -1,5 +1,7 @@
 package it.tinna.smartdoc.server.delegate.documenti;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -90,6 +92,7 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
 
     @Transactional(rollbackFor = Exception.class)
     public Integer save(ConfOrdineDto dto) throws SQLException {
+        gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
         {
             throw new SQLException("Il numero di conferma ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
@@ -263,8 +266,55 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
             totaleImponibile = totaleImponibile.setScale(2, java.math.RoundingMode.HALF_UP);
             
             params.put("totalemerce", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleMerce));
-            params.put("totaleimponibile", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
-            params.put("totaleiva", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
+            
+            // Rivalsa INPS and Withholding Tax
+            double importoRivalsa = 0;
+            double ivaRivalsaCalculated = 0;
+            if (dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps() == 1) {
+                double percRivalsa = dto.getPercRivalsaInps() != null ? dto.getPercRivalsaInps() : 4.0;
+                importoRivalsa = BigDecimal.valueOf(totaleMerce).multiply(BigDecimal.valueOf(percRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                
+                // Use a default VAT rate for Rivalsa (e.g., 22% or first product's VAT)
+                double impostaRivalsa = 22.0;
+                if (dto.getProdotti() != null && !dto.getProdotti().isEmpty() && dto.getProdotti().get(0).getPercentualeIva() != null) {
+                    impostaRivalsa = dto.getProdotti().get(0).getPercentualeIva();
+                }
+                ivaRivalsaCalculated = BigDecimal.valueOf(importoRivalsa).multiply(BigDecimal.valueOf(impostaRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+
+                boolean found = false;
+                for (RiepilogoIvaDto riDto : riepilogoIva) {
+                    if (riDto.getAliquotaIva() == impostaRivalsa) {
+                        riDto.setTotaleImponibile(riDto.getTotaleImponibile() + importoRivalsa);
+                        riDto.setTotaleImponibileFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    RiepilogoIvaDto riDto = new RiepilogoIvaDto();
+                    riDto.setAliquotaIva(impostaRivalsa);
+                    riDto.setAliquotaIvaFormattata(impostaRivalsa + "%");
+                    riDto.setTotaleImponibile(importoRivalsa);
+                    riDto.setTotaleImponibileFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
+                    riepilogoIva.add(riDto);
+                }
+            }
+
+            pt.setRiepilogoIva(riepilogoIva);
+            java.math.BigDecimal totaleImponibileCalculated = java.math.BigDecimal.ZERO;
+            java.math.BigDecimal totaleIvaCalculated = java.math.BigDecimal.ZERO;
+            for (it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto riDto : riepilogoIva) {
+                riDto.setImportoIva(BigDecimal.valueOf(riDto.getTotaleImponibile()).multiply(BigDecimal.valueOf(riDto.getAliquotaIva()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue());
+                riDto.setImportoIvaFormattato(it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+                totaleIvaCalculated = totaleIvaCalculated.add(java.math.BigDecimal.valueOf(riDto.getImportoIva()));
+                totaleImponibileCalculated = totaleImponibileCalculated.add(java.math.BigDecimal.valueOf(riDto.getTotaleImponibile()));
+            }
+
+            totaleIvaCalculated = totaleIvaCalculated.setScale(2, java.math.BigDecimal.ROUND_HALF_UP);
+            totaleImponibileCalculated = totaleImponibileCalculated.setScale(2, java.math.BigDecimal.ROUND_HALF_UP);
+
+            params.put("totaleimponibile", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleImponibileCalculated.doubleValue()));
+            params.put("totaleiva", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleIvaCalculated.doubleValue()));
             double totAcconto = dto.getAcconto() != null ? dto.getAcconto() : 0;
             params.put("acconto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totAcconto));
 
@@ -272,8 +322,23 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
             params.put("spesetrasporto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totTrasporto));
             params.put("spesealtre", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totAltreSpese));
             
-            params.put("totalefattura", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15));
-            params.put("totalenetto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15 - totAcconto));
+            // Fiscal parameters
+            double ritenuta = 0;
+            if (dto.getImportoRitenutaAcconto() != null) {
+                ritenuta = dto.getImportoRitenutaAcconto().doubleValue();
+            }
+            params.put("importoRivalsaInps", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(importoRivalsa));
+            params.put("importoRitenutaAcconto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(ritenuta));
+            params.put("importoIvaRivalsa", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(ivaRivalsaCalculated));
+            params.put("annotazioni", dto.getAnnotazioneEstesa());
+
+            double grandTotal = totaleImponibileCalculated.doubleValue() + totaleIvaCalculated.doubleValue() + totSpeseArt15;
+            params.put("totalefattura", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(grandTotal));
+            double nettoAPagare = grandTotal - totAcconto - ritenuta;
+            if (dto.getSplitPayment() != null && dto.getSplitPayment() == 1) {
+                nettoAPagare = nettoAPagare - totaleIvaCalculated.doubleValue();
+            }
+            params.put("totalenetto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(nettoAPagare));
             
             String coordinate = "";
             if (!StringUtils.isEmpty(dto.getDescrizioneNsBanca())) {
@@ -318,13 +383,19 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
         
         return map;
     }
-
-    public boolean isExistentNumero(Integer numero,
-                                    String particella,
-                                    String data,
-                                    Long id) throws SQLException
-    {
+    public boolean isExistentNumero(Integer numero, String particella, String data, Long id) throws SQLException {
         return confOrdineDao.isExistentNumero(numero, particella, data, id);
+    }
+
+    private void gestisciAnnotazioniRivalsa(ConfOrdineDto dto) {
+        if (dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps() == 1) {
+            String testoRivalsa = "Contributo INPS 4% ai sensi dell'art. 1 comma 212 legge 662/96";
+            if (StringUtils.isEmpty(dto.getAnnotazioneEstesa())) {
+                dto.setAnnotazioneEstesa(testoRivalsa);
+            } else if (!dto.getAnnotazioneEstesa().contains(testoRivalsa)) {
+                dto.setAnnotazioneEstesa(dto.getAnnotazioneEstesa() + "\n" + testoRivalsa);
+            }
+        }
     }
 }
 

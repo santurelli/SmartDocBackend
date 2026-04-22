@@ -498,31 +498,80 @@ public class NoteCreditoDelegate extends BaseDelegate
             // context.put("totalemerce",
             // NumberUtils.formatAsCurrency(totaleMerce));
             params.put("totalemerce", NumberUtils.formatAsCurrency(totaleMerce));
-            // context.put("totaleimponibile",
-            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
-            params.put("totaleimponibile", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue()));
-            // context.put("totaleiva",
-            // NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
-            params.put("totaleiva", NumberUtils.formatAsCurrency(totaleIva.doubleValue()));
-            // context.put("acconto", NumberUtils.formatAsCurrency(totAcconto));
+
+            // Rivalsa INPS and Withholding Tax
+            double importoRivalsa = 0;
+            double ivaRivalsaCalculated = 0;
+            if (dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps() == 1) {
+                double percRivalsa = dto.getPercRivalsaInps() != null ? dto.getPercRivalsaInps() : 4.0;
+                importoRivalsa = BigDecimal.valueOf(totaleMerce).multiply(BigDecimal.valueOf(percRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                
+                // Use a default VAT rate for Rivalsa (e.g., 22% or first product's VAT)
+                double impostaRivalsa = 22.0;
+                if (dto.getProdotti() != null && !dto.getProdotti().isEmpty() && dto.getProdotti().get(0).getPercentualeIva() != null) {
+                    impostaRivalsa = dto.getProdotti().get(0).getPercentualeIva();
+                }
+                ivaRivalsaCalculated = BigDecimal.valueOf(importoRivalsa).multiply(BigDecimal.valueOf(impostaRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+
+                boolean found = false;
+                for (RiepilogoIvaDto riDto : riepilogoIva) {
+                    if (riDto.getAliquotaIva() == impostaRivalsa) {
+                        riDto.setTotaleImponibile(riDto.getTotaleImponibile() + importoRivalsa);
+                        riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    RiepilogoIvaDto riDto = new RiepilogoIvaDto();
+                    riDto.setAliquotaIva(impostaRivalsa);
+                    riDto.setAliquotaIvaFormattata(impostaRivalsa + "%");
+                    riDto.setTotaleImponibile(importoRivalsa);
+                    riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(importoRivalsa));
+                    riepilogoIva.add(riDto);
+                }
+            }
+
+            ft.setRiepilogoIva(riepilogoIva);
+            BigDecimal totaleImponibileCalculated = BigDecimal.ZERO;
+            BigDecimal totaleIvaCalculated = new BigDecimal(0);
+            for ( RiepilogoIvaDto riDto : riepilogoIva )
+            {
+                riDto.setImportoIva(BigDecimal.valueOf(riDto.getTotaleImponibile()).multiply(BigDecimal.valueOf(riDto.getAliquotaIva()).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue());
+                riDto.setImportoIvaFormattato(NumberUtils.formatAsCurrency(riDto.getImportoIva()));
+                totaleIvaCalculated = totaleIvaCalculated.add(BigDecimal.valueOf(riDto.getImportoIva()));
+                totaleImponibileCalculated = totaleImponibileCalculated.add(BigDecimal.valueOf(riDto.getTotaleImponibile()));
+            }
+
+            totaleIvaCalculated = totaleIvaCalculated.setScale(2, BigDecimal.ROUND_HALF_UP);
+            totaleImponibileCalculated = totaleImponibileCalculated.setScale(2, BigDecimal.ROUND_HALF_UP);
+
+            params.put("totaleimponibile", NumberUtils.formatAsCurrency(totaleImponibileCalculated.doubleValue()));
+            params.put("totaleiva", NumberUtils.formatAsCurrency(totaleIvaCalculated.doubleValue()));
             params.put("acconto", NumberUtils.formatAsCurrency(totAcconto));
-            //
+
             params.put("speseart15", NumberUtils.formatAsCurrency(totSpeseArt15));
-            // context.put("spesetrasporto",
-            // NumberUtils.formatAsCurrency(totTrasporto));
             params.put("spesetrasporto", NumberUtils.formatAsCurrency(totTrasporto));
-            // context.put("spesealtre",
-            // NumberUtils.formatAsCurrency(totAltreSpese));
             params.put("spesealtre", NumberUtils.formatAsCurrency(totAltreSpese));
-            // context.put("totalefattura",
-            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() +
-            // totaleIva.doubleValue() + totSpeseArt15));
-            params.put("totalefattura", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15));
-            // context.put("totalenetto",
-            // NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() +
-            // totaleIva.doubleValue() + totSpeseArt15 - totAcconto));
-            params.put("totalenetto", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totaleIva.doubleValue() + totSpeseArt15 - totAcconto));
-            params.put("totale_escluso_iva", NumberUtils.formatAsCurrency(totaleImponibile.doubleValue() + totSpeseArt15 - totAcconto));
+            
+            // Fiscal parameters
+            double ritenuta = 0;
+            if (dto.getImportoRitenutaAcconto() != null) {
+                ritenuta = dto.getImportoRitenutaAcconto().doubleValue();
+            }
+            params.put("importoRivalsaInps", NumberUtils.formatAsCurrency(importoRivalsa));
+            params.put("importoRitenutaAcconto", NumberUtils.formatAsCurrency(ritenuta));
+            params.put("importoIvaRivalsa", NumberUtils.formatAsCurrency(ivaRivalsaCalculated));
+            params.put("annotazioni", dto.getAnnotazioneEstesa());
+
+            double grandTotal = totaleImponibileCalculated.doubleValue() + totaleIvaCalculated.doubleValue() + totSpeseArt15;
+            params.put("totalefattura", NumberUtils.formatAsCurrency(grandTotal));
+            double nettoAPagare = grandTotal - totAcconto - ritenuta;
+            if (dto.getSplitPayment() != null && dto.getSplitPayment() == 1) {
+                nettoAPagare = nettoAPagare - totaleIvaCalculated.doubleValue();
+            }
+            params.put("totalenetto", NumberUtils.formatAsCurrency(nettoAPagare));
+            params.put("totale_escluso_iva", NumberUtils.formatAsCurrency(totaleImponibileCalculated.doubleValue() + totSpeseArt15 - totAcconto - ritenuta));
             String coordinate = "";
             if ( !StringUtils.isEmpty(dto.getModalitaPagamento()) )
             {
@@ -860,6 +909,7 @@ public class NoteCreditoDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public long insert(NotaCreditoDto dto) throws SQLException
     {
+        gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getId()) )
         {
             throw new SQLException("Il numero di nota credito " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
@@ -906,6 +956,7 @@ public class NoteCreditoDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public long update(NotaCreditoDto dto) throws SQLException
     {
+        gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getId()) )
         {
             throw new SQLException("Il numero di nota credito " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
@@ -986,5 +1037,15 @@ public class NoteCreditoDelegate extends BaseDelegate
         dao.aggiornaTotaliNotaCredito(totale, totalePagato, currentDto.getIdDocumento());
     }
 
+    private void gestisciAnnotazioniRivalsa(NotaCreditoDto dto) {
+        if (dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps() == 1) {
+            String testoRivalsa = "Contributo INPS 4% ai sensi dell'art. 1 comma 212 legge 662/96";
+            if (StringUtils.isEmpty(dto.getCausale())) {
+                dto.setCausale(testoRivalsa);
+            } else if (!dto.getCausale().contains(testoRivalsa)) {
+                dto.setCausale(dto.getCausale() + "\n" + testoRivalsa);
+            }
+        }
+    }
 }
 

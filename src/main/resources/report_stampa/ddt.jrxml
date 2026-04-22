@@ -93,6 +93,7 @@
 	<parameter name="print_codagente" class="java.lang.Boolean" isForPrompting="false">
 		<defaultValueExpression><![CDATA[new java.lang.Boolean(true)]]></defaultValueExpression>
 	</parameter>
+	<parameter name="annotazioni" class="java.lang.String" isForPrompting="false"/>
 	<queryString>
 		<![CDATA[]]>
 	</queryString>
@@ -680,6 +681,14 @@
 					<rightPen lineWidth="0.5"/>
 				</box>
 			</frame>
+			<textField isStretchWithOverflow="true" isBlankWhenNull="true">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="52" width="368" height="31" uuid="eb60980e-3cae-4581-9f93-1823126f2941"/>
+				<box leftPadding="4" bottomPadding="2" rightPadding="4"/>
+				<textElement markup="html">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{annotazioni}]]></textFieldExpression>
+			</textField>
 			<frame>
 				<reportElement positionType="FixRelativeToBottom" x="0" y="21" width="184" height="21" uuid="de12b28d-bbab-4e7e-bb49-e345872aa607"/>
 				<box>

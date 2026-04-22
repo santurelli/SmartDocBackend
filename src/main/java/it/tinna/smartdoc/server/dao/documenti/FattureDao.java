@@ -649,6 +649,10 @@ public class FattureDao extends BaseDao
                                                dto.getPercRitenutaAcconto(),
                                                dto.getImportoRitenutaAcconto(),
                                                dto.getTipoRitenuta(),
+                                               dto.getFlRivalsaInps(),
+                                               dto.getPercRivalsaInps(),
+                                               dto.getImportoRivalsaInps(),
+                                               dto.getTipoCassaInps(),
                                                dto.getSconto(),
                                                dto.getUserCreated());
         }
@@ -797,6 +801,10 @@ public class FattureDao extends BaseDao
                                 dto.getPercRitenutaAcconto(),
                                 dto.getImportoRitenutaAcconto(),
                                 dto.getTipoRitenuta(),
+                                dto.getFlRivalsaInps(),
+                                dto.getPercRivalsaInps(),
+                                dto.getImportoRivalsaInps(),
+                                dto.getTipoCassaInps(),
                                 dto.getUserLastUpdate(),
                                 dto.getId());
         }
