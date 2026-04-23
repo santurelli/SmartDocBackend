@@ -215,6 +215,8 @@ public class DdtDao extends BaseDao {
                 dto.getPercRivalsaInps(), 
                 dto.getImportoRivalsaInps(), 
                 dto.getTipoCassaInps(), 
+                dto.getPercImponibileRivalsa(),
+                dto.getIdAliquotaIvaRivalsa(),
                 dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nell'inserimento del ddt", e);
@@ -327,6 +329,8 @@ public class DdtDao extends BaseDao {
                 dto.getPercRivalsaInps(), 
                 dto.getImportoRivalsaInps(), 
                 dto.getTipoCassaInps(), 
+                dto.getPercImponibileRivalsa(),
+                dto.getIdAliquotaIvaRivalsa(),
                 dto.getUserLastUpdate(), 
                 dto.getId());
         } catch (DataAccessException e) {

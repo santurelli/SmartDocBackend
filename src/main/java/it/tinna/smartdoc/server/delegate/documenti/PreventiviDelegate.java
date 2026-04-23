@@ -217,13 +217,23 @@ public class PreventiviDelegate {
             double ivaRivalsaCalculated = 0;
             if (dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps() == 1) {
                 double percRivalsa = dto.getPercRivalsaInps() != null ? dto.getPercRivalsaInps() : 4.0;
-                importoRivalsa = BigDecimal.valueOf(totaleMerce).multiply(BigDecimal.valueOf(percRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                double percImponibile = dto.getPercImponibileRivalsa() != null ? dto.getPercImponibileRivalsa() : 100.0;
                 
-                // Use a default VAT rate for Rivalsa (e.g., 22% or first product's VAT)
+                double imponibileRivalsa = BigDecimal.valueOf(totaleMerce).multiply(BigDecimal.valueOf(percImponibile).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                importoRivalsa = BigDecimal.valueOf(imponibileRivalsa).multiply(BigDecimal.valueOf(percRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                
+                // Aliquota IVA: usiamo quella specifica se impostata, altrimenti fallback su prima riga o 22%
                 double impostaRivalsa = 22.0;
-                if (dto.getProdotti() != null && !dto.getProdotti().isEmpty() && dto.getProdotti().get(0).getPercentualeIva() != null) {
-                    impostaRivalsa = dto.getProdotti().get(0).getPercentualeIva();
+                Integer idIvaRivalsa = dto.getIdAliquotaIvaRivalsa();
+                
+                if (idIvaRivalsa != null && idIvaRivalsa > 0) {
+                    it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto ai = aliquoteIvaDelegate.getById(idIvaRivalsa);
+                    if (ai != null) impostaRivalsa = ai.getImposta();
+                } else if (dto.getProdotti() != null && !dto.getProdotti().isEmpty()) {
+                    it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto ai = aliquoteIvaDelegate.getById(dto.getProdotti().get(0).getIdAliquotaIva());
+                    if (ai != null) impostaRivalsa = ai.getImposta();
                 }
+                
                 ivaRivalsaCalculated = BigDecimal.valueOf(importoRivalsa).multiply(BigDecimal.valueOf(impostaRivalsa).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
 
                 boolean found = false;

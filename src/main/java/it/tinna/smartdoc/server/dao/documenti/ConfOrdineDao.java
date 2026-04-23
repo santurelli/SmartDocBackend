@@ -150,6 +150,8 @@ public class ConfOrdineDao extends BaseDao {
                     dto.getPercRivalsaInps(),
                     dto.getImportoRivalsaInps(),
                     dto.getTipoCassaInps(),
+                    dto.getPercImponibileRivalsa(),
+                    dto.getIdAliquotaIvaRivalsa(),
                     dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nel salvataggio della conferma d'ordine", e);
@@ -208,6 +210,8 @@ public class ConfOrdineDao extends BaseDao {
                     dto.getPercRivalsaInps(),
                     dto.getImportoRivalsaInps(),
                     dto.getTipoCassaInps(),
+                    dto.getPercImponibileRivalsa(),
+                    dto.getIdAliquotaIvaRivalsa(),
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
             _log.error("Errore nell'aggiornamento della conferma d'ordine {}", dto.getId(), e);

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.sql.SQLException;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -634,59 +635,72 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     dettaglioLinea.setAliquotaIVA(0d);
                 }
             }
-            // 2.1.1.9 DatiCassaPrevidenziale (Rivalsa INPS)
-            if ( dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps().intValue() == 1 )
-            {
-                DatiCassaPrevidenzialeType datiCassa = new DatiCassaPrevidenzialeType();
-                datiCassa.setTipoCassa(SdiFormatter.parseTipoCassa(dto.getTipoCassaInps()));
-                datiCassa.setAlCassa(dto.getPercRivalsaInps());
-                datiCassa.setImportoContributoCassa(dto.getImportoRivalsaInps() != null ? dto.getImportoRivalsaInps().doubleValue() : 0.0);
-                
-                // L'imponibile cassa è la somma degli imponibili delle linee soggette a ritenuta (di solito tutte)
-                double imponibileCassa = 0;
-                for (ProdottoDocumentoDto pd : dto.getProdotti()) {
-                    if (pd.isProdotto()) {
-                        imponibileCassa += (pd.getTotaleSenzaIva() != null ? pd.getTotaleSenzaIva() : 0.0);
+                // 2.1.1.9 DatiCassaPrevidenziale (Rivalsa INPS)
+                if ( dto.getFlRivalsaInps() != null && dto.getFlRivalsaInps().intValue() == 1 )
+                {
+                    DatiCassaPrevidenzialeType datiCassa = new DatiCassaPrevidenzialeType();
+                    datiCassa.setTipoCassa(SdiFormatter.parseTipoCassa(dto.getTipoCassaInps()));
+                    datiCassa.setAlCassa(dto.getPercRivalsaInps());
+                    datiCassa.setImportoContributoCassa(dto.getImportoRivalsaInps() != null ? dto.getImportoRivalsaInps().doubleValue() : 0.0);
+                    
+                    // L'imponibile cassa è calcolato in base alla percentuale definita (default 100%)
+                    double percImponibile = dto.getPercImponibileRivalsa() != null ? dto.getPercImponibileRivalsa() : 100.0;
+                    double imponibileCassaBase = 0;
+                    for (ProdottoDocumentoDto pd : dto.getProdotti()) {
+                        if (pd.isProdotto()) {
+                            imponibileCassaBase += (pd.getTotaleSenzaIva() != null ? pd.getTotaleSenzaIva() : 0.0);
+                        }
                     }
+                    double imponibileCassa = BigDecimal.valueOf(imponibileCassaBase).multiply(BigDecimal.valueOf(percImponibile).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP)).doubleValue();
+                    datiCassa.setImponibileCassa(imponibileCassa);
+                    
+                    // Aliquota IVA: usiamo quella specifica se impostata, altrimenti fallback su prima riga o 22%
+                    double aliquotaIvaCassa = 22.0;
+                    String naturaCassa = null;
+                    Integer idIvaRivalsa = dto.getIdAliquotaIvaRivalsa();
+                    
+                    if (idIvaRivalsa != null && idIvaRivalsa > 0) {
+                        AliquotaIvaDto aiDto = aiDao.getById(idIvaRivalsa);
+                        if (aiDto != null) {
+                            aliquotaIvaCassa = aiDto.getImposta();
+                            naturaCassa = aiDto.getClasse();
+                        }
+                    } else if (!dto.getProdotti().isEmpty()) {
+                        AliquotaIvaDto aiDto = aiDao.getById(dto.getProdotti().get(0).getIdAliquotaIva());
+                        if (aiDto != null) {
+                            aliquotaIvaCassa = aiDto.getImposta();
+                            naturaCassa = aiDto.getClasse();
+                        }
+                    }
+                    
+                    datiCassa.setAliquotaIVA(aliquotaIvaCassa);
+                    if (aliquotaIvaCassa == 0 && StringUtils.isNotBlank(naturaCassa)) {
+                        datiCassa.setNatura(SdiFormatter.parseNaturaEsenzione(naturaCassa));
+                    }
+                    
+                    if (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1) {
+                        datiCassa.setRitenuta(true);
+                    }
+                    
+                    datiGeneraliDocumento.getDatiCassaPrevidenziale().add(datiCassa);
+                    
+                    // Aggiorniamo il riepilogo IVA: la rivalsa INPS fa cumulo sull'imponibile IVA
+                    RiepilogoIvaDto riDtoCassa = new RiepilogoIvaDto();
+                    riDtoCassa.setAliquotaIva(aliquotaIvaCassa);
+                    riDtoCassa.setTipologiaIva(naturaCassa);
+                    
+                    int index = riepilogoIva.indexOf(riDtoCassa);
+                    if (index >= 0) {
+                        riepilogoIva.get(index).setTotaleImponibile(riepilogoIva.get(index).getTotaleImponibile() + datiCassa.getImportoContributoCassa());
+                    } else {
+                        riDtoCassa.setTotaleImponibile(datiCassa.getImportoContributoCassa());
+                        riepilogoIva.add(riDtoCassa);
+                    }
+                    
+                    // Aggiorniamo il totale documento per includere la cassa (che non era nel totale items caricato dal DB)
+                    double importoIvatoCassa = datiCassa.getImportoContributoCassa() * (1 + aliquotaIvaCassa / 100.0);
+                    datiGeneraliDocumento.setImportoTotaleDocumento(datiGeneraliDocumento.getImportoTotaleDocumento() + importoIvatoCassa);
                 }
-                datiCassa.setImponibileCassa(imponibileCassa);
-                
-                // Aliquota IVA: prendiamo quella della prima riga prodotto, o 22% come fallback
-                double aliquotaIvaCassa = 22.0;
-                String naturaCassa = null;
-                if (!dto.getProdotti().isEmpty()) {
-                    AliquotaIvaDto aiDto = aiDao.getById(dto.getProdotti().get(0).getIdAliquotaIva());
-                    aliquotaIvaCassa = aiDto.getImposta();
-                    naturaCassa = aiDto.getClasse();
-                }
-                datiCassa.setAliquotaIVA(aliquotaIvaCassa);
-                if (aliquotaIvaCassa == 0 && StringUtils.isNotBlank(naturaCassa)) {
-                    datiCassa.setNatura(SdiFormatter.parseNaturaEsenzione(naturaCassa));
-                }
-                
-                if (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1) {
-                    datiCassa.setRitenuta(true);
-                }
-                
-                datiGeneraliDocumento.getDatiCassaPrevidenziale().add(datiCassa);
-                
-                // Aggiorniamo il riepilogo IVA: la rivalsa INPS fa cumulo sull'imponibile IVA
-                RiepilogoIvaDto riDtoCassa = new RiepilogoIvaDto();
-                riDtoCassa.setAliquotaIva(aliquotaIvaCassa);
-                riDtoCassa.setTipologiaIva(naturaCassa);
-                
-                int index = riepilogoIva.indexOf(riDtoCassa);
-                if (index >= 0) {
-                    riepilogoIva.get(index).setTotaleImponibile(riepilogoIva.get(index).getTotaleImponibile() + datiCassa.getImportoContributoCassa());
-                } else {
-                    riDtoCassa.setTotaleImponibile(datiCassa.getImportoContributoCassa());
-                    riepilogoIva.add(riDtoCassa);
-                }
-                
-                // Aggiorniamo il totale documento per includere la cassa (che non era nel totale items caricato dal DB)
-                double importoIvatoCassa = datiCassa.getImportoContributoCassa() * (1 + aliquotaIvaCassa / 100.0);
-                datiGeneraliDocumento.setImportoTotaleDocumento(datiGeneraliDocumento.getImportoTotaleDocumento() + importoIvatoCassa);
-            }
             // 2.2.2 DatiRiepilogo
             for ( int i = 0; i < riepilogoIva.size(); i++ )
             {

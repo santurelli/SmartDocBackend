@@ -2239,9 +2239,11 @@
 						perc_rivalsa_inps,
 						importo_rivalsa_inps,
 						tipo_cassa_inps,
+						perc_imponibile_rivalsa,
+						id_aliquota_iva_rivalsa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_confordine;
 		</content>
 	</query>
@@ -2351,7 +2353,9 @@
 				   d_e_confordine.fl_rivalsa_inps AS flRivalsaInps,
 				   d_e_confordine.perc_rivalsa_inps AS percRivalsaInps,
 				   d_e_confordine.importo_rivalsa_inps AS importoRivalsaInps,
-				   d_e_confordine.tipo_cassa_inps AS tipoCassaInps
+				   d_e_confordine.tipo_cassa_inps AS tipoCassaInps,
+				   d_e_confordine.perc_imponibile_rivalsa AS percImponibileRivalsa,
+				   d_e_confordine.id_aliquota_iva_rivalsa AS idAliquotaIvaRivalsa
 			  FROM d_e_confordine
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_confordine.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -2535,6 +2539,8 @@
 				   perc_rivalsa_inps = ?,
 				   importo_rivalsa_inps = ?,
 				   tipo_cassa_inps = ?,
+				   perc_imponibile_rivalsa = ?,
+				   id_aliquota_iva_rivalsa = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_confordine = ?
@@ -2840,9 +2846,11 @@
 						perc_rivalsa_inps,
 						importo_rivalsa_inps,
 						tipo_cassa_inps,
+						perc_imponibile_rivalsa,
+						id_aliquota_iva_rivalsa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_ddt;
 		</content>
 	</query>
@@ -2952,7 +2960,9 @@
 				   d_e_ddt.fl_rivalsa_inps AS flRivalsaInps,
 				   d_e_ddt.perc_rivalsa_inps AS percRivalsaInps,
 				   d_e_ddt.importo_rivalsa_inps AS importoRivalsaInps,
-				   d_e_ddt.tipo_cassa_inps AS tipoCassaInps
+				   d_e_ddt.tipo_cassa_inps AS tipoCassaInps,
+				   d_e_ddt.perc_imponibile_rivalsa AS percImponibileRivalsa,
+				   d_e_ddt.id_aliquota_iva_rivalsa AS idAliquotaIvaRivalsa
 			  FROM d_e_ddt
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_ddt.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -3149,6 +3159,8 @@
 				   perc_rivalsa_inps = ?,
 				   importo_rivalsa_inps = ?,
 				   tipo_cassa_inps = ?,
+				   perc_imponibile_rivalsa = ?,
+				   id_aliquota_iva_rivalsa = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_ddt = ?
@@ -3548,6 +3560,8 @@
 						perc_rivalsa_inps,
 						importo_rivalsa_inps,
 						tipo_cassa_inps,
+						perc_imponibile_rivalsa,
+						id_aliquota_iva_rivalsa,
 						sconto,
 						user_created,
 						dt_created)
@@ -3555,7 +3569,7 @@
 				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 				 	    ?,?,?,?,?,?,?,?,?,
 				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,
-				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,
+				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
 				 	    CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
@@ -3724,6 +3738,8 @@
 				   d_e_fatture.perc_rivalsa_inps AS percRivalsaInps,
 				   d_e_fatture.importo_rivalsa_inps AS importoRivalsaInps,
 				   d_e_fatture.tipo_cassa_inps AS tipoCassaInps,
+				   d_e_fatture.perc_imponibile_rivalsa AS percImponibileRivalsa,
+				   d_e_fatture.id_aliquota_iva_rivalsa AS idAliquotaIvaRivalsa,
 				   d_e_fatture.sconto
 			  FROM d_e_fatture
 		 LEFT JOIN d_e_tipipagamento
@@ -4259,6 +4275,8 @@
 				   perc_rivalsa_inps = ?,
 				   importo_rivalsa_inps = ?,
 				   tipo_cassa_inps = ?,
+				   perc_imponibile_rivalsa = ?,
+				   id_aliquota_iva_rivalsa = ?,
 				   dt_sent = NULL,
 				   xml_fatturaelettronica = NULL,
 				   -- tipo_fattura = CASE WHEN ? = 1 THEN 'FATTURA' ELSE tipo_fattura END,
@@ -6159,9 +6177,11 @@
 						perc_rivalsa_inps,
 						importo_rivalsa_inps,
 						tipo_cassa_inps,
+						perc_imponibile_rivalsa,
+						id_aliquota_iva_rivalsa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_notecredito;
 		</content>
 	</query>
@@ -6290,7 +6310,9 @@
 				   d_e_notecredito.fl_rivalsa_inps AS flRivalsaInps,
 				   d_e_notecredito.perc_rivalsa_inps AS percRivalsaInps,
 				   d_e_notecredito.importo_rivalsa_inps AS importoRivalsaInps,
-				   d_e_notecredito.tipo_cassa_inps AS tipoCassaInps
+				   d_e_notecredito.tipo_cassa_inps AS tipoCassaInps,
+				   d_e_notecredito.perc_imponibile_rivalsa AS percImponibileRivalsa,
+				   d_e_notecredito.id_aliquota_iva_rivalsa AS idAliquotaIvaRivalsa
 			  FROM d_e_notecredito
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_notecredito.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -6634,6 +6656,8 @@
 				   perc_rivalsa_inps = ?,
 				   importo_rivalsa_inps = ?,
 				   tipo_cassa_inps = ?,
+				   perc_imponibile_rivalsa = ?,
+				   id_aliquota_iva_rivalsa = ?,
 				   xml_fatturaelettronica = NULL,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
@@ -7862,9 +7886,11 @@
 						perc_rivalsa_inps,
 						importo_rivalsa_inps,
 						tipo_cassa_inps,
+						perc_imponibile_rivalsa,
+						id_aliquota_iva_rivalsa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			returning k_d_e_preventivi;
 		</content>
 	</query>
@@ -7971,7 +7997,9 @@
 				   d_e_preventivi.fl_rivalsa_inps AS flRivalsaInps,
 				   d_e_preventivi.perc_rivalsa_inps AS percRivalsaInps,
 				   d_e_preventivi.importo_rivalsa_inps AS importoRivalsaInps,
-				   d_e_preventivi.tipo_cassa_inps AS tipoCassaInps
+				   d_e_preventivi.tipo_cassa_inps AS tipoCassaInps,
+				   d_e_preventivi.perc_imponibile_rivalsa AS percImponibileRivalsa,
+				   d_e_preventivi.id_aliquota_iva_rivalsa AS idAliquotaIvaRivalsa
 			  FROM d_e_preventivi
 		 LEFT JOIN d_e_tipipagamento
 				ON d_e_preventivi.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -8151,6 +8179,8 @@
 				   perc_rivalsa_inps = ?,
 				   importo_rivalsa_inps = ?,
 				   tipo_cassa_inps = ?,
+				   perc_imponibile_rivalsa = ?,
+				   id_aliquota_iva_rivalsa = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_preventivi = ?

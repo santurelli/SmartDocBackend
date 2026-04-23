@@ -283,6 +283,12 @@ public class DocumentoDto extends BaseDto
     private String                              tipoCassaInps;
 
     @Expose
+    private Double                              percImponibileRivalsa;
+
+    @Expose
+    private Integer                             idAliquotaIvaRivalsa;
+
+    @Expose
     private String                              indirizzoDestinazione;
 
     @Expose

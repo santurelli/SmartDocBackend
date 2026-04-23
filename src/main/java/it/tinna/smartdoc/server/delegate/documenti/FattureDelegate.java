@@ -578,9 +578,14 @@ public class FattureDelegate extends BaseDelegate
             }
             double ivaRivalsaCalculated = 0;
             if (importoRivalsa > 0) {
-                double impostaRivalsa = 0;
-                if (dto.getProdotti() != null && !dto.getProdotti().isEmpty()) {
-                    it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto ai = aliquoteIvaDelegate.getById(dto.getProdotti().get(0).getIdAliquotaIva());
+                double impostaRivalsa = 22.0;
+                Integer idIvaRivalsa = dto.getIdAliquotaIvaRivalsa();
+                
+                if (idIvaRivalsa != null && idIvaRivalsa > 0) {
+                    AliquotaIvaDto ai = aliquoteIvaDelegate.getById(idIvaRivalsa);
+                    if (ai != null) impostaRivalsa = ai.getImposta();
+                } else if (dto.getProdotti() != null && !dto.getProdotti().isEmpty()) {
+                    AliquotaIvaDto ai = aliquoteIvaDelegate.getById(dto.getProdotti().get(0).getIdAliquotaIva());
                     if (ai != null) impostaRivalsa = ai.getImposta();
                 }
                 
@@ -591,7 +596,6 @@ public class FattureDelegate extends BaseDelegate
                     if (riDto.getAliquotaIva() == impostaRivalsa) {
                         riDto.setTotaleImponibile(riDto.getTotaleImponibile() + importoRivalsa);
                         riDto.setTotaleImponibileFormattato(NumberUtils.formatAsCurrency(riDto.getTotaleImponibile()));
-                        // L'IVA verrà ricalcolata nel loop successivo
                         found = true;
                         break;
                     }

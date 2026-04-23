@@ -185,6 +185,8 @@ public class PreventiviDao extends BaseDao {
                     dto.getPercRivalsaInps(),
                     dto.getImportoRivalsaInps(),
                     dto.getTipoCassaInps(),
+                    dto.getPercImponibileRivalsa(),
+                    dto.getIdAliquotaIvaRivalsa(),
                     dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nel salvataggio del preventivo", e);
@@ -241,6 +243,8 @@ public class PreventiviDao extends BaseDao {
                     dto.getPercRivalsaInps(),
                     dto.getImportoRivalsaInps(),
                     dto.getTipoCassaInps(),
+                    dto.getPercImponibileRivalsa(),
+                    dto.getIdAliquotaIvaRivalsa(),
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
             throw new SQLException(e);

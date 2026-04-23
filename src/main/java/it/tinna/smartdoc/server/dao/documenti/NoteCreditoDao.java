@@ -546,6 +546,8 @@ public class NoteCreditoDao extends BaseDao
                                                dto.getPercRivalsaInps(),
                                                dto.getImportoRivalsaInps(),
                                                dto.getTipoCassaInps(),
+                                               dto.getPercImponibileRivalsa(),
+                                               dto.getIdAliquotaIvaRivalsa(),
                                                dto.getUserCreated());
         }
         catch ( DataAccessException | ParseException e )
@@ -666,6 +668,8 @@ public class NoteCreditoDao extends BaseDao
                                 dto.getPercRivalsaInps(),
                                 dto.getImportoRivalsaInps(),
                                 dto.getTipoCassaInps(),
+                                dto.getPercImponibileRivalsa(),
+                                dto.getIdAliquotaIvaRivalsa(),
                                 dto.getUserLastUpdate(),
                                 dto.getId());
         }

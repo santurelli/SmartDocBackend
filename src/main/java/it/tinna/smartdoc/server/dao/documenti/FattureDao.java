@@ -653,6 +653,8 @@ public class FattureDao extends BaseDao
                                                dto.getPercRivalsaInps(),
                                                dto.getImportoRivalsaInps(),
                                                dto.getTipoCassaInps(),
+                                               dto.getPercImponibileRivalsa(),
+                                               dto.getIdAliquotaIvaRivalsa(),
                                                dto.getSconto(),
                                                dto.getUserCreated());
         }
@@ -805,6 +807,8 @@ public class FattureDao extends BaseDao
                                 dto.getPercRivalsaInps(),
                                 dto.getImportoRivalsaInps(),
                                 dto.getTipoCassaInps(),
+                                dto.getPercImponibileRivalsa(),
+                                dto.getIdAliquotaIvaRivalsa(),
                                 dto.getUserLastUpdate(),
                                 dto.getId());
         }
