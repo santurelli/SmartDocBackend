@@ -48,8 +48,8 @@ public class ProdottiDelegate extends BaseDelegate {
         return prodottiDao.isExistentCodice(codice, id);
     }
 
-    public void insert(ProdottoDto dto) throws SQLException {
-        prodottiDao.insert(dto);
+    public long insert(ProdottoDto dto) throws SQLException {
+        return prodottiDao.insert(dto);
     }
 
     public void update(ProdottoDto dto) throws SQLException {

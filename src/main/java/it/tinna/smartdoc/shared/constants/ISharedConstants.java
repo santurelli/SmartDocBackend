@@ -20,6 +20,8 @@ public class ISharedConstants
     public static String  CONFIG_KEY_ABILITANNOTAZIONIESTESE                                             = "ANNOTAZIONI_ESTESE";
 
     public static String  CONFIG_KEY_ABILITADIVISIONI                                                    = "DIVISIONI";
+    
+    public static String  CONFIG_KEY_PRIMANOTA_CONSIDERA_PROFORMA                                        = "CONSIDERA_PROFORMA_PRIMA_NOTA";
 
     public static String  CONFIG_KEY_NUM_NOTE_DEBITO_FATTURE                                             = "NUMERAZIONE_NOTE_DEBITO_UGUALE_FATTURE";                         // se vale 1 la numerazione delle note debito è la stessa delle fatture
     

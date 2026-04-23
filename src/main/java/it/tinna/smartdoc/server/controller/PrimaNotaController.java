@@ -42,8 +42,8 @@ public class PrimaNotaController {
     public ResponseEntity<List<PrimaNotaDto>> getList(
             @RequestParam(required = false) Integer tipoPagamento,
             @RequestParam(required = false) String idSoggetto,
-            @RequestParam(required = false) String dataDa,
-            @RequestParam(required = false) String dataA,
+            @RequestParam(required = false) String dtFrom,
+            @RequestParam(required = false) String dtTo,
             @RequestParam(required = false) Integer idRisorsa,
             @RequestParam(required = false) String tipologia,
             @RequestParam(required = false, defaultValue = "0") long idDivisione,
@@ -52,7 +52,7 @@ public class PrimaNotaController {
             @RequestParam(required = false, defaultValue = "0") Integer orderColumn,
             @RequestParam(required = false, defaultValue = "desc") String orderDir) {
         try {
-            return ResponseEntity.ok(primaNotaDelegate.getList(tipoPagamento, idSoggetto, dataDa, dataA, idRisorsa, tipologia, idDivisione, length, start, orderColumn, orderDir));
+            return ResponseEntity.ok(primaNotaDelegate.getList(tipoPagamento, idSoggetto, dtFrom, dtTo, idRisorsa, tipologia, idDivisione, length, start, orderColumn, orderDir));
         } catch (SQLException e) {
             log.error("Errore nel recupero della prima nota", e);
             return ResponseEntity.internalServerError().build();
@@ -99,8 +99,8 @@ public class PrimaNotaController {
             List<PrimaNotaDto> list = primaNotaDelegate.getList(
                 criteria.getTipoPagamento(), 
                 criteria.getIdSoggetto(), 
-                criteria.getDataDa(), 
-                criteria.getDataA(), 
+                criteria.getDtFrom(), 
+                criteria.getDtTo(), 
                 criteria.getIdRisorsa(), 
                 criteria.getTipologia(), 
                 criteria.getIdDivisione(), 
@@ -110,8 +110,8 @@ public class PrimaNotaController {
 
             Context context = new Context();
             context.putVar("rows", list);
-            context.putVar("dal", criteria.getDataDa());
-            context.putVar("al", criteria.getDataA());
+            context.putVar("dal", criteria.getDtFrom());
+            context.putVar("al", criteria.getDtTo());
 
             ClassPathResource templateResource = new ClassPathResource("report/prima_nota.xls");
             try (InputStream is = templateResource.getInputStream();

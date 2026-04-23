@@ -190,9 +190,9 @@ public class ProdottiDao extends BaseDao {
         }
     }
 
-    public void insert(ProdottoDto dto) throws SQLException {
+    public long insert(ProdottoDto dto) throws SQLException {
         try {
-            Long id = jdbcTemplate.queryForObject(FileQueryReader.getQuery("PRODOTTI_I01"), Long.class,
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("PRODOTTI_I01"), Long.class,
                 dto.getCodice(),
                 dto.getDescrizione(),
                 dto.getTipologia(),

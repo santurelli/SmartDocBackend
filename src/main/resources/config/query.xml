@@ -2842,7 +2842,7 @@
 						tipo_cassa_inps,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_ddt;
 		</content>
 	</query>
@@ -8187,11 +8187,44 @@
 	</query>
 	<query name="PRIMANOTA_S01">
 		<content delimiterParsingDisabled="true">
+			WITH p_nota AS (
+				SELECT id, idDocumento, data, descrDocumento, modalita, tipoDocumento, idrisorsa, iddivisione, tipoPagamento, risorsa, totale, entrate, uscite, saldato, soggetto, id_soggetto, riferimento_pagamento, type, progetto FROM v_prima_nota
+				UNION ALL
+				SELECT 
+					d_e_scadenzepagamentifatture.k_d_e_scadenzepagamentifatture AS id,
+					d_e_scadenzepagamentifatture.k_d_e_fatture AS idDocumento,
+					COALESCE(d_e_scadenzepagamentifatture.dt_pagamento, d_e_scadenzepagamentifatture.data) AS data,
+					'Pagamento Proforma n. ' || d_e_fatture.num_fattura || COALESCE('/' || d_e_fatture.particella, '') AS descrDocumento,
+					d_e_scadenzepagamentifatture.modalita,
+					'E' AS tipoDocumento,
+					d_e_scadenzepagamentifatture.k_d_e_risorse AS idrisorsa,
+					NULL::integer AS iddivisione,
+					NULL::integer AS tipoPagamento,
+					COALESCE(d_e_risorse.descrizione, '') AS risorsa,
+					d_e_scadenzepagamentifatture.importo AS totale,
+					d_e_scadenzepagamentifatture.importo AS entrate,
+					NULL::numeric AS uscite,
+					1 AS saldato,
+					d_e_clienti.denominazione AS soggetto,
+					'C-' || d_e_fatture.k_d_e_clienti AS id_soggetto,
+					d_e_scadenzepagamentifatture.rif_pagamento AS riferimento_pagamento,
+					'C' AS type,
+					d_e_fatture.k_d_e_progetti AS progetto
+				FROM d_e_scadenzepagamentifatture
+				JOIN d_e_fatture ON d_e_scadenzepagamentifatture.k_d_e_fatture = d_e_fatture.k_d_e_fatture
+				JOIN d_e_clienti ON d_e_fatture.k_d_e_clienti = d_e_clienti.k_d_e_clienti
+				LEFT JOIN d_e_risorse ON d_e_scadenzepagamentifatture.k_d_e_risorse = d_e_risorse.k_d_e_risorse
+				WHERE d_e_fatture.tipo_fattura = 'FATTURA_PROFORMA' 
+				  AND d_e_scadenzepagamentifatture.saldato = 1 
+				  AND d_e_fatture.fl_deleted = 0
+				  AND (SELECT valore FROM d_e_configurazione WHERE chiave = 'CONSIDERA_PROFORMA_PRIMA_NOTA' AND dominio = 'GLOBAL') = '1'
+				  AND d_e_scadenzepagamentifatture.k_d_e_scadenzepagamentifatture NOT IN (SELECT id FROM v_prima_nota WHERE type = 'PF')
+			)
 			SELECT id,
 				   idDocumento,
 				   TO_CHAR(data, 'DD/MM/YYYY') as dtDocumento,
 				   descrDocumento,
-				   v_prima_nota.modalita,
+				   p_nota.modalita,
 				   tipoDocumento,
 				   idrisorsa AS idRisorsa,
 				   iddivisione AS idDivisione,
@@ -8211,13 +8244,13 @@
 				   type,
 				   progetto AS idProgetto,
 				   COUNT(*) OVER() AS total
-			  FROM v_prima_nota
+			  FROM p_nota
 		 LEFT JOIN d_e_tipipagamento
-		 		ON v_prima_nota.tipoPagamento = d_e_tipipagamento.k_d_e_tipipagamento
+		 		ON p_nota.tipoPagamento = d_e_tipipagamento.k_d_e_tipipagamento
 			 WHERE COALESCE(tipoPagamento, 0) = COALESCE(?, tipoPagamento, 0)
 			   AND COALESCE(id_soggetto,'') = COALESCE(?, id_soggetto, '')
-			   AND data &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data)
-			   AND data &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data)
+			   AND data::date &gt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data::date)
+			   AND data::date &lt;= COALESCE(TO_DATE(?, 'DD/MM/YYYY'), data::date)
 			   AND COALESCE(idrisorsa, 0) = COALESCE(?, idrisorsa, 0)
 			   ${TIPOLOGIA}
 			   AND COALESCE(iddivisione, 0) = COALESCE(?, iddivisione, 0)

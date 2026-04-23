@@ -1210,7 +1210,7 @@
 				<textFieldExpression><![CDATA[$P{annotazioni}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement positionType="FixRelativeToBottom" x="0" y="23" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292i">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="23" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292c">
 					<printWhenExpression><![CDATA[$P{importoRivalsaInps} != null && !$P{importoRivalsaInps}.equals("€ 0,00") && !$P{importoRivalsaInps}.equals("0,00")]]></printWhenExpression>
 				</reportElement>
 				<box topPadding="2" leftPadding="4"/>
@@ -1230,7 +1230,7 @@
 				<textFieldExpression><![CDATA[$P{importoRivalsaInps}]]></textFieldExpression>
 			</textField>
 			<staticText>
-				<reportElement positionType="FixRelativeToBottom" x="0" y="44" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292j">
+				<reportElement positionType="FixRelativeToBottom" x="0" y="44" width="92" height="10" uuid="7a97c431-3d0d-4bb4-a715-495cce25292d">
 					<printWhenExpression><![CDATA[$P{importoRitenutaAcconto} != null && !$P{importoRitenutaAcconto}.equals("€ 0,00") && !$P{importoRitenutaAcconto}.equals("0,00")]]></printWhenExpression>
 				</reportElement>
 				<box topPadding="2" leftPadding="4"/>

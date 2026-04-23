@@ -123,8 +123,10 @@ public class ArticoliController {
                 }
             }
 
-            prodottiDelegate.insert(dto);
-            return ResponseEntity.ok(new GenericResponseDto<Void>());
+            long id = prodottiDelegate.insert(dto);
+            GenericResponseDto<Long> response = new GenericResponseDto<>();
+            response.setPayload(id);
+            return ResponseEntity.ok(response);
         } catch (SQLException e) {
             return ResponseEntity.internalServerError().body("Error creating article: " + e.getMessage());
         }

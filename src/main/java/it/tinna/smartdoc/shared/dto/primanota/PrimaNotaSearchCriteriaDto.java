@@ -8,8 +8,8 @@ import lombok.Setter;
 public class PrimaNotaSearchCriteriaDto {
     private Integer tipoPagamento;
     private String idSoggetto;
-    private String dataDa;
-    private String dataA;
+    private String dtFrom;
+    private String dtTo;
     private Integer idRisorsa;
     private String tipologia;
     private long idDivisione;
