@@ -13,7 +13,11 @@ import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
 
+import lombok.extern.slf4j.Slf4j;
+import com.google.gson.Gson;
+
 @RestController
+@Slf4j
 @RequestMapping("/api/fatture-fornitore")
 public class FattureFornitoreController {
 
@@ -51,8 +55,13 @@ public class FattureFornitoreController {
 
     @PostMapping
     public ResponseEntity<GenericResponseDto<Integer>> save(@RequestBody FatturaFornitoreDto dto) throws SQLException {
-        Integer id = fattureFornitoreDelegate.insert(dto);
-        return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        try {
+            Integer id = fattureFornitoreDelegate.insert(dto);
+            return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        } catch (Exception e) {
+            log.error("Errore durante il salvataggio della fattura fornitore: {}", new Gson().toJson(dto), e);
+            throw e;
+        }
     }
 
     @DeleteMapping("/{id}")

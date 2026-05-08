@@ -1407,14 +1407,19 @@
 					  	   /*COALESCE(partita_iva || '/' || codice_fiscale, partita_iva, codice_fiscale, '') as partitaIva,*/
 					  	   d_e_clienti.note,
 					  	   COALESCE(d_e_indirizzi_clienti.indirizzo || ' ' || d_e_indirizzi_clienti.citta , '') AS citta,
+					  	   d_e_indirizzi_clienti.codice_ufficio AS codiceSdi,
 					  	   COUNT(*) OVER() AS total,
 					  	   COALESCE(d_e_agenti.denominazione, '') AS descAgente
 					  FROM d_e_clienti
 				 LEFT JOIN d_e_agenti
 				 		ON d_e_clienti.k_d_e_agenti = d_e_agenti.k_d_e_agenti
 				 LEFT JOIN d_e_indirizzi_clienti
-				 		ON d_e_clienti.k_d_e_clienti = d_e_indirizzi_clienti.id_richiedente
-				 	   AND d_e_indirizzi_clienti.tipologia = 'O'
+				 		ON d_e_indirizzi_clienti.k_d_e_indirizzi = (SELECT k_d_e_indirizzi 
+				 													  FROM d_e_indirizzi_clienti 
+				 													 WHERE id_richiedente = d_e_clienti.k_d_e_clienti 
+				 													   AND fl_deleted = 0 
+				 												  ORDER BY (CASE WHEN tipologia = 'O' THEN 1 WHEN tipologia = 'L' THEN 2 ELSE 3 END) 
+				 												     LIMIT 1)
 					 WHERE d_e_clienti.fl_deleted = 0
 					   AND (   LOWER(d_e_clienti.codice) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.codice))
 					   		OR LOWER(d_e_clienti.denominazione) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.denominazione))
@@ -3566,11 +3571,11 @@
 						user_created,
 						dt_created)
 				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,TO_TIMESTAMP(?,'DD/MM/YYYY HH24:MI'),
-				 	    ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-				 	    ?,?,?,?,?,?,?,?,?,
-				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,
-				 	    ?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
-				 	    CURRENT_TIMESTAMP)
+						?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+						?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),
+						?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),
+						?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+						CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_fatture;
 		</content>
 	</query>
@@ -4980,8 +4985,12 @@
 					  	   COUNT(*) OVER() AS total
 					  FROM d_e_fornitori
 				 LEFT JOIN d_e_indirizzi_fornitori
-				 		ON d_e_fornitori.k_d_e_fornitori = d_e_indirizzi_fornitori.id_richiedente
-				 	   AND d_e_indirizzi_fornitori.tipologia = 'O'
+				 		ON d_e_indirizzi_fornitori.k_d_e_indirizzi = (SELECT k_d_e_indirizzi 
+				 													  FROM d_e_indirizzi_fornitori 
+				 													 WHERE id_richiedente = d_e_fornitori.k_d_e_fornitori 
+				 													   AND fl_deleted = 0 
+				 												  ORDER BY (CASE WHEN tipologia = 'O' THEN 1 WHEN tipologia = 'L' THEN 2 ELSE 3 END) 
+				 												     LIMIT 1)
 					 WHERE d_e_fornitori.fl_deleted = 0
 					   AND (   LOWER(d_e_fornitori.codice) LIKE COALESCE(LOWER(?), LOWER(d_e_fornitori.codice))
 					   		OR LOWER(d_e_fornitori.denominazione) LIKE COALESCE(LOWER(?), LOWER(d_e_fornitori.denominazione))
@@ -5949,9 +5958,10 @@
 					    k_d_e_magazzini,
 					    k_d_e_fornitori,
 					    desc_causale,
+					    k_d_e_causalimovimentiprodotti,
 					    user_created,
 					    dt_created)
-				VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			 RETURNING k_d_e_movimenti_magazzino
 		</content>
 	</query>
@@ -5972,55 +5982,49 @@
 					    k_d_e_magazzini,
 					    k_d_e_clienti,
 					    desc_causale,
+					    k_d_e_causalimovimentiprodotti,
 					    user_created,
 					    dt_created)
-				VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				VALUES (?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			 RETURNING k_d_e_movimenti_magazzino
 		</content>
 	</query>
 	<query name="MOVIMENTIMAGAZZINO_S01">
 		<content delimiterParsingDisabled="true">
-			SELECT m.k_d_e_movimenti_magazzino as id,
-				   m.k_d_e_prodotti as idProdotto,
-				   p.descrizione as descrizioneProdotto,
-				   p.descrizione as descrizioneProdottoExcel,
-				   m.tipo_movimento as tipoMovimento,
-				   COALESCE(c.denominazione, f.denominazione, '') as clienteFornitore,
-				   CASE WHEN m.tipo_movimento = 'I' THEN m.quantita ELSE 0 END as quantitaCarico,
-				   CASE WHEN m.tipo_movimento = 'U' THEN m.quantita ELSE 0 END as quantitaScarico,
-				   m.quantita as quantitaBase,
-				   TO_CHAR(m.data,'DD/MM/YYYY') as dataMovimento,
-				   COALESCE(cp.descrizione, m.desc_causale, '') as causale,
-				   cp.k_d_e_causalimovimentiprodotti as idCausale,
-				   m.quantita,
-				   m.k_d_e_unitamisura as idUnitaMisura,
-				   m.k_d_e_aliquoteiva as idAliquotaIva,
-				   iva.descrizione as descrAliquotaIva,
-				   m.prezzo_unitario as prezzoUnitario,
-				   m.k_d_e_taglie as idTaglia,
-				   t.descrizione as descrTaglia,
-				   m.k_d_e_colori as idColore,
-				   col.descrizione as descrColore,
-				   m.k_d_e_toni as idTono,
-				   ton.descrizione as descrTono,
-				   m.k_d_e_scelte as idScelta,
-				   sce.descrizione as descrScelta
-			  FROM d_e_movimenti_magazzino m
-			  JOIN d_e_prodotti p ON p.k_d_e_prodotti = m.k_d_e_prodotti
-			  LEFT JOIN d_e_causalimovimentiprodotti cp ON cp.k_d_e_causalimovimentiprodotti = m.k_d_e_causalimovimentiprodotti AND cp.fl_deleted = 0
-			  LEFT JOIN d_e_clienti c ON c.k_d_e_clienti = m.k_d_e_clienti AND c.fl_deleted = 0
-			  LEFT JOIN d_e_fornitori f ON f.k_d_e_fornitori = m.k_d_e_fornitori AND f.fl_deleted = 0
-			  LEFT JOIN d_e_aliquoteiva iva ON iva.k_d_e_aliquoteiva = m.k_d_e_aliquoteiva AND iva.fl_deleted = 0
-			  LEFT JOIN d_e_taglie t ON t.k_d_e_taglie = m.k_d_e_taglie AND t.fl_deleted = 0
-			  LEFT JOIN d_e_colori col ON col.k_d_e_colori = m.k_d_e_colori AND col.fl_deleted = 0
-			  LEFT JOIN d_e_toni ton ON ton.k_d_e_toni = m.k_d_e_toni AND ton.fl_deleted = 0
-			  LEFT JOIN d_e_scelte sce ON sce.k_d_e_scelte = m.k_d_e_scelte AND sce.fl_deleted = 0
-			 WHERE m.fl_deleted = 0
-			   AND m.data &gt;= COALESCE(TO_DATE(CAST(? AS TEXT),'DD/MM/YYYY'), m.data)
-			   AND m.data &lt;= COALESCE(TO_DATE(CAST(? AS TEXT),'DD/MM/YYYY'), m.data)
-			   AND (m.k_d_e_prodotti = ? OR CAST(? AS INTEGER) IS NULL)
-		  ORDER BY m.data DESC
-		  LIMIT CAST(? AS INTEGER) OFFSET CAST(? AS INTEGER)
+			SELECT x.*,
+				   COALESCE(f.descrizione, '') AS descrFormato,
+				   COALESCE(s.descrizione, '') AS descrScelta,
+				   COALESCE(t.descrizione, '') AS descrTono,
+				   COALESCE(c.descrizione, '') AS descrCalibro
+			  FROM (
+				SELECT numero_documento AS numeroDocumento,
+					   id_prodotto AS idProdotto,
+					   descrizione_prodotto AS descrizioneProdotto,
+					   descrizione_prodotto AS descrizioneProdottoExcel,
+					   tipo_movimento AS tipoMovimento,
+					   cliente_fornitore AS clienteFornitore,
+					   CASE WHEN tipo_movimento = 'I' THEN quantita_um_base ELSE 0 END AS quantitaCarico,
+					   CASE WHEN tipo_movimento = 'U' THEN quantita_um_base ELSE 0 END AS quantitaScarico,
+					   quantita_um_base AS quantitaBase,
+					   TO_CHAR(data_movimento, 'DD/MM/YYYY') AS dataMovimento,
+					   causale AS causale,
+					   id_documento AS idDocumento,
+					   quantita_movimento AS quantita,
+					   id_um_movimento AS idUnitaMisura,
+					   prezzo AS prezzoUnitario,
+					   idmagazzino AS idMagazzino
+				  FROM v_movimenti_prodotti
+				 WHERE DATE_TRUNC('day', data_movimento) &gt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
+				   AND DATE_TRUNC('day', data_movimento) &lt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
+				   AND (id_prodotto = ? OR CAST(? AS INTEGER) IS NULL)
+			  ORDER BY data_movimento DESC
+			  LIMIT CAST(? AS INTEGER) OFFSET CAST(? AS INTEGER)
+			  ) x
+			  JOIN d_e_prodotti p ON p.k_d_e_prodotti = x.idProdotto
+			  LEFT JOIN d_e_formatiarticolo f ON f.k_d_e_formatiarticolo = p.k_d_e_formatiarticolo
+			  LEFT JOIN d_e_sceltearticolo s ON s.k_d_e_sceltearticolo = p.k_d_e_sceltearticolo
+			  LEFT JOIN d_e_toniarticolo t ON t.k_d_e_toniarticolo = p.k_d_e_toniarticolo
+			  LEFT JOIN d_e_calibriarticolo c ON c.k_d_e_calibriarticolo = p.k_d_e_calibriarticolo
 		</content>
 	</query>
 	<query name="MOVIMENTIMAGAZZINO_S02">
@@ -8446,7 +8450,7 @@
 				 	   	dot,
 				 	    user_created, 
 				 	    dt_created)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_prodotti
 		</content>
 	</query>
@@ -8495,6 +8499,10 @@
 					      k_d_e_sceltearticolo,
 					      k_d_e_toniarticolo,
 					      k_d_e_calibriarticolo,
+					      k_d_e_unitamisura1 AS idUnitaMisura1,
+					      prezzo_fornitore AS prezzoFornitore,
+					      k_d_e_aliquoteiva AS idAliquotaIva,
+					      k_d_e_fornitori AS idFornitore,
 					      COUNT(*) OVER() AS total
 					 FROM d_e_prodotti
 				LEFT JOIN d_e_categorie

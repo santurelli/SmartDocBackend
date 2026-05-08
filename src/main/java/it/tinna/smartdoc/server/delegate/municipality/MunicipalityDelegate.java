@@ -27,12 +27,12 @@ public class MunicipalityDelegate extends BaseDelegate {
     }
 
     public List<MunicipalityDto> getSuggestion(String q) throws SQLException {
-        MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
+        MunicipalityDao dao = new MunicipalityDao(serviceJdbcTemplate);
         return dao.getSuggestion(q);
     }
 
     public MunicipalityDto getByPartitaIva(String partitaIva) throws SQLException {
-        MunicipalityDao dao = new MunicipalityDao(jdbcTemplate);
+        MunicipalityDao dao = new MunicipalityDao(serviceJdbcTemplate);
         return dao.getByPartitaIva(partitaIva);
     }
 

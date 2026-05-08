@@ -33,6 +33,8 @@ public class ClienteDto extends BaseClienteDto {
     // @Expose
     private String ultimoDocVendita;
 
+    private String codiceSdi;
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ClienteDto) {

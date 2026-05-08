@@ -383,7 +383,7 @@ public class FattureFornitoreDao extends BaseDao
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nel salvataggio della fattura fornitore", e);
+            _log.error("Errore nel salvataggio della fattura fornitore (numero: {}, data: {})", dto.getNumeroDocumentoFornitore(), dto.getDataDocumentoFornitore(), e);
             throw new SQLException(e);
         }
     }
@@ -452,7 +452,7 @@ public class FattureFornitoreDao extends BaseDao
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nell'aggiornamento della fattura fornitore con id {}", dto.getId());
+            _log.error("Errore nell'aggiornamento della fattura fornitore con id {}", dto.getId(), e);
             throw new SQLException(e);
         }
     }

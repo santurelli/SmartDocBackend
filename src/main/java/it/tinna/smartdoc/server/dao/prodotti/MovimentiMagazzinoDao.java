@@ -37,6 +37,7 @@ public class MovimentiMagazzinoDao extends BaseDao {
                 dto.getIdMagazzino(),
                 dto.getIdFornitore(),
                 dto.getDescrCausale(),
+                dto.getIdCausale(),
                 dto.getUserCreated()
             );
         } catch (DataAccessException e) {
@@ -61,6 +62,7 @@ public class MovimentiMagazzinoDao extends BaseDao {
                 dto.getIdMagazzino(),
                 dto.getIdCliente(), // Changed from IdFornitore
                 dto.getDescrCausale(),
+                dto.getIdCausale(),
                 dto.getUserCreated()
             );
         } catch (DataAccessException e) {

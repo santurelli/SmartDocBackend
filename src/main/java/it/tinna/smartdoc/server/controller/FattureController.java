@@ -27,7 +27,11 @@ import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
+import lombok.extern.slf4j.Slf4j;
+import com.google.gson.Gson;
+
 @RestController
+@Slf4j
 @RequestMapping("/api/fatture")
 public class FattureController {
 
@@ -95,20 +99,25 @@ public class FattureController {
 
     @PostMapping
     public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody FatturaDto dto) throws SQLException {
-        if (dto.getId() > 0) {
-            UtenteDto user = getCurrentUser();
-            if (user != null) {
-                dto.setUserLastUpdate(user.getId());
+        try {
+            if (dto.getId() > 0) {
+                UtenteDto user = getCurrentUser();
+                if (user != null) {
+                    dto.setUserLastUpdate(user.getId());
+                }
+                fattureDelegate.update(user, dto);
+                return ResponseEntity.ok(new GenericResponseDto<>(dto.getId(), null));
+            } else {
+                UtenteDto user = getCurrentUser();
+                if (user != null) {
+                    dto.setUserCreated(user.getId());
+                }
+                long id = fattureDelegate.insert(dto);
+                return ResponseEntity.ok(new GenericResponseDto<>(id, null));
             }
-            fattureDelegate.update(user, dto);
-            return ResponseEntity.ok(new GenericResponseDto<>(dto.getId(), null));
-        } else {
-            UtenteDto user = getCurrentUser();
-            if (user != null) {
-                dto.setUserCreated(user.getId());
-            }
-            long id = fattureDelegate.insert(dto);
-            return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        } catch (Exception e) {
+            log.error("Errore durante il salvataggio della fattura: {}", new Gson().toJson(dto), e);
+            throw e;
         }
     }
 

@@ -55,7 +55,7 @@ public class DdtController {
         String orderColumn = (String) p.getOrDefault("orderColumn", "data_ddt");
         String orderDir = (String) p.getOrDefault("orderDir", "asc");
         
-        String dtFrom = (String) p.get("dataDa");
+        String dtFrom = p.get("dataDa") != null ? (String) p.get("dataDa") : (String) p.get("dataDA");
         String dtTo = (String) p.get("dataA");
         
         Object idClienteObj = p.get("idCliente");

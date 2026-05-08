@@ -43,87 +43,85 @@ public class ApiKeyFilter extends OncePerRequestFilter {
 
         String requestUri = request.getRequestURI();
         
-        // Solo per gli endpoint esterni
-        if (requestUri.startsWith("/api/external/")) {
-            String signature = request.getHeader("X-HMAC-Signature");
-            String timestampStr = request.getHeader("X-HMAC-Timestamp");
-            String dbKey = request.getParameter("dbKey");
-
-            if (signature == null || timestampStr == null || dbKey == null) {
-                log.warn("Missing mandatory HMAC headers or dbKey parameter");
-                sendError(response, "Missing authentication details");
-                return;
-            }
-
-            try {
-                // 1. Verifica Timestamp (Replay Attack protection)
-                long timestamp = Long.parseLong(timestampStr);
-                long now = System.currentTimeMillis() / 1000;
-                if (Math.abs(now - timestamp) > MAX_TIMESTAMP_DIFF_SECONDS) {
-                    log.warn("Request timestamp expired: {} (now: {})", timestamp, now);
-                    sendError(response, "Request expired");
-                    return;
-                }
-
-                // 2. Recupero Secret Key da DB di servizio
-                String secretKey = getSecretKey(dbKey);
-                if (secretKey == null) {
-                    log.warn("No Secret Key found for database: {}", dbKey);
-                    sendError(response, "Invalid database key");
-                    return;
-                }
-
-                // 3. Calcolo HMAC locale
-                String payload = "";
-                if (request instanceof CachedBodyHttpServletRequest cachedRequest) {
-                    payload = new String(cachedRequest.getCachedBody(), StandardCharsets.UTF_8);
-                } else {
-                    log.warn("Request is NOT an instance of CachedBodyHttpServletRequest. Body caching is disabled for URI: {}", requestUri);
-                }
-                
-                String dataToSign = timestampStr + payload;
-                log.info("HMAC Data To Sign: [{}], Timestamp: [{}], Payload: [{}]", dataToSign, timestampStr, payload);
-                String calculatedSignature = calculateHmac(secretKey, dataToSign);
-
-                if (!calculatedSignature.equalsIgnoreCase(signature)) {
-                    log.warn("Invalid HMAC signature for dbKey: {}. Expected: {}, Received: {}", dbKey, calculatedSignature, signature);
-                    sendError(response, "Invalid signature");
-                    return;
-                }
-
-                // 4. Autenticazione e setting contesto
-                log.info("HMAC Authentication successful for dbKey: {}", dbKey);
-                DatabaseContextHolder.setClientDatabase(dbKey);
-
-                UserDetails userDetails = new UserDetailsImpl(
-                        0,
-                        "external-api",
-                        "",
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_EXTERNAL_SERVICE"))
-                );
-
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        userDetails, null, userDetails.getAuthorities());
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-
-            } catch (NumberFormatException e) {
-                log.error("Invalid timestamp format: {}", timestampStr);
-                sendError(response, "Invalid timestamp format");
-                return;
-            } catch (Exception e) {
-                log.error("Error during HMAC validation", e);
-                sendError(response, "Authentication error");
-                return;
-            }
-        }
-
         try {
+            // Solo per gli endpoint esterni
+            if (requestUri.startsWith("/api/external/")) {
+                String signature = request.getHeader("X-HMAC-Signature");
+                String timestampStr = request.getHeader("X-HMAC-Timestamp");
+                String dbKey = request.getParameter("dbKey");
+
+                if (signature == null || timestampStr == null || dbKey == null) {
+                    log.warn("Missing mandatory HMAC headers or dbKey parameter");
+                    sendError(response, "Missing authentication details");
+                    return;
+                }
+
+                try {
+                    // 1. Verifica Timestamp (Replay Attack protection)
+                    long timestamp = Long.parseLong(timestampStr);
+                    long now = System.currentTimeMillis() / 1000;
+                    if (Math.abs(now - timestamp) > MAX_TIMESTAMP_DIFF_SECONDS) {
+                        log.warn("Request timestamp expired: {} (now: {})", timestamp, now);
+                        sendError(response, "Request expired");
+                        return;
+                    }
+
+                    // 2. Recupero Secret Key da DB di servizio
+                    String secretKey = getSecretKey(dbKey);
+                    if (secretKey == null) {
+                        log.warn("No Secret Key found for database: {}", dbKey);
+                        sendError(response, "Invalid database key");
+                        return;
+                    }
+
+                    // 3. Calcolo HMAC locale
+                    String payload = "";
+                    if (request instanceof CachedBodyHttpServletRequest cachedRequest) {
+                        payload = new String(cachedRequest.getCachedBody(), StandardCharsets.UTF_8);
+                    } else {
+                        log.warn("Request is NOT an instance of CachedBodyHttpServletRequest. Body caching is disabled for URI: {}", requestUri);
+                    }
+                    
+                    String dataToSign = timestampStr + payload;
+                    log.info("HMAC Data To Sign: [{}], Timestamp: [{}], Payload: [{}]", dataToSign, timestampStr, payload);
+                    String calculateSignature = calculateHmac(secretKey, dataToSign);
+
+                    if (!calculateSignature.equalsIgnoreCase(signature)) {
+                        log.warn("Invalid HMAC signature for dbKey: {}. Expected: {}, Received: {}", dbKey, calculateSignature, signature);
+                        sendError(response, "Invalid signature");
+                        return;
+                    }
+
+                    // 4. Autenticazione e setting contesto
+                    log.info("HMAC Authentication successful for dbKey: {}", dbKey);
+                    DatabaseContextHolder.setClientDatabase(dbKey);
+
+                    UserDetails userDetails = new UserDetailsImpl(
+                            0,
+                            "external-api",
+                            "",
+                            Collections.singletonList(new SimpleGrantedAuthority("ROLE_EXTERNAL_SERVICE"))
+                    );
+
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            userDetails, null, userDetails.getAuthorities());
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                } catch (NumberFormatException e) {
+                    log.error("Invalid timestamp format: {}", timestampStr);
+                    sendError(response, "Invalid timestamp format");
+                    return;
+                } catch (Exception e) {
+                    log.error("Error during HMAC validation", e);
+                    sendError(response, "Authentication error");
+                    return;
+                }
+            }
+
             filterChain.doFilter(request, response);
         } finally {
-            // Pulizia del contesto se impostato da questo filtro
-            if (requestUri.startsWith("/api/external/")) {
-                DatabaseContextHolder.clearClientDatabase();
-            }
+            // Pulizia del contesto SEMPRE alla fine della richiesta per evitare perdite tra i thread di Tomcat
+            DatabaseContextHolder.clearClientDatabase();
         }
     }
 

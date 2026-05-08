@@ -33,33 +33,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader("Authorization");
-        final String jwt;
-        final String userEmail;
-
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.trace("No Bearer token found in request to {}", request.getRequestURI());
-            filterChain.doFilter(request, response);
-            return;
-        }
-
         try {
-            jwt = authHeader.substring(7);
-            userEmail = jwtService.extractUsername(jwt);
-            log.debug("JWT Filter: extracted user {} from token", userEmail);
-        } catch (io.jsonwebtoken.ExpiredJwtException e) {
-            log.warn("JWT Filter: Token expired for request to {}", request.getRequestURI());
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Token expired");
-            return;
-        } catch (Exception e) {
-            log.error("JWT Filter: Invalid token for request to {}", request.getRequestURI(), e);
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("Invalid token");
-            return;
-        }
+            final String authHeader = request.getHeader("Authorization");
+            final String jwt;
+            final String userEmail;
 
-        try {
+            if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                log.trace("No Bearer token found in request to {}", request.getRequestURI());
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            try {
+                jwt = authHeader.substring(7);
+                userEmail = jwtService.extractUsername(jwt);
+                log.debug("JWT Filter: extracted user {} from token", userEmail);
+            } catch (io.jsonwebtoken.ExpiredJwtException e) {
+                log.warn("JWT Filter: Token expired for request to {}", request.getRequestURI());
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Token expired");
+                return;
+            } catch (Exception e) {
+                log.error("JWT Filter: Invalid token for request to {}", request.getRequestURI(), e);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("Invalid token");
+                return;
+            }
+
             if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtService.isTokenValid(jwt, userEmail)) {
                     log.debug("JWT Filter: Token is valid for user {}", userEmail);

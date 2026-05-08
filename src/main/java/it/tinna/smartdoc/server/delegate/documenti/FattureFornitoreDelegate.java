@@ -48,6 +48,8 @@ import it.tinna.smartdoc.server.dao.divisioni.DivisioniDao;
 import it.tinna.smartdoc.server.dao.documenti.DocumentiDao;
 import it.tinna.smartdoc.server.dao.documenti.FattureDao;
 import it.tinna.smartdoc.server.dao.documenti.FattureFornitoreDao;
+import it.tinna.smartdoc.server.dao.listini.ListiniDao;
+
 import it.tinna.smartdoc.server.dao.fornitori.FornitoriDao;
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
@@ -681,7 +683,11 @@ public class FattureFornitoreDelegate extends BaseDelegate
         map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPAGAMENTO, tipiPagamentoDao.getListForCombo());
         map.put(ISharedConstants.COMBOSMAP_KEY_BANCHE, risorseDao.getListForCombo(RisorsaDto.Tipologia.BANCA.getValore()));
         map.put(ISharedConstants.COMBOSMAP_KEY_DIVISIONI, divisioniDao.getListForCombo());
+        
+        ListiniDao listiniDao = new ListiniDao(jdbcTemplate);
+        map.put(ISharedConstants.COMBOSMAP_KEY_LISTINI, listiniDao.getListForCombo());
         return map;
+
     }
 
     public List<FatturaFornitoreDto> getListForExcel(Integer idFornitore,
@@ -948,64 +954,51 @@ public class FattureFornitoreDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public Integer insert(FatturaFornitoreDto dto) throws SQLException
     {
-        FattureFornitoreDao ffDao = new FattureFornitoreDao(jdbcTemplate);
-        Integer idFattura = ffDao.insert(dto);
-        for ( ProdottoDocumentoDto prodottoFatturaDto : dto.getProdotti() )
-        {
-            prodottoFatturaDto.setIdDocumento(idFattura);
-            ffDao.insertProdotto(prodottoFatturaDto);
-        }
-        if ( dto.getListaSpeseIncassoFattura() != null )
-        {
-            for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+        try {
+            FattureFornitoreDao ffDao = new FattureFornitoreDao(jdbcTemplate);
+            Integer idFattura = ffDao.insert(dto);
+            for ( ProdottoDocumentoDto prodottoFatturaDto : dto.getProdotti() )
             {
-                spesaIncassoDdtDto.setIdFattura(idFattura);
-                ffDao.insertSpesaIncasso(spesaIncassoDdtDto);
+                prodottoFatturaDto.setIdDocumento(idFattura);
+                ffDao.insertProdotto(prodottoFatturaDto);
             }
-        }
-        if ( dto.getListaScadenzePagamentiDocumento() != null )
-        {
-            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+            if ( dto.getListaSpeseIncassoFattura() != null )
             {
-                scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
-                ffDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+                {
+                    spesaIncassoDdtDto.setIdFattura(idFattura);
+                    ffDao.insertSpesaIncasso(spesaIncassoDdtDto);
+                }
             }
-        }
-        if ( dto.getIdOrdini() != null && !dto.getIdOrdini().isEmpty() )
-        {
-            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
-            for ( Integer idOrdine : dto.getIdOrdini() )
+            if ( dto.getListaScadenzePagamentiDocumento() != null )
             {
-                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idOrdine, ISharedConstants.TIPODOCASSOCIATO_ORDINE);
+                for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+                {
+                    scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
+                    ffDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                }
             }
-        }
-        else if ( dto.getIdBolleCarico() != null && !dto.getIdBolleCarico().isEmpty() )
-        {
-            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
-            for ( Integer idBollaCarico : dto.getIdBolleCarico() )
+            if ( dto.getIdOrdini() != null && !dto.getIdOrdini().isEmpty() )
             {
-                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idBollaCarico, ISharedConstants.TIPODOCASSOCIATO_BOLLACARICO);
+                DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+                for ( Integer idOrdine : dto.getIdOrdini() )
+                {
+                    documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idOrdine, ISharedConstants.TIPODOCASSOCIATO_ORDINE);
+                }
             }
+            else if ( dto.getIdBolleCarico() != null && !dto.getIdBolleCarico().isEmpty() )
+            {
+                DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+                for ( Integer idBollaCarico : dto.getIdBolleCarico() )
+                {
+                    documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idBollaCarico, ISharedConstants.TIPODOCASSOCIATO_BOLLACARICO);
+                }
+            }
+            return idFattura;
+        } catch (Exception e) {
+            _log.error("Errore durante l'inserimento della fattura fornitore: {}", new Gson().toJson(dto), e);
+            throw e;
         }
-        // if (dto.getIdOrdini() != null && !dto.getIdOrdini().isEmpty()) {
-        // for (Integer idOrdine : dto.getIdOrdini()) {
-        // documentiDao.associaDoc(idFattura,
-        // ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE,
-        // idOrdine,
-        // ISharedConstants.TIPODOCASSOCIATO_ORDINE);
-        // }
-        // }
-        // if (dto.getIdBolleCarico() != null &&
-        // !dto.getIdBolleCarico().isEmpty()) {
-        // for (Integer idBollaCarico : dto.getIdBolleCarico()) {
-        // documentiDao.associaDoc(idFattura,
-        // ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE,
-        // idBollaCarico,
-        // ISharedConstants.TIPODOCASSOCIATO_BOLLACARICO);
-        // }
-        // }
-
-        return idFattura;
     }
 
     public boolean isExistentNumero(Integer numeroDdt,
@@ -1020,31 +1013,37 @@ public class FattureFornitoreDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public void update(FatturaFornitoreDto dto) throws SQLException
     {
-        FattureFornitoreDao documentiDao = new FattureFornitoreDao(jdbcTemplate);
-        documentiDao.update(dto);
-        documentiDao.deleteProdottiById(dto.getId());
-        for ( ProdottoDocumentoDto prodottoDocumentoDto : dto.getProdotti() )
-        {
-            prodottoDocumentoDto.setIdDocumento(dto.getId());
-            documentiDao.insertProdotto(prodottoDocumentoDto);
-        }
-        documentiDao.deleteSpeseIncassoById(dto.getId());
-        if ( dto.getListaSpeseIncassoFattura() != null )
-        {
-            for ( SpesaIncassoDocumentoDto spesaIncassoDocumentoDto : dto.getListaSpeseIncassoFattura() )
+        try {
+            FattureFornitoreDao ffDao = new FattureFornitoreDao(jdbcTemplate);
+            ffDao.update(dto);
+            ffDao.deleteProdottiById(dto.getId());
+            for ( ProdottoDocumentoDto prodottoFatturaDto : dto.getProdotti() )
             {
-                spesaIncassoDocumentoDto.setIdFattura(dto.getId());
-                documentiDao.insertSpesaIncasso(spesaIncassoDocumentoDto);
+                prodottoFatturaDto.setIdDocumento(dto.getId());
+                ffDao.insertProdotto(prodottoFatturaDto);
             }
-        }
-        documentiDao.deleteScadenzePagamento(dto.getId());
-        if ( dto.getListaScadenzePagamentiDocumento() != null )
-        {
-            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+            ffDao.deleteSpeseIncassoById(dto.getId());
+            if ( dto.getListaSpeseIncassoFattura() != null )
             {
-                scadenzaPagamentoDocumentoDto.setIdDocumento(dto.getId());
-                documentiDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+                {
+                    spesaIncassoDdtDto.setIdFattura(dto.getId());
+                    ffDao.insertSpesaIncasso(spesaIncassoDdtDto);
+                }
             }
+            ffDao.deleteScadenzePagamento(dto.getId());
+            if ( dto.getListaScadenzePagamentiDocumento() != null )
+            {
+                for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+                {
+                    scadenzaPagamentoDocumentoDto.setIdDocumento(dto.getId());
+                    ffDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                }
+            }
+            ffDao.aggiornaTotaliFatturaFornitore(dto.getId());
+        } catch (Exception e) {
+            _log.error("Errore durante l'aggiornamento della fattura fornitore {}: {}", dto.getId(), new Gson().toJson(dto), e);
+            throw e;
         }
     }
 

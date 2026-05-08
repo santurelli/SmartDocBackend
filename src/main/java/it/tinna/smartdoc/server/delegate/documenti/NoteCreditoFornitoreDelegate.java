@@ -47,6 +47,8 @@ import it.tinna.smartdoc.server.dao.contatti.ContattiDao;
 import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
 import it.tinna.smartdoc.server.dao.divisioni.DivisioniDao;
 import it.tinna.smartdoc.server.dao.documenti.NoteCreditoFornitoreDao;
+import it.tinna.smartdoc.server.dao.listini.ListiniDao;
+
 import it.tinna.smartdoc.server.dao.fornitori.FornitoriDao;
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
@@ -687,7 +689,11 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
         map.put(ISharedConstants.COMBOSMAP_KEY_TIPIPAGAMENTO, tipiPagamentoDao.getListForCombo());
         map.put(ISharedConstants.COMBOSMAP_KEY_BANCHE, risorseDao.getListForCombo(RisorsaDto.Tipologia.BANCA.getValore()));
         map.put(ISharedConstants.COMBOSMAP_KEY_DIVISIONI, divisioniDao.getListForCombo());
+        
+        ListiniDao listiniDao = new ListiniDao(jdbcTemplate);
+        map.put(ISharedConstants.COMBOSMAP_KEY_LISTINI, listiniDao.getListForCombo());
         return map;
+
     }
 
     public List<FatturaFornitoreDto> getFattureAssociabili(long idFornitore,

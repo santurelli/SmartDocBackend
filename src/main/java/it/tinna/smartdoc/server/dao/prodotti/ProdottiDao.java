@@ -245,6 +245,7 @@ public class ProdottiDao extends BaseDao {
                 dto.getUserCreated() 
             );
         } catch (DataAccessException e) {
+             _log.error("Errore durante l'inserimento del prodotto {}", dto.getCodice(), e);
              throw new SQLException(e);
         }
     }

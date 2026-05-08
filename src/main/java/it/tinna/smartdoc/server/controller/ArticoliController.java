@@ -26,9 +26,11 @@ import it.tinna.smartdoc.server.security.JwtService;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/articoli")
+@Slf4j
 public class ArticoliController {
 
     @Autowired
@@ -128,6 +130,7 @@ public class ArticoliController {
             response.setPayload(id);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
+            log.error("Errore nella creazione dell'articolo: {}", dto.getCodice(), e);
             return ResponseEntity.internalServerError().body("Error creating article: " + e.getMessage());
         }
     }

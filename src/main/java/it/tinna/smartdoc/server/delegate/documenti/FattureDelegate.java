@@ -62,6 +62,8 @@ import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
 import it.tinna.smartdoc.server.dao.divisioni.DivisioniDao;
 import it.tinna.smartdoc.server.dao.documenti.DocumentiDao;
 import it.tinna.smartdoc.server.dao.documenti.FattureDao;
+import it.tinna.smartdoc.server.dao.listini.ListiniDao;
+
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
 import it.tinna.smartdoc.server.dao.progetti.ProgettiDao;
@@ -851,6 +853,10 @@ public class FattureDelegate extends BaseDelegate
         map.put(ISharedConstants.COMBOSMAP_KEY_DIVISIONI, divisioniDao.getListForCombo());
         String particelleAsString = configurazioneDao.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
         map.put(ISharedConstants.COMBOSMAP_KEY_PARTICELLE, StringUtils.split(particelleAsString, StringUtils.CR + StringUtils.LF));
+        
+        ListiniDao listiniDao = new ListiniDao(jdbcTemplate);
+        map.put(ISharedConstants.COMBOSMAP_KEY_LISTINI, listiniDao.getListForCombo());
+
         if ( TipoFattura.valueOf(tipoFattura) == TipoFattura.FATTURA_ACCOMPAGNATORIA )
         {
             CausaliTrasportoDao causaliTrasportoDao = new CausaliTrasportoDao(jdbcTemplate);
@@ -1055,60 +1061,152 @@ public class FattureDelegate extends BaseDelegate
     }
 
     @Transactional(rollbackFor = Throwable.class)
+    public void update(UtenteDto utenteDto,
+                       FatturaDto dto) throws SQLException
+    {
+        try {
+            gestisciAnnotazioniRivalsa(dto);
+            if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
+            {
+                throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            }
+            FattureDao fattureDao = new FattureDao(jdbcTemplate);
+            FatturaDto existentDto = fattureDao.getById(dto.getId());
+            dto.setTipoFattura(existentDto.getTipoFattura());
+            if ( dto.getFlFatturaElettronica() == 1 )
+            {
+                // recupero lo stato precedente della fattura elettronica
+                if ( existentDto.getFlFatturaElettronica() != 1 )
+                {
+                    if ( utenteDto.getFatturaElettronica() == 1 )
+                    {
+                        dto.setStatoFatturaElettronica(StatoFatturaElettronica.DI);
+                    }
+                    if ( existentDto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA )
+                    {
+                        dto.setTipoFattura(TipoFattura.FATTURA);
+                    }
+                }
+                else
+                {
+                    if ( utenteDto.getFatturaElettronica() == 1 )
+                    {
+                        // Aggiorno lo stato solo se in DB è nullo (caso di migrazione o record incompleti)
+                        if (existentDto.getStatoFatturaElettronica() == null) {
+                            dto.setStatoFatturaElettronica(dto.getStatoFatturaElettronica());
+                        } else {
+                            dto.setStatoFatturaElettronica(existentDto.getStatoFatturaElettronica());
+                        }
+                    }
+                }
+            }
+            fattureDao.update(dto);
+
+            // Se è una fattura elettronica, invalido l'XML salvato nel database centrale.
+            // Questo forza la rigenerazione dell'XML corretto al prossimo invio se i dati sono stati modificati.
+            if (dto.getFlFatturaElettronica() == 1) {
+                try {
+                    String dbKey = DatabaseContextHolder.getClientDatabase();
+                    fatturaelettronicaDelegate.cancellaFatturaElettronicaCentrale(dbKey, dto.getId());
+                    _log.info("Invalidazione XML fattura elettronica centrale eseguita per ID: {}", dto.getId());
+                } catch (Exception e) {
+                    _log.warn("Impossibile cancellare l'XML centrale per la fattura {}: {}", dto.getId(), e.getMessage());
+                }
+            }
+
+            fattureDao.deleteProdottiById(dto.getId());
+            for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
+            {
+                prodottoDdtDto.setIdDocumento(dto.getId());
+                fattureDao.insertProdotto(prodottoDdtDto);
+            }
+            fattureDao.deleteSpeseIncassoById(dto.getId());
+            if ( dto.getListaSpeseIncassoFattura() != null )
+            {
+                for ( SpesaIncassoDocumentoDto spesaIncassoFatturaDto : dto.getListaSpeseIncassoFattura() )
+                {
+                    spesaIncassoFatturaDto.setIdFattura(dto.getId());
+                    fattureDao.insertSpesaIncasso(spesaIncassoFatturaDto);
+                }
+            }
+            fattureDao.deleteScadenzePagamento(dto.getId());
+            if ( dto.getListaScadenzePagamentiDocumento() != null )
+            {
+                for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+                {
+                    scadenzaPagamentoDocumentoDto.setIdDocumento(dto.getId());
+                    fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                }
+            }
+            double totale = fattureDao.getTotale(dto.getId());
+            double totalePagato = fattureDao.getTotalePagato(dto.getId());
+            fattureDao.aggiornaTotaliFattura(totale, totalePagato, dto.getId());
+        } catch (Exception e) {
+            _log.error("Errore durante l'aggiornamento della fattura {}: {}", dto.getId(), new Gson().toJson(dto), e);
+            throw e;
+        }
+    }
+
+    @Transactional(rollbackFor = Throwable.class)
     public long insert(FatturaDto dto) throws SQLException
     {
-        gestisciAnnotazioniRivalsa(dto);
-        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
-        {
-            throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
-        }
-        FattureDao fattureDao = new FattureDao(jdbcTemplate);
-        if ( (dto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA || dto.getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA) && dto.getFlFatturaElettronica() == 1 )
-        {
-            dto.setTipoFattura(TipoFattura.FATTURA);
-        }
-        long idFattura = fattureDao.insert(dto);
-        for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
-        {
-            prodottoDdtDto.setIdDocumento(idFattura);
-            fattureDao.insertProdotto(prodottoDdtDto);
-        }
-        if ( dto.getListaSpeseIncassoFattura() != null )
-        {
-            for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+        try {
+            gestisciAnnotazioniRivalsa(dto);
+            if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
             {
-                spesaIncassoDdtDto.setIdFattura(idFattura);
-                fattureDao.insertSpesaIncasso(spesaIncassoDdtDto);
+                throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
             }
-        }
-        if ( dto.getListaScadenzePagamentiDocumento() != null )
-        {
-            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+            FattureDao fattureDao = new FattureDao(jdbcTemplate);
+            if ( (dto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA || dto.getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA) && dto.getFlFatturaElettronica() == 1 )
             {
-                scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
-                fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                dto.setTipoFattura(TipoFattura.FATTURA);
             }
-        }
-        if ( dto.getIdPreventivi() != null && !dto.getIdPreventivi().isEmpty() )
-        {
-            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
-            for ( Integer idPreventivo : dto.getIdPreventivi() )
+            long idFattura = fattureDao.insert(dto);
+            for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
             {
-                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idPreventivo, ISharedConstants.TIPODOCASSOCIATO_PREVENTIVO);
+                prodottoDdtDto.setIdDocumento(idFattura);
+                fattureDao.insertProdotto(prodottoDdtDto);
             }
-        }
-        else if ( dto.getIdDdt() != null && !dto.getIdDdt().isEmpty() )
-        {
-            DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
-            for ( Integer idDdt : dto.getIdDdt() )
+            if ( dto.getListaSpeseIncassoFattura() != null )
             {
-                documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idDdt, ISharedConstants.TIPODOCASSOCIATO_DDT);
+                for ( SpesaIncassoDocumentoDto spesaIncassoDdtDto : dto.getListaSpeseIncassoFattura() )
+                {
+                    spesaIncassoDdtDto.setIdFattura(idFattura);
+                    fattureDao.insertSpesaIncasso(spesaIncassoDdtDto);
+                }
             }
+            if ( dto.getListaScadenzePagamentiDocumento() != null )
+            {
+                for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
+                {
+                    scadenzaPagamentoDocumentoDto.setIdDocumento(idFattura);
+                    fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
+                }
+            }
+            if ( dto.getIdPreventivi() != null && !dto.getIdPreventivi().isEmpty() )
+            {
+                DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+                for ( Integer idPreventivo : dto.getIdPreventivi() )
+                {
+                    documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idPreventivo, ISharedConstants.TIPODOCASSOCIATO_PREVENTIVO);
+                }
+            }
+            else if ( dto.getIdDdt() != null && !dto.getIdDdt().isEmpty() )
+            {
+                DocumentiDao documentiDao = new DocumentiDao(jdbcTemplate);
+                for ( Integer idDdt : dto.getIdDdt() )
+                {
+                    documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURA, idDdt, ISharedConstants.TIPODOCASSOCIATO_DDT);
+                }
+            }
+            double totale = fattureDao.getTotale(idFattura);
+            double totalePagato = fattureDao.getTotalePagato(idFattura);
+            fattureDao.aggiornaTotaliFattura(totale, totalePagato, idFattura);
+            return idFattura;
+        } catch (Exception e) {
+            _log.error("Errore durante l'inserimento della fattura: {}", new Gson().toJson(dto), e);
+            throw e;
         }
-        double totale = fattureDao.getTotale(idFattura);
-        double totalePagato = fattureDao.getTotalePagato(idFattura);
-        fattureDao.aggiornaTotaliFattura(totale, totalePagato, idFattura);
-        return idFattura;
     }
 
     public boolean isExistentNumero(Integer numeroDdt,
@@ -1128,88 +1226,6 @@ public class FattureDelegate extends BaseDelegate
             }
         }
         return dao.isExistentNumero(numeroDdt, particella, data, flFatturaElettronica, tipoFattura, id);
-    }
-
-    @Transactional(rollbackFor = SQLException.class)
-    public void update(UtenteDto utenteDto,
-                       FatturaDto dto) throws SQLException
-    {
-        gestisciAnnotazioniRivalsa(dto);
-        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
-        {
-            throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
-        }
-        FattureDao fattureDao = new FattureDao(jdbcTemplate);
-        FatturaDto existentDto = fattureDao.getById(dto.getId());
-        dto.setTipoFattura(existentDto.getTipoFattura());
-        if ( dto.getFlFatturaElettronica() == 1 )
-        {
-            // recupero lo stato precedente della fattura elettronica
-            if ( existentDto.getFlFatturaElettronica() != 1 )
-            {
-                if ( utenteDto.getFatturaElettronica() == 1 )
-                {
-                    dto.setStatoFatturaElettronica(StatoFatturaElettronica.DI);
-                }
-                if ( existentDto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA )
-                {
-                    dto.setTipoFattura(TipoFattura.FATTURA);
-                }
-            }
-            else
-            {
-                if ( utenteDto.getFatturaElettronica() == 1 )
-                {
-                    // Aggiorno lo stato solo se in DB è nullo (caso di migrazione o record incompleti)
-                    if (existentDto.getStatoFatturaElettronica() == null) {
-                        dto.setStatoFatturaElettronica(dto.getStatoFatturaElettronica());
-                    } else {
-                        dto.setStatoFatturaElettronica(existentDto.getStatoFatturaElettronica());
-                    }
-                }
-            }
-        }
-        fattureDao.update(dto);
-
-        // Se è una fattura elettronica, invalido l'XML salvato nel database centrale.
-        // Questo forza la rigenerazione dell'XML corretto al prossimo invio se i dati sono stati modificati.
-        if (dto.getFlFatturaElettronica() == 1) {
-            try {
-                String dbKey = DatabaseContextHolder.getClientDatabase();
-                fatturaelettronicaDelegate.cancellaFatturaElettronicaCentrale(dbKey, dto.getId());
-                _log.info("Invalidazione XML fattura elettronica centrale eseguita per ID: {}", dto.getId());
-            } catch (Exception e) {
-                _log.warn("Impossibile cancellare l'XML centrale per la fattura {}: {}", dto.getId(), e.getMessage());
-            }
-        }
-
-        fattureDao.deleteProdottiById(dto.getId());
-        for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
-        {
-            prodottoDdtDto.setIdDocumento(dto.getId());
-            fattureDao.insertProdotto(prodottoDdtDto);
-        }
-        fattureDao.deleteSpeseIncassoById(dto.getId());
-        if ( dto.getListaSpeseIncassoFattura() != null )
-        {
-            for ( SpesaIncassoDocumentoDto spesaIncassoFatturaDto : dto.getListaSpeseIncassoFattura() )
-            {
-                spesaIncassoFatturaDto.setIdFattura(dto.getId());
-                fattureDao.insertSpesaIncasso(spesaIncassoFatturaDto);
-            }
-        }
-        fattureDao.deleteScadenzePagamento(dto.getId());
-        if ( dto.getListaScadenzePagamentiDocumento() != null )
-        {
-            for ( ScadenzaPagamentoDocumentoDto scadenzaPagamentoDocumentoDto : dto.getListaScadenzePagamentiDocumento() )
-            {
-                scadenzaPagamentoDocumentoDto.setIdDocumento(dto.getId());
-                fattureDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
-            }
-        }
-        double totale = fattureDao.getTotale(dto.getId());
-        double totalePagato = fattureDao.getTotalePagato(dto.getId());
-        fattureDao.aggiornaTotaliFattura(totale, totalePagato, dto.getId());
     }
 
     @Transactional(rollbackFor = Throwable.class)

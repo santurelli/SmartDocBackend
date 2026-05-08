@@ -660,7 +660,7 @@ public class FattureDao extends BaseDao
         }
         catch ( DataAccessException | ParseException e )
         {
-            _log.error("Errore nell'inserimento della fattura", e);
+            _log.error("Errore nell'inserimento della fattura (numero: {}, data: {})", dto.getNumDocumento(), dto.getDataDocumento(), e);
             throw new SQLException(e);
         }
     }
@@ -699,7 +699,7 @@ public class FattureDao extends BaseDao
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nll'inserimento della spesa di incasso per la fattura {}", dto.getIdFattura(), e);
+            _log.error("Errore nell'inserimento della spesa di incasso per la fattura {}", dto.getIdFattura(), e);
             throw new SQLException(e);
         }
     }

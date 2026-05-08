@@ -47,6 +47,8 @@ import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
 import it.tinna.smartdoc.server.dao.divisioni.DivisioniDao;
 import it.tinna.smartdoc.server.dao.documenti.FattureDao;
 import it.tinna.smartdoc.server.dao.documenti.NoteCreditoDao;
+import it.tinna.smartdoc.server.dao.listini.ListiniDao;
+
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
 import it.tinna.smartdoc.server.dao.progetti.ProgettiDao;
@@ -760,6 +762,10 @@ public class NoteCreditoDelegate extends BaseDelegate
         map.put(ISharedConstants.COMBOSMAP_KEY_DIVISIONI, divisioniDao.getListForCombo());
         String particelleAsString = configurazioneDao.getByKey(ISharedConstants.CONFIG_DOMAIN_DOCUMENTI, ISharedConstants.CONFIG_KEY_PARTICELLE);
         map.put(ISharedConstants.COMBOSMAP_KEY_PARTICELLE, StringUtils.split(particelleAsString, StringUtils.CR + StringUtils.LF));
+        
+        ListiniDao listiniDao = new ListiniDao(jdbcTemplate);
+        map.put(ISharedConstants.COMBOSMAP_KEY_LISTINI, listiniDao.getListForCombo());
+
         return map;
     }
 
