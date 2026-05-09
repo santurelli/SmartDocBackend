@@ -8,7 +8,8 @@ public enum NaturaEsenzioneEnum
  ESENTI("Esenti"),
  REGIME("Regime del margine"),
  INVERSIONE("Inversione contabile"),
- IVA_UE("Iva assolta in altro stato UE");
+ IVA_UE("Iva assolta in altro stato UE"),
+ NON_SOGGETTE_ALTRI("Non soggette - altri casi");
 
     private String descrizione;
 

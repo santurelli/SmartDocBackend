@@ -22,6 +22,7 @@ import it.tinna.smartdoc.server.dao.documenti.FattureDao;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
+import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
 
 /**
  * Unit test to verify that the article quantity update logic (stock decrease) 
@@ -35,9 +36,17 @@ public class FattureQuantitaDelegateTest {
     @Mock
     private JdbcTemplate jdbcTemplate;
 
+    @Mock
+    private ConfigurazioneDelegate configurazioneDelegate;
+
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws Exception {
         MockitoAnnotations.openMocks(this);
+        // Skip automatic revenue stamp logic in this test
+        org.mockito.Mockito.when(configurazioneDelegate.getByKey(
+            it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_DOMAIN_DOCUMENTI,
+            it.tinna.smartdoc.shared.constants.ISharedConstants.CONFIG_KEY_ABILITA_BOLLO_AUTOMATICO
+        )).thenReturn("0");
     }
 
     @Test

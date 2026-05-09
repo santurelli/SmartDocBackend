@@ -16,8 +16,6 @@ public class MovimentiDocumentoDto extends BaseDto
     @Expose
     private String                     denominazioneCliente;
 
-    private boolean                    checked;
-
     @Expose
     private String                     dataDocumento;
 
@@ -193,21 +191,9 @@ public class MovimentiDocumentoDto extends BaseDto
         return totalePagato;
     }
 
-    @Override
-    public boolean isChecked()
-    {
-        return checked;
-    }
-
     public void setAgente(String agente)
     {
         this.agente = agente;
-    }
-
-    @Override
-    public void setChecked(boolean checked)
-    {
-        this.checked = checked;
     }
 
     public void setDataDocumento(String dataDocumento)

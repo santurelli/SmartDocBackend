@@ -124,8 +124,6 @@ public class DocumentoDto extends BaseDto
     @Expose
     private String                              luogoDestinazione;
 
-    private boolean                             checked;
-
     @Expose
     private String                              cig;
 
@@ -202,6 +200,7 @@ public class DocumentoDto extends BaseDto
 
     private String                              descVettore;
 
+    @Expose
     private String                              dtLiquidazioneProvvigione;
 
     @ToString.Include
@@ -346,8 +345,10 @@ public class DocumentoDto extends BaseDto
     @SerializedName("progetto")
     private ProgettoDto                         progettoDto;
 
+    @Expose
     private String                              progFileFatturaElettronica;
 
+    @Expose
     private Integer                             progInvioFatturaElettronica;
 
     @Expose
@@ -368,6 +369,7 @@ public class DocumentoDto extends BaseDto
     @Expose
     private String                              targa;
 
+    @Expose
     private String                              tipoComunicazione;
 
     private String                              tipoDocumento;

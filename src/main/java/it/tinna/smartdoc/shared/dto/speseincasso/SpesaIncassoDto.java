@@ -6,8 +6,6 @@ import it.tinna.smartdoc.shared.dto.BaseDto;
 public class SpesaIncassoDto extends BaseDto
 {
 
-    private boolean checked;
-
     private String  codiceIva;
 
     private String  descrizione;
@@ -41,16 +39,6 @@ public class SpesaIncassoDto extends BaseDto
     public Integer getTrasporto()
     {
         return trasporto;
-    }
-
-    public boolean isChecked()
-    {
-        return checked;
-    }
-
-    public void setChecked(boolean checked)
-    {
-        this.checked = checked;
     }
 
     public void setCodiceIva(String codiceIva)

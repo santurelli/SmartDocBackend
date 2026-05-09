@@ -13,7 +13,6 @@ import lombok.Setter;
 public class SpesaIncassoDocumentoDto extends BaseDto {
 
     private AliquotaIvaDto aliquotaIvaDto;
-    private boolean checked;
     private String descrizione;
     private long idFattura;
     private Integer idSpesaIncasso;

@@ -968,6 +968,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
             case IVA_UE:
                 return "N7";
 
+            case NON_SOGGETTE_ALTRI:
+                return "N2.2";
+
         }
 
         return null;
@@ -1001,6 +1004,9 @@ public class SdiFormatter extends XmlFieldFormatterBase
 
         if ( "N7".equals(value) )
             return NaturaEsenzioneEnum.IVA_UE;
+
+        if ( "N2.2".equals(value) )
+            return NaturaEsenzioneEnum.NON_SOGGETTE_ALTRI;
 
         return null;
     }

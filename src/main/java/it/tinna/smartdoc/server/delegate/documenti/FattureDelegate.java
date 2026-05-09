@@ -1066,6 +1066,7 @@ public class FattureDelegate extends BaseDelegate
     {
         try {
             gestisciAnnotazioniRivalsa(dto);
+            gestisciBolloAutomatico(dto);
             if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
             {
                 throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
@@ -1152,6 +1153,7 @@ public class FattureDelegate extends BaseDelegate
     {
         try {
             gestisciAnnotazioniRivalsa(dto);
+            gestisciBolloAutomatico(dto);
             if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
             {
                 throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
@@ -1451,6 +1453,80 @@ public class FattureDelegate extends BaseDelegate
                 dto.setCausale(testoRivalsa);
             } else if (!dto.getCausale().contains(testoRivalsa)) {
                 dto.setCausale(dto.getCausale() + "\n" + testoRivalsa);
+            }
+        }
+    }
+
+    private void gestisciBolloAutomatico(FatturaDto dto) throws SQLException {
+        String abilitaBollo = configurazioneDelegate.getByKey(ISharedConstants.CONFIG_DOMAIN_FATTURAZIONE, ISharedConstants.CONFIG_KEY_ABILITA_BOLLO_AUTOMATICO);
+        if (!"1".equals(abilitaBollo)) {
+            return;
+        }
+
+        double sogliaBollo = 77.47;
+        double totaleEsente = 0;
+        AliquoteIvaDao aiDao = new AliquoteIvaDao(jdbcTemplate);
+        
+        // Calcolo totale esente
+        for (ProdottoDocumentoDto p : dto.getProdotti()) {
+            if (p.isProdotto() || p.isFuoriMagazzino()) {
+                AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
+                if (ai != null && (ai.getImposta() == null || ai.getImposta() == 0)) {
+                    totaleEsente += (p.getTotaleSenzaIva() != null ? p.getTotaleSenzaIva() : 0);
+                }
+            }
+        }
+
+        boolean bolloGiaPresente = false;
+        ProdottoDocumentoDto rigaBollo = null;
+        for (ProdottoDocumentoDto p : dto.getProdotti()) {
+            if (p.isFuoriMagazzino()) {
+                // Controllo primario su codice tecnico o secondario su descrizione + natura
+                boolean isBolloByCode = "BOLLO_SISTEMA".equals(p.getFmCodice());
+                boolean isBolloByDesc = p.getFmDescrizione() != null && p.getFmDescrizione().toUpperCase().contains("BOLLO");
+                
+                if (isBolloByCode || isBolloByDesc) {
+                    AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
+                    if (ai != null && "N2.2".equals(ai.getClasse())) {
+                        bolloGiaPresente = true;
+                        rigaBollo = p;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (totaleEsente > sogliaBollo) {
+            if (!bolloGiaPresente) {
+                // Aggiunta riga bollo
+                ProdottoDocumentoDto pBollo = new ProdottoDocumentoDto();
+                pBollo.setProdotto(true);
+                pBollo.setFuoriMagazzino(true);
+                pBollo.setFmCodice("BOLLO_SISTEMA");
+                pBollo.setFmDescrizione("Bollo in fattura");
+                pBollo.setQuantita(1.0);
+                pBollo.setPrezzo(2.00);
+                pBollo.setTotaleSenzaIva(2.00);
+                pBollo.setPrezzoImponibile(2.00);
+                
+                // Cerchiamo un'aliquota N1 o comunque esente per il bollo
+                List<AliquotaIvaDto> aliquote = aiDao.getListForCombo();
+                AliquotaIvaDto aiBollo = aliquote.stream()
+                    .filter(a -> "N2.2".equals(a.getClasse()) || (a.getImposta() == 0 && a.getDescrizione().toUpperCase().contains("BOLLO")))
+                    .findFirst()
+                    .orElse(aliquote.stream().filter(a -> a.getImposta() == 0).findFirst().orElse(null));
+                
+                if (aiBollo != null) {
+                    pBollo.setIdAliquotaIva((int) aiBollo.getId());
+                    dto.getProdotti().add(pBollo);
+                    _log.info("Aggiunto bollo automatico di 2€ alla fattura (totale esente: {})", totaleEsente);
+                }
+            }
+        } else {
+            if (bolloGiaPresente && rigaBollo != null) {
+                // Se il totale è sceso sotto la soglia, rimuoviamo il bollo automatico
+                dto.getProdotti().remove(rigaBollo);
+                _log.info("Rimosso bollo automatico (totale esente: {} < 77.47)", totaleEsente);
             }
         }
     }

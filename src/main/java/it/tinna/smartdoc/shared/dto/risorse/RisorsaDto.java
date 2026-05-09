@@ -36,7 +36,6 @@ public class RisorsaDto extends BaseDto {
 	private String abi;
 	private String cab;
 	private String bic;
-	private boolean checked;
 	private String cin;
 	@Expose
 	private String codSia;
@@ -114,11 +113,6 @@ public class RisorsaDto extends BaseDto {
 		return tipologia;
 	}
 
-	@Override
-	public boolean isChecked() {
-		return checked;
-	}
-
 	public void setAbi(String abi) {
 		this.abi = abi;
 	}
@@ -129,11 +123,6 @@ public class RisorsaDto extends BaseDto {
 
 	public void setCab(String cab) {
 		this.cab = cab;
-	}
-
-	@Override
-	public void setChecked(boolean checked) {
-		this.checked = checked;
 	}
 
 	public void setCin(String cin) {

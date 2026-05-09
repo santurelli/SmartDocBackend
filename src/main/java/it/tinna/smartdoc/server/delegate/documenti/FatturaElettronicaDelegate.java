@@ -1,5 +1,55 @@
 package it.tinna.smartdoc.server.delegate.documenti;
 
+import it.tinna.smartdoc.batch.dto.NotificaFatturaDto;
+import it.tinna.smartdoc.batch.enums.ConfigurazioneDomain;
+import it.tinna.smartdoc.batch.enums.ConfigurazioneKey;
+import it.tinna.smartdoc.server.constants.*;
+import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
+import it.tinna.smartdoc.server.dao.configurazione.ConfigurazioneDao;
+import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
+import it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao;
+import it.tinna.smartdoc.server.dao.documenti.FattureDao;
+import it.tinna.smartdoc.server.dao.tipipagamento.TipiPagamentoDao;
+import it.tinna.smartdoc.server.delegate.BaseDelegate;
+import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.ErroreType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.NotificaMancataConsegnaType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.NotificaScartoType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.RicevutaConsegnaType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.quadratura.v2_0.jaxbClass.EsitoFTPType;
+import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.*;
+import it.tinna.smartdoc.server.xml.sdi.SdiFormatter;
+import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
+import it.tinna.smartdoc.shared.dto.clienti.TipologiaClienteFornitore;
+import it.tinna.smartdoc.shared.dto.configurazione.ConfigurazioneDto;
+import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
+import it.tinna.smartdoc.shared.dto.documenti.*;
+import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
+import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.util.JAXBSource;
+import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.time.FastDateFormat;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
+
+import javax.xml.XMLConstants;
+import javax.xml.transform.Source;
+import javax.xml.transform.stream.StreamSource;
+import javax.xml.validation.Schema;
+import javax.xml.validation.SchemaFactory;
+import javax.xml.validation.Validator;
 import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -13,101 +63,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-
-import javax.xml.XMLConstants;
-import jakarta.xml.bind.JAXBContext;
-import jakarta.xml.bind.JAXBElement;
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.Marshaller;
-import jakarta.xml.bind.util.JAXBSource;
-import javax.xml.transform.Source;
-import javax.xml.transform.stream.StreamSource;
-import javax.xml.validation.Schema;
-import javax.xml.validation.SchemaFactory;
-import javax.xml.validation.Validator;
-
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.time.FastDateFormat;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.Resource;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
-import org.xml.sax.SAXException;
-import org.springframework.web.multipart.MultipartFile;
-import jakarta.xml.bind.Unmarshaller;
-import java.io.InputStream;
-
-import it.tinna.smartdoc.batch.dto.NotificaFatturaDto;
-import it.tinna.smartdoc.batch.enums.ConfigurazioneDomain;
-import it.tinna.smartdoc.batch.enums.ConfigurazioneKey;
-import it.tinna.smartdoc.server.constants.EsigibilitaIvaEnum;
-import it.tinna.smartdoc.server.constants.FormatoTrasmissioneEnum;
-import it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum;
-import it.tinna.smartdoc.server.constants.NaturaEsenzioneEnum;
-import it.tinna.smartdoc.server.constants.RegimeFiscaleEnum;
-import it.tinna.smartdoc.server.constants.TipoDocumentoEnum;
-import it.tinna.smartdoc.server.constants.TipoPagamentoEnum;
-import it.tinna.smartdoc.server.constants.TipoRitenutaEnum;
-import it.tinna.smartdoc.server.constants.CausalePagamentoEnum;
-import it.tinna.smartdoc.server.constants.TipoScontoDocumentoEnum;
-import it.tinna.smartdoc.server.constants.TipoCassaEnum;
-import it.tinna.smartdoc.server.xml.sdi.SdiFormatter;
-import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
-import it.tinna.smartdoc.server.dao.configurazione.ConfigurazioneDao;
-import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
-import it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao;
-import it.tinna.smartdoc.server.dao.documenti.FattureDao;
-import it.tinna.smartdoc.server.dao.tipipagamento.TipiPagamentoDao;
-import it.tinna.smartdoc.server.delegate.BaseDelegate;
-import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.ErroreType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.NotificaMancataConsegnaType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.NotificaScartoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.RicevutaConsegnaType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.quadratura.v2_0.jaxbClass.EsitoFTPType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.AnagraficaType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.CedentePrestatoreType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.CessionarioCommittenteType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiAnagraficiCedenteType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiAnagraficiCessionarioType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiBeniServiziType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiDocumentiCorrelatiType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiGeneraliDocumentoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiGeneraliType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiPagamentoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRiepilogoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiRitenutaType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiTrasmissioneType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DatiCassaPrevidenzialeType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioLineeType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.DettaglioPagamentoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.FatturaElettronicaBodyType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.FatturaElettronicaHeaderType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.FatturaElettronicaType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.IdFiscaleType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.IndirizzoType;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.ObjectFactory;
-import it.tinna.smartdoc.server.xml.fattura.sdi.v1_2.jaxbClass.ScontoMaggiorazioneType;
-import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
-import it.tinna.smartdoc.shared.dto.clienti.TipologiaClienteFornitore;
-import it.tinna.smartdoc.shared.dto.configurazione.ConfigurazioneDto;
-import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
-import it.tinna.smartdoc.shared.dto.documenti.EsitoSdiDto;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaDto;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
-import it.tinna.smartdoc.shared.dto.documenti.NotaCreditoDto;
-import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
-import it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica;
-import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
-import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
-import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
-import it.tinna.smartdoc.shared.dto.tipipagamento.TipoPagamentoDto;
-import it.tinna.smartdoc.server.xml.sdi.SdiFormatter;
 
 @Service(value = "fatturaelettronicaDelegate")
 public class FatturaElettronicaDelegate extends BaseDelegate
@@ -466,6 +421,30 @@ public class FatturaElettronicaDelegate extends BaseDelegate
             {
                 datiGeneraliDocumento.getCausale().add(dto.getCausale());
             }
+
+            // 2.1.1.6 DatiBollo
+            boolean hasBollo = false;
+            for (ProdottoDocumentoDto p : dto.getProdotti()) {
+                if (p.isFuoriMagazzino()) {
+                    // Controllo primario su codice tecnico o secondario su descrizione + natura
+                    boolean isBolloByCode = "BOLLO_SISTEMA".equals(p.getFmCodice());
+                    boolean isBolloByDesc = p.getFmDescrizione() != null && p.getFmDescrizione().toUpperCase().contains("BOLLO");
+                    
+                    if (isBolloByCode || isBolloByDesc) {
+                        AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
+                        if (ai != null && "N2.2".equals(ai.getClasse())) {
+                            hasBollo = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (hasBollo) {
+                DatiBolloType datiBollo = new DatiBolloType();
+                datiBollo.setBolloVirtuale(true);
+                datiBollo.setImportoBollo(2.00);
+                datiGeneraliDocumento.setDatiBollo(datiBollo);
+            }
             // Gestione Scontrino
             if ( dto instanceof FatturaDto )
             {
@@ -592,7 +571,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     dettaglioLinea.setAliquotaIVA(aiDto.getImposta());
                     if ( aiDto.getImposta().equals(0d) )
                     {
-                        dettaglioLinea.setNatura(NaturaEsenzioneEnum.valueOf(aiDto.getClasse()));
+                        dettaglioLinea.setNatura(SdiFormatter.parseNaturaEsenzione(aiDto.getClasse()));
                     }
                     
                     if ( dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1 )
@@ -710,7 +689,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 datiRiepilogo.setAliquotaIVA(riepilogoDto.getAliquotaIva());
                 if ( riepilogoDto.getAliquotaIva().equals(0d) )
                 {
-                    datiRiepilogo.setNatura(NaturaEsenzioneEnum.valueOf(riepilogoDto.getTipologiaIva()));
+                    datiRiepilogo.setNatura(SdiFormatter.parseNaturaEsenzione(riepilogoDto.getTipologiaIva()));
                 }
                 datiRiepilogo.setImponibileImporto(riepilogoDto.getTotaleImponibile());
                 datiRiepilogo.setImposta(BigDecimal.valueOf(riepilogoDto.getAliquotaIva()).multiply(BigDecimal.valueOf(riepilogoDto.getTotaleImponibile())).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
