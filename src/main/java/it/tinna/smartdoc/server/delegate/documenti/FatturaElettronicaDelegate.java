@@ -432,7 +432,8 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                     
                     if (isBolloByCode || isBolloByDesc) {
                         AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
-                        if (ai != null && "N2.2".equals(ai.getClasse())) {
+                        // Verifichiamo che sia un'aliquota con imposta zero
+                        if (ai != null && (ai.getImposta() == null || ai.getImposta() == 0)) {
                             hasBollo = true;
                             break;
                         }
