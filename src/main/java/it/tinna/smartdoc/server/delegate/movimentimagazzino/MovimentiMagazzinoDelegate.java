@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.prodotti.MovimentiMagazzinoDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
@@ -15,6 +16,7 @@ import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 import java.util.List;
 
 
+@Transactional(readOnly = true)
 @Service
 public class MovimentiMagazzinoDelegate extends BaseDelegate {
 

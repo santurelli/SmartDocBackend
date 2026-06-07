@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.login.LoginDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
@@ -12,6 +13,7 @@ import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 
+@Transactional(readOnly = true)
 @Service(value = "loginDelegate")
 public class LoginDelegate extends BaseDelegate {
 

@@ -49,7 +49,10 @@ import org.springframework.web.client.RestTemplate;
 
 import it.tinna.smartdoc.batch.constants.BatchConstants;
 import it.tinna.smartdoc.server.constants.TipoDocumentoEnum;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
+import it.tinna.smartdoc.server.delegate.documenti.FattureFornitoreDelegate;
+import it.tinna.smartdoc.server.delegate.documenti.NoteCreditoFornitoreDelegate;
 import it.tinna.smartdoc.server.delegate.municipality.MunicipalityDelegate;
 import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.MetadatiInvioFileType;
 import it.tinna.smartdoc.server.xml.fattura.sdi.messaggitypes.v1_1.jaxbClass.NotificaMancataConsegnaType;
@@ -85,11 +88,11 @@ public class EsitiSdiWriter implements ItemStreamWriter<File>, StepExecutionList
 
     private List<FatturaDto>           fatture;
 
-    @Setter
-    private String                     urlImportFattureFornitore;
+    @Autowired
+    private FattureFornitoreDelegate   fattureFornitoreDelegate;
 
-    @Setter
-    private String                     urlImportNoteCreditoFornitore;
+    @Autowired
+    private NoteCreditoFornitoreDelegate noteCreditoFornitoreDelegate;
 
     @Override
     public ExitStatus afterStep(StepExecution stepExecution)
@@ -140,43 +143,21 @@ public class EsitiSdiWriter implements ItemStreamWriter<File>, StepExecutionList
                         MunicipalityDto aziendaDto = municipalityDelegate.getByPartitaIva(partitaIva);
                         if ( aziendaDto != null )
                         {
-                            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-                            ByteArrayResource contentsAsResource = new ByteArrayResource(FileUtils.readFileToByteArray(fileFirmaVerificata))
-                            {
-                                @Override
-                                public String getFilename()
+                            byte[] fileBytes = FileUtils.readFileToByteArray(fileFirmaVerificata);
+                            DatabaseContextHolder.set(aziendaDto.getDbName());
+                            try {
+                                if ( tipoDocumento == TipoDocumentoEnum.NOTA_CREDITO )
                                 {
-                                    return FilenameUtils.getBaseName(nomeFile); // Filename has to be returned in order to be able to post.
+                                    noteCreditoFornitoreDelegate.importFromSdi(fileBytes);
                                 }
-                            };
-                            body.add("file", contentsAsResource);
-                            body.add("dbKey", aziendaDto.getDbName());
-
-                            HttpHeaders headers = new HttpHeaders();
-                            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-                            RestTemplate restTemplate = new RestTemplate();
-                            HttpEntity<MultiValueMap<String, Object>> requestEntity = new HttpEntity<>(body, headers);
-                            if ( tipoDocumento == TipoDocumentoEnum.NOTA_CREDITO )
-                            {
-                                try
+                                else
                                 {
-                                    restTemplate.exchange(urlImportNoteCreditoFornitore, HttpMethod.POST, requestEntity, String.class);
+                                    fattureFornitoreDelegate.importFromSdi(fileBytes);
                                 }
-                                catch ( RestClientException e )
-                                {
-                                    logger.error("Errore nella chiamata al servizio di salvataggio della nota credito fornitore", e);
-                                }
-                            }
-                            else
-                            {
-                                try
-                                {
-                                    restTemplate.exchange(urlImportFattureFornitore, HttpMethod.POST, requestEntity, String.class);
-                                }
-                                catch ( RestClientException e )
-                                {
-                                    logger.error("Errore nella chiamata al servizio di salvataggio della fattura fornitore", e);
-                                }
+                            } catch (Exception e) {
+                                logger.error("Errore nell'importazione da SDI del documento fornitore", e);
+                            } finally {
+                                DatabaseContextHolder.clear();
                             }
                         }
                         else

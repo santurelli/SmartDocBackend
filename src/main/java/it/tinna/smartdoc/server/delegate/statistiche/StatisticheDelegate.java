@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.clienti.ClientiDao;
 import it.tinna.smartdoc.server.dao.documenti.DocumentiDao;
@@ -21,6 +22,7 @@ import it.tinna.smartdoc.shared.dto.statistiche.StatisticaDto;
 import it.tinna.smartdoc.shared.dto.statistiche.StatisticaPagamentoDto;
 import it.tinna.smartdoc.shared.dto.statistiche.TipoRaggruppamento;
 
+@Transactional(readOnly = true)
 @Service(value = "statisticheDelegate")
 public class StatisticheDelegate extends BaseDelegate
 {

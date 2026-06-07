@@ -17,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 import it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum;
 import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
+import it.tinna.smartdoc.server.delegate.aliquoteiva.AliquoteIvaDelegate;
 import it.tinna.smartdoc.server.delegate.clienti.ClientiDelegate;
 import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
 import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
+import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
 import it.tinna.smartdoc.shared.dto.clienti.TipologiaClienteFornitore;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
@@ -41,6 +43,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
     private final FattureDelegate fattureDelegate;
     private final FatturaElettronicaDelegate fatturaElettronicaDelegate;
     private final ClientiDelegate clientiDelegate;
+    private final AliquoteIvaDelegate aliquoteIvaDelegate;
 
     @Transactional(rollbackFor = Throwable.class)
     public ExternalResponseDto processaFatturaFastOrder(String nomeStore, it.tinna.smartdoc.shared.dto.external.fastorder.FatturaDto externalFattura) throws Exception {
@@ -325,6 +328,10 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             log.info("Fattura auto-impostata come SEMPLIFICATA (TD07) causa dati indirizzo mancanti e totale < 400€");
         }
         
+        // Numero e data scontrino da FastOrder
+        feDto.setNumeroScontrino(extFattura.getNumScontrino() > 0 ? extFattura.getNumScontrino() : null);
+        feDto.setDataScontrino(extFattura.getDtScontrino());
+
         Double scontoPerc = extFattura.getPagamentoComandaDto().getSconto();
         if (scontoPerc != null && Double.isFinite(scontoPerc) && scontoPerc > 0) {
             feDto.setSconto(String.valueOf(scontoPerc));
@@ -347,10 +354,8 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
                 pdDto.setNota(desc); 
                 pdDto.setQuantita(Double.valueOf(extPiatto.getQuantita()));
                 
-                // Mappatura IVA (semplificata come da legacy reader)
-                if (extPiatto.getIva().equals(4d)) pdDto.setIdAliquotaIva(11);
-                else if (extPiatto.getIva().equals(22d)) pdDto.setIdAliquotaIva(6);
-                else pdDto.setIdAliquotaIva(1); // Default 10%
+                // Mappatura IVA: lookup dinamico per non dipendere da ID hardcoded che variano per tenant
+                pdDto.setIdAliquotaIva(resolveAliquotaIvaId(extPiatto.getIva()));
                 
                 // Prezzo ivato (pieno, lo sconto è gestito a livello di testata)
                 BigDecimal prezzoConIva = BigDecimal.valueOf(extPiatto.getPrezzo());
@@ -377,8 +382,9 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             pdDto.setFmDescrizione(StringUtils.defaultIfBlank(extFattura.getTestoModelloStampa(), "Dettaglio Fattura").replaceAll("\\n", " "));
             pdDto.setFmDescrizione(StringUtils.left(pdDto.getFmDescrizione(), 1000));
             pdDto.setQuantita(1d);
-            pdDto.setIdAliquotaIva(1);
-            
+            int idAliquota10 = resolveAliquotaIvaId(10d);
+            pdDto.setIdAliquotaIva(idAliquota10);
+
             BigDecimal prezzoConIva = BigDecimal.valueOf(feDto.getTotale());
             BigDecimal prezzoSenzaIva = prezzoConIva.divide(BigDecimal.valueOf(1.1), 2, RoundingMode.HALF_UP); // Default 10%
             pdDto.setPrezzo(prezzoSenzaIva.doubleValue());
@@ -401,5 +407,25 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         feDto.setListaScadenzePagamentiDocumento(List.of(scadenzaDto));
 
         return feDto;
+    }
+
+    private int resolveAliquotaIvaId(double percentuale) {
+        try {
+            List<AliquotaIvaDto> lista = aliquoteIvaDelegate.getByAliquota(percentuale);
+            if (lista != null && !lista.isEmpty()) {
+                return (int) lista.get(0).getId();
+            }
+            // fallback: cerca al 10% se la percentuale richiesta non esiste
+            if (percentuale != 10d) {
+                lista = aliquoteIvaDelegate.getByAliquota(10d);
+                if (lista != null && !lista.isEmpty()) {
+                    log.warn("Aliquota IVA {}% non trovata, uso fallback al 10%", percentuale);
+                    return (int) lista.get(0).getId();
+                }
+            }
+        } catch (Exception e) {
+            log.error("Errore nel recupero aliquota IVA per percentuale {}", percentuale, e);
+        }
+        throw new IllegalStateException("Nessuna aliquota IVA trovata per percentuale " + percentuale + "% nel database corrente");
     }
 }

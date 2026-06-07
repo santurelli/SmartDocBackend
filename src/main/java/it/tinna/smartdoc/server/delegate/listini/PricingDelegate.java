@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.listini.ListiniDao;
 import it.tinna.smartdoc.server.dao.prodotti.PrezziProdottiDao;
@@ -16,6 +17,7 @@ import it.tinna.smartdoc.shared.dto.listini.ListinoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.PrezzoProdottoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 
+@Transactional(readOnly = true)
 @Service
 public class PricingDelegate extends BaseDelegate {
 

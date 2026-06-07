@@ -246,7 +246,6 @@
 			FROM d_e_aliquoteiva
 		   WHERE imposta = ?
 		     AND fl_deleted = 0
-		     AND indetraibilita IS NULL
 		</content>
 	</query>
 	<query name="ALIQUOTEIVA_U01">
@@ -2023,6 +2022,17 @@
 			 WHERE progressivo_file = ?
 		</content>
 	</query>
+	<query name="FATTURAELETTRONICA_S04B">
+		<content delimiterParsingDisabled="true">
+			SELECT db_key         AS dbKey,
+			       k_d_e_fatture  AS idFattura,
+			       tipo_esito_sdi AS tipoEsito,
+			       tipo_documento AS tipoDocumento
+			  FROM d_e_fatture_elettroniche
+			 WHERE progressivo_file = ?
+			 LIMIT 1
+		</content>
+	</query>
 	<query name="FATTURAELETTRONICA_S05">
 		<content delimiterParsingDisabled="true">
 			SELECT COUNT(*)
@@ -2119,6 +2129,13 @@
 			 WHERE k_d_e_fatture = ?
 		</content>
 	</query>
+	<query name="FATTURAELETTRONICA_U01B">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_notecredito
+			   SET stato_fattura_elettronica = ?
+			 WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
 	<query name="FATTURAELETTRONICA_U02">
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_supporti_inviati
@@ -2156,7 +2173,8 @@
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_fatture_elettroniche
 			   SET progressivo_file = ?,
-			   	   k_d_e_supporti_inviati = ?
+			   	   k_d_e_supporti_inviati = ?,
+			   	   dt_invio_sdi = NOW()
 			 WHERE k_d_e_fatture_elettroniche = ?
 		</content>
 	</query>

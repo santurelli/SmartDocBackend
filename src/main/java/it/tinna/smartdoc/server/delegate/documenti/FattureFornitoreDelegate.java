@@ -75,6 +75,7 @@ import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
 import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
+import it.tinna.smartdoc.shared.dto.documenti.DocumentiListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaFornitoreDto;
 import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
@@ -101,6 +102,7 @@ import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 @Service(value = "fattureFornitoreDelegate")
+@Transactional(readOnly = true)
 public class FattureFornitoreDelegate extends BaseDelegate
 {
 
@@ -722,10 +724,30 @@ public class FattureFornitoreDelegate extends BaseDelegate
     {
         FattureFornitoreDao dao = new FattureFornitoreDao(jdbcTemplate);
         List<FatturaFornitoreDto> list = dao.getList(idFornitore, dtFrom, dtTo, numeroDocumento, dtRegistrazioneFrom, dtRegistrazioneTo, numeroRegistrazione, stato, length, start, orderColumn, orderDir);
-        DatatablesResponseDto<FatturaFornitoreDto> dto = new DatatablesResponseDto<>();
-        dto.setTotalCount(list == null || list.isEmpty() ? 0 : list.get(0).getTotal());
-        dto.setTotalFiltered(dto.getTotalCount());
-        dto.setList(list);
+        DocumentiListResponse<FatturaFornitoreDto> dto = new DocumentiListResponse<>();
+        BigDecimal totFatturato = BigDecimal.ZERO;
+        BigDecimal totDaSaldare = BigDecimal.ZERO;
+        BigDecimal totSaldato = BigDecimal.ZERO;
+        for ( FatturaFornitoreDto mdDto : list )
+        {
+            if ( mdDto.getTotale() != null )
+            {
+                totFatturato = totFatturato.add(BigDecimal.valueOf(mdDto.getTotale()));
+            }
+            if ( mdDto.getTotaleDaPagare() != null )
+            {
+                totDaSaldare = totDaSaldare.add(BigDecimal.valueOf(mdDto.getTotaleDaPagare()));
+            }
+            if ( mdDto.getTotalePagato() != null )
+            {
+                totSaldato = totSaldato.add(BigDecimal.valueOf(mdDto.getTotalePagato()));
+            }
+        }
+        dto.setTotalCount(list.isEmpty() ? 0l : (long) list.get(0).getTotal());
+        dto.setTotalFiltered(list.isEmpty() ? 0l : (long) list.get(0).getTotal());
+        dto.setTotFatturato(totFatturato.doubleValue());
+        dto.setTotDaSaldare(totDaSaldare.doubleValue());
+        dto.setTotSaldato(totSaldato.doubleValue());
         dto.setList(list);
         return dto;
     }
@@ -748,6 +770,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
         return dao.getUltimeFatture();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void importFromSdi(byte[] fileFatturaElettronica) throws SQLException
     {
         FastDateFormat fastFormat = FastDateFormat.getInstance("dd/MM/yyyy");

@@ -35,6 +35,7 @@ import it.tinna.smartdoc.shared.dto.documenti.SpesaIncassoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 
 @Service
+@Transactional(readOnly = true)
 public class DdtDelegate extends BaseDelegate {
 
     @Autowired

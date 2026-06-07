@@ -31,6 +31,7 @@ import it.tinna.smartdoc.shared.dto.template.RiepilogoIvaDto;
 import it.tinna.smartdoc.shared.dto.template.confordine.ConfOrdineTemplate;
 
 @Service
+@Transactional(readOnly = true)
 public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDelegate {
 
     @Autowired

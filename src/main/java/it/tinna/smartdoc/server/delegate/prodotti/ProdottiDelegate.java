@@ -1,5 +1,7 @@
 package it.tinna.smartdoc.server.delegate.prodotti;
 
+import org.springframework.transaction.annotation.Transactional;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +19,7 @@ import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.shared.dto.prodotti.PrezzoProdottoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 
+@Transactional(readOnly = true)
 @Service
 public class ProdottiDelegate extends BaseDelegate {
 
@@ -43,15 +46,17 @@ public class ProdottiDelegate extends BaseDelegate {
     public Map<String, Object> getCombosMap() throws SQLException {
         return prodottiDao.getCombosMap();
     }
-    
-     public boolean isExistentCodice(String codice, Integer id) throws SQLException {
+
+    public boolean isExistentCodice(String codice, Integer id) throws SQLException {
         return prodottiDao.isExistentCodice(codice, id);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public long insert(ProdottoDto dto) throws SQLException {
         return prodottiDao.insert(dto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(ProdottoDto dto) throws SQLException {
         prodottiDao.update(dto);
     }
@@ -60,6 +65,7 @@ public class ProdottiDelegate extends BaseDelegate {
         return prodottiDao.getProssimoCodice();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(long id, Object user) throws SQLException {
         prodottiDao.delete(id, user);
     }
@@ -72,6 +78,7 @@ public class ProdottiDelegate extends BaseDelegate {
         return prezziProdottiDao.getByIdProdotto(idProdotto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void savePrezzi(long idProdotto, List<PrezzoProdottoDto> prezzi) throws SQLException {
         prezziProdottiDao.deleteByIdProdotto(idProdotto);
         for (PrezzoProdottoDto dto : prezzi) {
@@ -82,4 +89,3 @@ public class ProdottiDelegate extends BaseDelegate {
         }
     }
 }
-

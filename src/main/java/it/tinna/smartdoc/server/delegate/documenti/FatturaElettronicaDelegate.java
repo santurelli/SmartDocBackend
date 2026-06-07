@@ -42,6 +42,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
@@ -64,6 +65,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
+@Transactional(readOnly = true)
 @Service(value = "fatturaelettronicaDelegate")
 public class FatturaElettronicaDelegate extends BaseDelegate
 {
@@ -81,8 +83,9 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                                      NotificaMancataConsegnaType notificaMancataConsegna) throws SQLException
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        dao.aggiornaDatiNotificaMancataConsegna(notificaMancataConsegna.getIdentificativoSdI().toString(), notificaMancataConsegna.getMessageId(), notificaMancataConsegna.getDataOraRicezione(), notificaMancataConsegna.getDescrizione(), fileEsitoSdi.getAbsolutePath(), FilenameUtils.getBaseName(notificaMancataConsegna.getNomeFile()).split("_")[1]);
-        dao.memorizzaEsitoSdi(FilenameUtils.getBaseName(notificaMancataConsegna.getNomeFile()).split("_")[1]);
+        String progressivoFile = FilenameUtils.getBaseName(notificaMancataConsegna.getNomeFile()).split("_")[1];
+        dao.aggiornaDatiNotificaMancataConsegna(notificaMancataConsegna.getIdentificativoSdI().toString(), notificaMancataConsegna.getMessageId(), notificaMancataConsegna.getDataOraRicezione(), notificaMancataConsegna.getDescrizione(), fileEsitoSdi.getAbsolutePath(), progressivoFile);
+        propagaEsitoSdiAlTenant(dao, progressivoFile);
     }
 
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
@@ -102,16 +105,70 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 strErrori.append("Codice: ").append(errore.getCodice()).append(" - Descrizione: ").append(errore.getDescrizione());
             }
         }
-        dao.aggiornaDatiNotificaScarto(notificaScarto.getIdentificativoSdI().toString(), notificaScarto.getMessageId(), notificaScarto.getDataOraRicezione(), strErrori.toString(), fileEsitoSdi.getAbsolutePath(), FilenameUtils.getBaseName(notificaScarto.getNomeFile()).split("_")[1]);
-        dao.memorizzaEsitoSdi(FilenameUtils.getBaseName(notificaScarto.getNomeFile()).split("_")[1]);
+        String progressivoFile = FilenameUtils.getBaseName(notificaScarto.getNomeFile()).split("_")[1];
+        dao.aggiornaDatiNotificaScarto(notificaScarto.getIdentificativoSdI().toString(), notificaScarto.getMessageId(), notificaScarto.getDataOraRicezione(), strErrori.toString(), fileEsitoSdi.getAbsolutePath(), progressivoFile);
+        propagaEsitoSdiAlTenant(dao, progressivoFile);
     }
 
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      RicevutaConsegnaType ricevutaConsegna) throws SQLException
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        dao.aggiornaDatiRicevutaConsegna(ricevutaConsegna.getIdentificativoSdI().toString(), ricevutaConsegna.getMessageId(), ricevutaConsegna.getDataOraConsegna(), ricevutaConsegna.getDestinatario().getDescrizione(), fileEsitoSdi.getAbsolutePath(), FilenameUtils.getBaseName(ricevutaConsegna.getNomeFile()).split("_")[1]);
-        dao.memorizzaEsitoSdi(FilenameUtils.getBaseName(ricevutaConsegna.getNomeFile()).split("_")[1]);
+        String progressivoFile = FilenameUtils.getBaseName(ricevutaConsegna.getNomeFile()).split("_")[1];
+        dao.aggiornaDatiRicevutaConsegna(ricevutaConsegna.getIdentificativoSdI().toString(), ricevutaConsegna.getMessageId(), ricevutaConsegna.getDataOraConsegna(), ricevutaConsegna.getDestinatario().getDescrizione(), fileEsitoSdi.getAbsolutePath(), progressivoFile);
+        propagaEsitoSdiAlTenant(dao, progressivoFile);
+    }
+
+    /**
+     * Propaga l'esito SDI dal service_db al tenant DB corretto, senza usare dblink.
+     * Sostituisce la stored procedure memorizzaesitosdi che usava dblink con credenziali hardcoded.
+     */
+    /**
+     * Propaga l'esito SDI dal service_db al tenant DB corretto, senza usare dblink.
+     * Sostituisce la stored procedure memorizzaesitosdi che usava dblink con credenziali hardcoded.
+     * Gestisce sia FATTURA che NOTA_CREDITO come faceva la stored procedure originale.
+     */
+    private void propagaEsitoSdiAlTenant(FatturaElettronicaDao serviceDao, String progressivoFile) throws SQLException
+    {
+        java.util.Map<String, Object> esitoRecord = serviceDao.getEsitoByProgressivoFile(progressivoFile);
+        if (esitoRecord == null)
+        {
+            _log.warn("propagaEsitoSdiAlTenant: nessun record trovato per progressivo {}", progressivoFile);
+            return;
+        }
+        String dbKey       = (String) esitoRecord.get("dbKey");
+        Number idDocumento = (Number) esitoRecord.get("idFattura");
+        String tipoEsito   = (String) esitoRecord.get("tipoEsito");
+        String tipoDoc     = (String) esitoRecord.get("tipoDocumento");
+
+        if (dbKey == null || idDocumento == null || tipoEsito == null)
+        {
+            _log.warn("propagaEsitoSdiAlTenant: dati incompleti per progressivo {} (dbKey={}, id={}, esito={})", progressivoFile, dbKey, idDocumento, tipoEsito);
+            return;
+        }
+        try
+        {
+            StatoFatturaElettronica stato = StatoFatturaElettronica.valueOf(tipoEsito);
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.set(dbKey);
+            FatturaElettronicaDao tenantDao = new FatturaElettronicaDao(jdbcTemplate);
+            if ("NOTA_CREDITO".equals(tipoDoc))
+            {
+                tenantDao.aggiornaStatoNotaCredito(idDocumento.longValue(), stato);
+            }
+            else
+            {
+                tenantDao.aggiornaStatoFattura(idDocumento.longValue(), stato);
+            }
+            _log.info("Esito SDI '{}' propagato al tenant {} per documento {} ({})", tipoEsito, dbKey, idDocumento, tipoDoc);
+        }
+        catch (IllegalArgumentException e)
+        {
+            _log.warn("Tipo esito SDI '{}' non mappabile a StatoFatturaElettronica, skip aggiornamento tenant", tipoEsito);
+        }
+        finally
+        {
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.clear();
+        }
     }
 
     public void aggiornaDatiInvioSupporto(EsitoFTPType esitoInvio) throws SQLException
@@ -900,9 +957,10 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         return StringUtils.leftPad(Long.toString(l, 36), 10, "0");
     }
 
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW, rollbackFor = Throwable.class, transactionManager = "serviceTransactionManager")
     public synchronized String getProgressivoUnivocoFile() throws SQLException
     {
-        ConfigurazioneDao dao = new ConfigurazioneDao(jdbcTemplate);
+        ConfigurazioneDao dao = new ConfigurazioneDao(serviceJdbcTemplate);
         String ultimoProgressivioUnivoco = dao.getByKey(ConfigurazioneDomain.FATTURA_ELETTRONICA.name(), ConfigurazioneKey.PROGRESSIVO_UNIVOCO_FILE.name());
         if ( StringUtils.isEmpty(ultimoProgressivioUnivoco) )
         {
@@ -925,7 +983,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
     public long getSupportiInviati() throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
         return dao.getSupportiInviati();
     }
 
@@ -944,15 +1002,33 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public void impostaInviataSdi(String dbKey,
                                   long idFattura) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        dao.impostaInviataSdi(dbKey, idFattura);
+        try
+        {
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.set(dbKey);
+            FatturaElettronicaDao tenantDao = new FatturaElettronicaDao(jdbcTemplate);
+            tenantDao.aggiornaStatoFattura(idFattura, it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.IN);
+            _log.info("Fattura {} del tenant {} impostata come inviata a SDI", idFattura, dbKey);
+        }
+        finally
+        {
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.clear();
+        }
     }
 
     public void impostaNotaCreditoInviataSdi(String dbKey,
                                              long idFattura) throws SQLException
     {
-        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        dao.impostaNotaCreditoInviataSdi(dbKey, idFattura);
+        try
+        {
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.set(dbKey);
+            FatturaElettronicaDao tenantDao = new FatturaElettronicaDao(jdbcTemplate);
+            tenantDao.aggiornaStatoNotaCredito(idFattura, it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.IN);
+            _log.info("Nota credito {} del tenant {} impostata come inviata a SDI", idFattura, dbKey);
+        }
+        finally
+        {
+            it.tinna.smartdoc.server.database.DatabaseContextHolder.clear();
+        }
     }
 
     /**
@@ -973,7 +1049,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     public void memorizzaEsitoSdi(String progressivoFile) throws SQLException
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
-        dao.memorizzaEsitoSdi(progressivoFile);
+        propagaEsitoSdiAlTenant(dao, progressivoFile);
     }
 
     public long memorizzaFatturaElettronica(String dbKey,

@@ -4,11 +4,13 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.causaliesigibilitadifferita.CausaliEsigibilitaDifferitaDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.causaliesigibilitadifferita.CausaleEsigibilitaDifferitaDto;
 
+@Transactional(readOnly = true)
 @Service(value = "causaliesigibilitadifferitaDelegate")
 public class CausaliEsigibilitaDifferitaDelegate extends BaseDelegate
 {
@@ -18,6 +20,7 @@ public class CausaliEsigibilitaDifferitaDelegate extends BaseDelegate
     // super(jdbcTemplate);
     // }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(long idUser,
                        List<Long> ids) throws SQLException
     {
@@ -57,12 +60,14 @@ public class CausaliEsigibilitaDifferitaDelegate extends BaseDelegate
         return dao.getListForCombo();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(CausaleEsigibilitaDifferitaDto dto) throws SQLException
     {
         CausaliEsigibilitaDifferitaDao dao = new CausaliEsigibilitaDifferitaDao(jdbcTemplate);
         dao.insert(dto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(CausaleEsigibilitaDifferitaDto dto) throws SQLException
     {
         CausaliEsigibilitaDifferitaDao dao = new CausaliEsigibilitaDifferitaDao(jdbcTemplate);

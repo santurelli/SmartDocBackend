@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.utenti.UtentiDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
@@ -13,6 +14,7 @@ import it.tinna.smartdoc.shared.constants.IErrorCodes;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.login.GruppoDto;
 
+@Transactional(readOnly = true)
 @Service(value = "utentiDelegate")
 public class UtentiDelegate extends BaseDelegate
 {

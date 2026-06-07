@@ -4,11 +4,13 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.agenti.AgentiDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.agenti.AgenteDto;
 
+@Transactional(readOnly = true)
 @Service(value = "agentiDelegate")
 public class AgentiDelegate extends BaseDelegate
 {
@@ -18,6 +20,7 @@ public class AgentiDelegate extends BaseDelegate
     // super(jdbcTemplate);
     // }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(Long idUser,
                        List<Long> ids) throws SQLException
     {
@@ -69,12 +72,14 @@ public class AgentiDelegate extends BaseDelegate
         return dao.getListForCombo();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(AgenteDto dto) throws SQLException
     {
         AgentiDao dao = new AgentiDao(jdbcTemplate);
         dao.insert(dto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(AgenteDto dto) throws SQLException
     {
         AgentiDao dao = new AgentiDao(jdbcTemplate);

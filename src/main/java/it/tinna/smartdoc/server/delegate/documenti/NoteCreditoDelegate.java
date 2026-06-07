@@ -93,6 +93,7 @@ import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 @Service(value = "notecreditoDelegate")
+@Transactional(readOnly = true)
 public class NoteCreditoDelegate extends BaseDelegate
 {
 

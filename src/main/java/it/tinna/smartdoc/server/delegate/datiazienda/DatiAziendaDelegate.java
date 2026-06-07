@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.apache.tika.Tika;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import it.tinna.smartdoc.server.constants.CategorieTabDecod;
@@ -18,6 +19,7 @@ import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
 
+@Transactional(readOnly = true)
 @Service(value = "datiaziendaDelegate")
 public class DatiAziendaDelegate extends BaseDelegate
 {
@@ -66,6 +68,7 @@ public class DatiAziendaDelegate extends BaseDelegate
         return dto;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void save(DatiAziendaDto dto,
                      MultipartFile mpf) throws SQLException
     {

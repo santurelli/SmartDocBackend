@@ -66,13 +66,20 @@ public class PreventiviDelegateTest {
     }
 
     @Test
-    public void testInsert_Duplicate_ThrowsException() throws SQLException {
+    public void testInsert_Duplicate_AutoRecalculates() throws SQLException {
         PreventivoDto dto = new PreventivoDto();
         dto.setNumDocumento(500);
         dto.setDataDocumento("2026-03-21");
 
         when(preventiviDao.isExistentNumero(any(), any(), any(), anyInt())).thenReturn(true);
-        
-        assertThrows(SQLException.class, () -> preventiviDelegate.insert(dto));
+        when(preventiviDao.generaCodice(any())).thenReturn("501");
+        when(preventiviDao.insert(any())).thenReturn(4002);
+
+        Integer id = preventiviDelegate.insert(dto);
+
+        // Il numero deve essere stato ricalcolato a 501
+        assertEquals(501, dto.getNumDocumento().intValue());
+        assertEquals(4002, id.intValue());
+        verify(preventiviDao, times(1)).insert(dto);
     }
 }

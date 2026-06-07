@@ -3,6 +3,7 @@ package it.tinna.smartdoc.server.delegate.formatiarticolo;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.formatiarticolo.FormatiArticoloDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
@@ -11,6 +12,7 @@ import it.tinna.smartdoc.shared.dto.formatiarticolo.FormatoArticoloDto;
 import java.sql.SQLException;
 import java.util.List;
 
+@Transactional(readOnly = true)
 @Service
 public class FormatiArticoloDelegate extends BaseDelegate {
 
@@ -31,18 +33,21 @@ public class FormatiArticoloDelegate extends BaseDelegate {
     }
 
     @CacheEvict(value = "formatiArticoloCombo", allEntries = true)
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(FormatoArticoloDto dto, Integer userId) throws SQLException {
         FormatiArticoloDao dao = new FormatiArticoloDao(jdbcTemplate);
         dao.insert(dto, userId);
     }
 
     @CacheEvict(value = "formatiArticoloCombo", allEntries = true)
+    @Transactional(rollbackFor = Throwable.class)
     public void update(FormatoArticoloDto dto, Integer userId) throws SQLException {
         FormatiArticoloDao dao = new FormatiArticoloDao(jdbcTemplate);
         dao.update(dto, userId);
     }
 
     @CacheEvict(value = "formatiArticoloCombo", allEntries = true)
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(Integer id, Integer userId) throws SQLException {
         FormatiArticoloDao dao = new FormatiArticoloDao(jdbcTemplate);
         dao.delete(id, userId);

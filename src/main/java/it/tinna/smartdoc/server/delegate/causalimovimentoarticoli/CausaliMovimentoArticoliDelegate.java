@@ -6,17 +6,20 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.causalimovimentoarticoli.CausaliMovimentoArticoliDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.causalimovimenti.CausaleMovimentoDto;
 
+@Transactional(readOnly = true)
 @Service
 public class CausaliMovimentoArticoliDelegate extends BaseDelegate {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(long idUser, List<Long> list) throws SQLException {
         CausaliMovimentoArticoliDao dao = new CausaliMovimentoArticoliDao(jdbcTemplate);
         for (Long id : list) {
@@ -39,6 +42,7 @@ public class CausaliMovimentoArticoliDelegate extends BaseDelegate {
         return dao.getSuggestion(q);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(CausaleMovimentoDto dto) throws SQLException {
         CausaliMovimentoArticoliDao dao = new CausaliMovimentoArticoliDao(jdbcTemplate);
         dao.insert(dto);
@@ -49,6 +53,7 @@ public class CausaliMovimentoArticoliDelegate extends BaseDelegate {
         return dao.isExistent(descrizione, id);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(CausaleMovimentoDto dto) throws SQLException {
         CausaliMovimentoArticoliDao dao = new CausaliMovimentoArticoliDao(jdbcTemplate);
         dao.update(dto);

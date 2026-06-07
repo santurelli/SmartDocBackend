@@ -20,6 +20,7 @@ import java.util.HashMap;
 import it.tinna.smartdoc.server.delegate.aliquoteiva.AliquoteIvaDelegate;
 import it.tinna.smartdoc.server.delegate.unitamisura.UnitaMisuraDelegate;
 import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
+import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
@@ -27,7 +28,8 @@ import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 import org.apache.commons.lang3.StringUtils;
 
 @Service
-public class PreventiviDelegate {
+@Transactional(readOnly = true)
+public class PreventiviDelegate extends BaseDelegate {
 
     @Autowired
     private PreventiviDao preventiviDao;
@@ -423,9 +425,13 @@ public class PreventiviDelegate {
     @Transactional(rollbackFor = Exception.class)
     public Integer insert(PreventivoDto dto) throws SQLException {
         gestisciAnnotazioniRivalsa(dto);
+        // Se il numero proposto è già occupato (race condition o numerazione desincronizzata),
+        // ricalcola automaticamente il prossimo numero disponibile invece di bloccare l'utente
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) (long) dto.getId()) )
         {
-            throw new SQLException("Il numero di preventivo " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            String nextNum = preventiviDao.generaCodice(dto.getDataDocumento());
+            _log.warn("Numero preventivo {} già presente, ricalcolato automaticamente in {}", dto.getNumDocumento(), nextNum);
+            dto.setNumDocumento(Integer.parseInt(nextNum));
         }
         Integer id = preventiviDao.insert(dto);
         dto.setId(id);

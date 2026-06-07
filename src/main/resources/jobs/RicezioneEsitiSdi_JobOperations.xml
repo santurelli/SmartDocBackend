@@ -9,7 +9,6 @@
 	
 	<!--################################### TASKLET SECTION ###############################################-->
 	<bean id="ricezioneEsitiSdiPathCreatorTasklet" class="it.tinna.smartdoc.batch.tasklet.PathCreatorTasklet" scope="step">
-		<property name="templateDir" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_WORKDIR)}"></property>
 	</bean>
 	<bean id="invioNotificheTasklet" class="it.tinna.smartdoc.batch.tasklet.InvioNotificheScartiTasklet" scope="step">
 		<property name="freeMarkerConfiguration" ref="freeMarkerConfiguration"></property>
@@ -20,20 +19,18 @@
 	</bean>
 	<!--################################### READER SECTION ###############################################-->
 	<bean id="esitiSdiReader" class="it.tinna.smartdoc.batch.readers.esitisdi.EsitiSdiReader" scope="step">
-		<property name="cartellaEsiti" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_CARTELLA_ESITI)}"></property>
+		<property name="cartellaEsiti" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_CARTELLA_ESITI)}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property>
 	</bean>
 	<!--################################### PROCESSOR SECTION ###############################################-->
 	<bean id="esitiSdiProcessor" class="it.tinna.smartdoc.batch.processors.esitisdi.EsitiSdiProcessor" scope="step">
 		<property name="stepExecution" value="#{stepExecution}"></property>
-		<property name="comandoDecifratura" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_DECIFRATURA)}"></property>
-		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
+		<property name="comandoDecifratura" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_DECIFRATURA)}"></property>
+		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
 	</bean>
 	<!--################################### WRITER SECTION ###############################################-->
 	<bean id="esitiSdiWriter" class="it.tinna.smartdoc.batch.writers.esitisdi.EsitiSdiWriter" scope="step">
 		<property name="stepExecution" value="#{stepExecution}"></property>
-		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
-		<property name="urlImportFattureFornitore" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_URL_IMPORT_FATTURE_FORNITORE)}"></property>
-		<property name="urlImportNoteCreditoFornitore" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_URL_IMPORT_NOTECREDITO_FORNITORE)}"></property>
+		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
 	</bean>
 </beans>

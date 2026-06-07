@@ -1,0 +1,1 @@
+ALTER TABLE d_e_notecreditofornitore ADD COLUMN k_d_e_progetti integer;

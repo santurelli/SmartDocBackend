@@ -112,6 +112,7 @@ import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 @Service(value = "fattureDelegate")
+@Transactional(readOnly = true)
 public class FattureDelegate extends BaseDelegate
 {
 
@@ -871,6 +872,7 @@ public class FattureDelegate extends BaseDelegate
         return map;
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public FatturaElettronicaWrapperDto getFatturaElettronica(long idFattura)
     {
         FatturaElettronicaWrapperDto result = new FatturaElettronicaWrapperDto();
@@ -1288,6 +1290,7 @@ public class FattureDelegate extends BaseDelegate
     /**
      * Importa una fattura elettronica SDI (XML)
      */
+    @Transactional(rollbackFor = Throwable.class)
     public Long importXml(MultipartFile file) throws Exception {
         JAXBContext jaxbContext = JAXBContext.newInstance(FatturaElettronicaType.class);
         Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();

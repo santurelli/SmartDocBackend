@@ -34,14 +34,29 @@ public class NoteCreditoController {
             @RequestParam(required = false) String dataFine,
             @RequestParam(required = false) Integer idCliente,
             @RequestParam(required = false) Integer idAgente,
-            @RequestParam(required = false, defaultValue = "1") Integer orderColumn,
+            @RequestParam(required = false, defaultValue = "data_notacredito") String orderColumn,
             @RequestParam(required = false, defaultValue = "asc") String orderDir,
             @RequestParam(required = false, defaultValue = "0") int start,
             @RequestParam(required = false, defaultValue = "10") int length,
             @RequestParam(required = false) String numDocumento,
             @RequestParam(required = false) String stato) throws SQLException {
         
-        FattureListResponse list = noteCreditoDelegate.getList(idCliente, dataInizio, dataFine, idAgente, stato, length, start, orderColumn, orderDir);
+        Integer orderColumnIdx = 1;
+        if ("num_notacredito".equals(orderColumn)) {
+            orderColumnIdx = 2;
+        } else if ("d_e_clienti.denominazione".equals(orderColumn)) {
+            orderColumnIdx = 3;
+        } else if ("data_notacredito".equals(orderColumn)) {
+            orderColumnIdx = 1;
+        } else if (orderColumn != null) {
+            try {
+                orderColumnIdx = Integer.parseInt(orderColumn);
+            } catch (NumberFormatException e) {
+                orderColumnIdx = 1;
+            }
+        }
+        
+        FattureListResponse list = noteCreditoDelegate.getList(idCliente, dataInizio, dataFine, idAgente, stato, length, start, orderColumnIdx, orderDir);
         return ResponseEntity.ok(new GenericResponseDto<>(list, null));
     }
 

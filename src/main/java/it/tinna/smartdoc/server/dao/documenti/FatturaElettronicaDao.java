@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.datatype.XMLGregorianCalendar;
 
@@ -126,9 +127,6 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
-    /*
-     * Il batch non usa questo metodo ma il metodo memorizzaEsitoSdi che contiene la chiamata ad una stored procedure con db_link per la connessione al database finale Questo metodo è usato dal front end per una fattura scartata come "Da inviare"
-     */
     public void aggiornaStatoFattura(long idFattura,
                                      StatoFatturaElettronica statoFattura) throws SQLException
     {
@@ -139,6 +137,20 @@ public class FatturaElettronicaDao extends BaseDao
         catch ( DataAccessException e )
         {
             _log.error("Errore nell'aggiornamento della fattura {} con lo stato {}", idFattura, statoFattura.name(), e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void aggiornaStatoNotaCredito(long idNotaCredito,
+                                         StatoFatturaElettronica statoFattura) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURAELETTRONICA_U01B"), statoFattura.name(), idNotaCredito);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nell'aggiornamento della nota credito {} con lo stato {}", idNotaCredito, statoFattura.name(), e);
             throw new SQLException(e);
         }
     }
@@ -383,17 +395,20 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
-    public void memorizzaEsitoSdi(String progressivoFile) throws SQLException
+    public Map<String, Object> getEsitoByProgressivoFile(String progressivoFile) throws SQLException
     {
         try
         {
-            _log.info("Chiamo memorizzaEsitoSdi per progressivo file {}", progressivoFile);
-            SimpleJdbcCall sjc = new SimpleJdbcCall(jdbcTemplate).withProcedureName("memorizzaEsitoSdi");
-            sjc.execute(progressivoFile);
+            return jdbcTemplate.queryForMap(FileQueryReader.getQuery("FATTURAELETTRONICA_S04B"), progressivoFile);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            _log.warn("Nessuna fattura elettronica trovata per progressivo file {}", progressivoFile);
+            return null;
         }
         catch ( DataAccessException e )
         {
-            _log.error("Errore nella memorizzazione dell'esito sdi per la fattura relativa al progressivo file {}", progressivoFile, e);
+            _log.error("Errore nel recupero esito SDI per progressivo file {}", progressivoFile, e);
             throw new SQLException(e);
         }
     }

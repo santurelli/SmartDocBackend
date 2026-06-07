@@ -38,6 +38,19 @@ public class DocumentoAcquistoDto extends DocumentoDto
     public String getIntestazioneDocumento()
     {
         StringBuilder intestazioneDocumento = new StringBuilder("");
+        if ( fornitoreDto == null )
+        {
+            if ( StringUtils.isNotBlank(descFornitore) )
+            {
+                intestazioneDocumento.append("<b>").append(descFornitore).append("</b><br>");
+            }
+            else
+            {
+                intestazioneDocumento.append("<b>Fornitore N/D</b><br>");
+            }
+            return intestazioneDocumento.toString();
+        }
+        
         intestazioneDocumento.append("<b>").append(fornitoreDto.getDenominazione()).append("</b><br>");
         if ( fornitoreDto.getElencoIndirizzi() != null && !fornitoreDto.getElencoIndirizzi().isEmpty() )
         {

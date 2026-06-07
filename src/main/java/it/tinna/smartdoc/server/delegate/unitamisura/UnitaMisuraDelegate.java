@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,6 +12,7 @@ import it.tinna.smartdoc.server.dao.unitamisura.UnitaMisuraDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.unitamisura.UnitaMisuraDto;
 
+@Transactional(readOnly = true)
 @Service(value = "unitaMisuraDelegate")
 public class UnitaMisuraDelegate extends BaseDelegate
 {
@@ -20,6 +22,7 @@ public class UnitaMisuraDelegate extends BaseDelegate
     // super(jdbcTemplate);
     // }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(final long idUser,
                        List<Long> ids) throws SQLException
     {
@@ -72,12 +75,14 @@ public class UnitaMisuraDelegate extends BaseDelegate
         return dao.getListForCombo();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(UnitaMisuraDto dto) throws SQLException
     {
         UnitaMisuraDao dao = new UnitaMisuraDao(jdbcTemplate);
         dao.insert(dto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(UnitaMisuraDto dto) throws SQLException
     {
         UnitaMisuraDao dao = new UnitaMisuraDao(jdbcTemplate);

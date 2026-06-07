@@ -26,6 +26,7 @@ import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 import it.tinna.smartdoc.shared.dto.risorse.RisorsaDto;
 
 @Service(value = "fornitoriDelegate")
+@Transactional(readOnly = true)
 public class FornitoriDelegate extends BaseDelegate
 {
 

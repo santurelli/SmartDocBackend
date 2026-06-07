@@ -5,10 +5,12 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.citta.CittaDao;
 import it.tinna.smartdoc.shared.dto.citta.CittaDto;
 
+@Transactional(readOnly = true)
 @Service
 public class CittaDelegate {
 

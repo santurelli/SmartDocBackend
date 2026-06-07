@@ -39,7 +39,6 @@
 	
 	<!--################################### TASKLET SECTION ###############################################-->
 	<bean id="esitiInvioPathCreatorTasklet" class="it.tinna.smartdoc.batch.tasklet.PathCreatorTasklet" scope="step">
-		<property name="templateDir" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_WORKDIR)}"></property>
 	</bean>
 	<bean id="aggiornaEsitoSdiFattureTasklet" class="it.tinna.smartdoc.batch.tasklet.AggiornaEsitoSdiFattureTasklet" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
@@ -47,14 +46,14 @@
 	<!--################################### READER SECTION ###############################################-->
 	<bean id="esitiInvioReader" class="it.tinna.smartdoc.batch.readers.esitiinvio.EsitiInvioReader" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
-		<property name="cartellaEsiti" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_CARTELLA_ESITI)}"></property>
+		<property name="cartellaEsiti" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_CARTELLA_ESITI)}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property>
 	</bean>
 	<!--################################### PROCESSOR SECTION ###############################################-->
 	<bean id="esitiInvioProcessor" class="it.tinna.smartdoc.batch.processors.esitiinvio.EsitiInvioProcessor" scope="step">
 		<property name="stepExecution" value="#{stepExecution}"></property>
-		<property name="comandoDecifratura" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_DECIFRATURA)}"></property>
-		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
+		<property name="comandoDecifratura" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_DECIFRATURA)}"></property>
+		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_INVIO, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
 	</bean>
 	<!--################################### WRITER SECTION ###############################################-->
 	<bean id="esitiInvioWriter" class="it.tinna.smartdoc.batch.writers.esitiinvio.EsitiInvioWriter" scope="step">

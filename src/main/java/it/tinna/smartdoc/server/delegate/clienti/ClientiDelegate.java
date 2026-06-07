@@ -17,6 +17,7 @@ import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
 import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 
 @Service(value = "clientiDelegate")
+@Transactional(readOnly = true)
 public class ClientiDelegate extends BaseDelegate
 {
 

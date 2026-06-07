@@ -17,6 +17,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import it.tinna.smartdoc.server.database.SmartDocRoutingDataSource;
+import it.tinna.smartdoc.server.database.TenantAwareDataSource;
 
 @Configuration
 public class DataSourceConfig {
@@ -33,19 +34,9 @@ public class DataSourceConfig {
     @Value("${spring.datasource.url}")
     private String serviceDbUrl;
 
-    // Tenant DBs
-    @Value("${datasource.romax.url}")
-    private String romaxUrl;
-    @Value("${datasource.justdesign.url}")
-    private String justdesignUrl;
-    @Value("${datasource.justeat.url}")
-    private String justeatUrl;
-    @Value("${datasource.santurelli.url}")
-    private String santurelliUrl;
-    @Value("${datasource.enzaiannaccone.url}")
-    private String enzaiannacconeUrl;
-    @Value("${datasource.riggiolandia.url}")
-    private String riggiolandiaUrl;
+    // Shared DB for Tenants
+    @Value("${datasource.shared.url}")
+    private String sharedDbUrl;
 
     public DataSource createDataSource(String url) {
         HikariDataSource dataSource = DataSourceBuilder.create()
@@ -56,48 +47,38 @@ public class DataSourceConfig {
                 .password(commonPassword)
                 .build();
         
-        // Dynamic Pool Configuration (Soluzione 1)
-        dataSource.setMaximumPoolSize(5);        // Tetto massimo per tenant
-        dataSource.setMinimumIdle(0);           // Chiudi tutte le connessioni se non usate
-        dataSource.setIdleTimeout(60000);       // 1 minuto di inattività prima della chiusura
-        dataSource.setPoolName("HikariPool-" + url.substring(url.lastIndexOf("/") + 1));
+        dataSource.setMaximumPoolSize(20);      // Pool unico condiviso
+        dataSource.setMinimumIdle(2);
+        dataSource.setIdleTimeout(60000);
+        dataSource.setPoolName("HikariPool-Shared");
         
         return dataSource;
     }
 
     @Bean(name = "servicedbDataSource")
     public DataSource servicedbDataSource() {
-        return createDataSource(serviceDbUrl);
+        HikariDataSource dataSource = DataSourceBuilder.create()
+                .type(HikariDataSource.class)
+                .driverClassName(commonDriverClassName)
+                .url(serviceDbUrl)
+                .username(commonUsername)
+                .password(commonPassword)
+                .build();
+        dataSource.setMaximumPoolSize(5);
+        dataSource.setMinimumIdle(1);
+        dataSource.setIdleTimeout(60000);
+        dataSource.setPoolName("HikariPool-Service");
+        return dataSource;
     }
 
-    @Bean(name = "romaxDataSource")
-    public DataSource romaxDataSource() {
-        return createDataSource(romaxUrl);
+    @Bean(name = "shareddbDataSource")
+    public DataSource shareddbDataSource() {
+        return createDataSource(sharedDbUrl);
     }
 
-    @Bean(name = "justdesignDataSource")
-    public DataSource justdesignDataSource() {
-        return createDataSource(justdesignUrl);
-    }
-
-    @Bean(name = "justeatDataSource")
-    public DataSource justeatDataSource() {
-        return createDataSource(justeatUrl);
-    }
-
-    @Bean(name = "santurelliDataSource")
-    public DataSource santurelliDataSource() {
-        return createDataSource(santurelliUrl);
-    }
-
-    @Bean(name = "enzaiannacconeDataSource")
-    public DataSource enzaiannacconeDataSource() {
-        return createDataSource(enzaiannacconeUrl);
-    }
-
-    @Bean(name = "riggiolandiaDataSource")
-    public DataSource riggiolandiaDataSource() {
-        return createDataSource(riggiolandiaUrl);
+    @Bean(name = "tenantAwareDataSource")
+    public DataSource tenantAwareDataSource() {
+        return new TenantAwareDataSource(shareddbDataSource(), servicedbDataSource());
     }
 
     @Bean
@@ -107,15 +88,7 @@ public class DataSourceConfig {
         Map<Object, Object> targetDataSources = new HashMap<>();
         
         targetDataSources.put("servicedb", servicedbDataSource());
-        targetDataSources.put("sd_romax", romaxDataSource());
-        // Assuming keys match the 'dbName' column in 'd_e_entita'.
-        // User asked for: Romax, JustDesign, JustEat, JustFood, Santurelli.
-        // I will map them as requested. I should double check logic or keys if possible but for now:
-        targetDataSources.put("sd_justdesign", justdesignDataSource());
-        targetDataSources.put("sd_justeat", justeatDataSource());
-        targetDataSources.put("sd_santurelli", santurelliDataSource());
-        targetDataSources.put("sd_enzaiannaccone", enzaiannacconeDataSource());
-        targetDataSources.put("sd_riggiolandia", riggiolandiaDataSource());
+        targetDataSources.put("shareddb", tenantAwareDataSource());
 
         routingDataSource.setTargetDataSources(targetDataSources);
         routingDataSource.setDefaultTargetDataSource(servicedbDataSource());
@@ -143,4 +116,3 @@ public class DataSourceConfig {
         return new DataSourceTransactionManager(dataSource);
     }
 }
-

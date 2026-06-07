@@ -10,7 +10,9 @@ public class SmartDocRoutingDataSource extends AbstractRoutingDataSource {
     protected Object determineCurrentLookupKey() {
         String key = DatabaseContextHolder.getClientDatabase();
         log.debug("Routing DataSource to: {}", key);
-        return key;
+        if (org.apache.commons.lang3.StringUtils.equalsIgnoreCase(key, "servicedb")) {
+            return "servicedb";
+        }
+        return "shareddb";
     }
 }
-

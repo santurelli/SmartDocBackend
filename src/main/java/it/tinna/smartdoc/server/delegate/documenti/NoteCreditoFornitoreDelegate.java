@@ -97,6 +97,7 @@ import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
 @Service(value = "noteCreditoFornitoreDelegate")
+@Transactional(readOnly = true)
 public class NoteCreditoFornitoreDelegate extends BaseDelegate
 {
 
@@ -767,6 +768,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
         return dao.getScadenzaPagamento(idScadenza);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void importFromSdi(byte[] fileFatturaElettronica) throws SQLException
     {
         FastDateFormat fastFormat = FastDateFormat.getInstance("dd/MM/yyyy");

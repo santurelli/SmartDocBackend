@@ -4,15 +4,18 @@ import java.sql.SQLException;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import it.tinna.smartdoc.server.dao.toniarticolo.ToniArticoloDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.dto.toniarticolo.TonoArticoloDto;
 
+@Transactional(readOnly = true)
 @Service(value = "toniArticoloDelegate")
 public class ToniArticoloDelegate extends BaseDelegate
 {
 
+    @Transactional(rollbackFor = Throwable.class)
     public void delete(long idUser,
                        List<Long> ids) throws SQLException
     {
@@ -52,12 +55,14 @@ public class ToniArticoloDelegate extends BaseDelegate
         return dao.getListForCombo();
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void insert(TonoArticoloDto dto) throws SQLException
     {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);
         dao.insert(dto);
     }
 
+    @Transactional(rollbackFor = Throwable.class)
     public void update(TonoArticoloDto dto) throws SQLException
     {
         ToniArticoloDao dao = new ToniArticoloDao(jdbcTemplate);

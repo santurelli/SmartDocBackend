@@ -15,6 +15,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
 
 import freemarker.template.Configuration;
@@ -41,6 +42,7 @@ import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperRunManager;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 
+@Transactional(readOnly = true)
 @Service(value = "primanotaDelegate")
 public class PrimaNotaDelegate extends BaseDelegate
 {
@@ -191,12 +193,19 @@ public class PrimaNotaDelegate extends BaseDelegate
                 {
                     bcDto = dipendentiDao.getById(idSoggetto);
                 }
-                PrimaNotaDto.SoggettoPrimaNotaDto spnDto = dto.new SoggettoPrimaNotaDto();
-                spnDto.setId(tipoSoggetto + "-" + bcDto.getId());
-                spnDto.setDenominazione(bcDto.getDenominazione());
-                spnDto.setCodiceFiscale(bcDto.getCodiceFiscale());
-                spnDto.setPartitaIva(bcDto.getPartitaIva());
-                dto.setObjSoggetto(spnDto);
+                if (bcDto != null)
+                {
+                    PrimaNotaDto.SoggettoPrimaNotaDto spnDto = dto.new SoggettoPrimaNotaDto();
+                    spnDto.setId(tipoSoggetto + "-" + bcDto.getId());
+                    spnDto.setDenominazione(bcDto.getDenominazione());
+                    spnDto.setCodiceFiscale(bcDto.getCodiceFiscale());
+                    spnDto.setPartitaIva(bcDto.getPartitaIva());
+                    dto.setObjSoggetto(spnDto);
+                }
+                else
+                {
+                    _log.warn("Soggetto di tipo '{}' con id {} non trovato, prima nota id {} restituita senza dettaglio soggetto", tipoSoggetto, idSoggetto, dto.getId());
+                }
             }
         }
         return list;

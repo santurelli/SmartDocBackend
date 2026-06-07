@@ -173,7 +173,7 @@ public class FatturaElettronicaDelegateTest {
             verify(mockedDao.constructed().get(0), times(1)).aggiornaDatiRicevutaConsegna(
                 eq("12345"), eq("MSG-001"), any(), eq("Destinatario Test"), anyString(), eq("00001")
             );
-            verify(mockedDao.constructed().get(0), times(1)).memorizzaEsitoSdi("00001");
+            verify(mockedDao.constructed().get(0), times(1)).getEsitoByProgressivoFile("00001");
         }
     }
 }
