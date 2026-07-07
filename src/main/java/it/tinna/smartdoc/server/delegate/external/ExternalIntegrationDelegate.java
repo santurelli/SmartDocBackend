@@ -282,6 +282,11 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
 
         feDto.setDataDocumento(extFattura.getData());
         feDto.setNumDocumento(extFattura.getNumero());
+        if (extFattura.getSuffisso() != null && !extFattura.getSuffisso().isBlank()) {
+            // Il suffisso viene preposto con "/" → SmartDoc costruirà es. "1/PDR" nell'XML SDI
+            String suf = extFattura.getSuffisso().trim();
+            feDto.setParticella(suf.startsWith("/") ? suf : "/" + suf);
+        }
         feDto.setSplitPayment(0);
         feDto.setFlRitenutaAcconto(0);
         feDto.setEsigibilitaDifferita(0);

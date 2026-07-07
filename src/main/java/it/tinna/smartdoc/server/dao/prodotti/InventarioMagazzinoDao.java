@@ -24,12 +24,26 @@ public class InventarioMagazzinoDao extends BaseDao {
         super(jdbcTemplate);
     }
 
+    private Integer getMagazzinoPredefinito() {
+        try {
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("MAGAZZINI_S_PREDEFINITO"), Integer.class);
+        } catch (Exception e) {
+            _log.warn("Magazzino predefinito non trovato, uso fallback MIN(k_d_e_magazzini)");
+            try {
+                return jdbcTemplate.queryForObject("SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted = 0", Integer.class);
+            } catch (Exception ex) {
+                _log.error("Impossibile determinare il magazzino predefinito", ex);
+                return 1;
+            }
+        }
+    }
+
     public List<InventarioMagazzinoDto> list(InventarioSearchCriteriaDto criteria) throws SQLException {
         try {
             String query = FileQueryReader.getQuery("INVENTARIOMAGAZZINO_S01");
             List<Object> params = new ArrayList<>();
             
-            Integer idMagazzino = criteria.getIdMagazzino() != null ? criteria.getIdMagazzino() : 1;
+            Integer idMagazzino = criteria.getIdMagazzino() != null ? criteria.getIdMagazzino() : getMagazzinoPredefinito();
             Integer idFornitore = criteria.getIdFornitore() != null ? criteria.getIdFornitore() : 0;
             Integer idArticolo = criteria.getIdArticolo() != null ? criteria.getIdArticolo() : 0;
             String dataAl = criteria.getDataAl();

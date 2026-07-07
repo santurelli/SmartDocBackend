@@ -33,10 +33,11 @@ public class ClientiController {
             @RequestParam(required = false, defaultValue = "0") Integer start,
             @RequestParam(required = false, defaultValue = "10") Integer length,
             @RequestParam(required = false, defaultValue = "0") Integer orderColumn,
-            @RequestParam(required = false, defaultValue = "asc") String orderDir) {
-        
+            @RequestParam(required = false, defaultValue = "asc") String orderDir,
+            @RequestParam(required = false, defaultValue = "false") Boolean light) {
+
         try {
-            List<ClienteDto> list = clientiDelegate.getList(search, length, start, orderColumn, orderDir);
+            List<ClienteDto> list = clientiDelegate.getList(search, length, start, orderColumn, orderDir, light);
             long total = list.isEmpty() ? 0 : list.get(0).getTotal();
             
             DatatablesResponseDto<ClienteDto> response = new DatatablesResponseDto<>();

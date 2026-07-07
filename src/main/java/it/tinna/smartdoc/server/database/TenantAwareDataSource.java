@@ -34,6 +34,11 @@ public class TenantAwareDataSource extends DelegatingDataSource
     @Override
     public Connection getConnection() throws SQLException {
         Connection conn = super.getConnection();
+        // PgBouncer transaction mode: in modalità transaction, ogni statement può finire su un backend
+        // diverso. Impostando autoCommit=false forziamo l'apertura di una transazione esplicita
+        // (lazy BEGIN al primo statement), garantendo che SET LOCAL e la query successiva
+        // vengano eseguiti sullo stesso backend PostgreSQL.
+        conn.setAutoCommit(false);
         setupTenant(conn);
         return wrapConnection(conn);
     }
@@ -41,36 +46,39 @@ public class TenantAwareDataSource extends DelegatingDataSource
     @Override
     public Connection getConnection(String username, String password) throws SQLException {
         Connection conn = super.getConnection(username, password);
+        conn.setAutoCommit(false);
         setupTenant(conn);
         return wrapConnection(conn);
     }
 
     private void setupTenant(Connection conn) throws SQLException {
         String dbKey = DatabaseContextHolder.getClientDatabase();
-        
-        // Se dbKey è nullo, vuoto o coincide con servicedb, consideriamo nessun tenant specifico
+
+        // Nessun tenant specifico (servicedb o contesto non impostato): non serve SET LOCAL.
+        // La transazione è aperta ma senza app.current_tenant → RLS usa il valore di default.
         if (dbKey == null || dbKey.trim().isEmpty() || "servicedb".equalsIgnoreCase(dbKey)) {
-            try (Statement stmt = conn.createStatement()) {
-                stmt.execute("RESET app.current_tenant");
-            }
             return;
         }
 
         Long tenantId = getTenantIdFromDbKey(dbKey);
-        
+
         if (log.isDebugEnabled()) {
             log.debug("Setting app.current_tenant = {} (resolved from dbKey '{}') for connection", tenantId, dbKey);
         }
-        
-        try (Statement stmt = conn.createStatement()) {
-            if (tenantId == null) {
-                stmt.execute("RESET app.current_tenant");
-            } else {
-                stmt.execute("SET app.current_tenant = '" + tenantId + "'");
+
+        if (tenantId != null) {
+            // SET LOCAL è transaction-scoped: persiste fino al COMMIT/ROLLBACK della transazione
+            // corrente. Con PgBouncer transaction mode, questo garantisce che tutti gli statement
+            // della stessa "connessione logica" usino lo stesso backend PostgreSQL e vedano
+            // il valore corretto di app.current_tenant per la RLS.
+            try (Statement stmt = conn.createStatement()) {
+                stmt.execute("SET LOCAL app.current_tenant = '" + tenantId + "'");
+            } catch (SQLException e) {
+                log.error("Failed to set app.current_tenant to {}", tenantId, e);
+                throw e;
             }
-        } catch (SQLException e) {
-            log.error("Failed to set app.current_tenant to {}", tenantId, e);
-            throw e;
+        } else {
+            log.warn("Tenant ID non trovato per dbKey '{}', la RLS non filtrerà per tenant", dbKey);
         }
     }
 
@@ -102,13 +110,22 @@ public class TenantAwareDataSource extends DelegatingDataSource
                 @Override
                 public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                     if ("close".equals(method.getName())) {
+                        // Chiude la transazione corrente prima di restituire la connessione al pool.
+                        // Con SET LOCAL, il COMMIT reverte automaticamente app.current_tenant al valore
+                        // di default. Se la transazione è già stata committata da Spring (@Transactional),
+                        // il COMMIT è un no-op (PostgreSQL emette WARNING ignorabile).
                         if (log.isDebugEnabled()) {
-                            log.debug("Resetting app.current_tenant on connection close");
+                            log.debug("Committing transaction on connection close (SET LOCAL app.current_tenant will be reverted)");
                         }
                         try (Statement stmt = conn.createStatement()) {
-                            stmt.execute("RESET app.current_tenant");
+                            stmt.execute("COMMIT");
                         } catch (SQLException e) {
-                            log.warn("Failed to reset app.current_tenant on connection close", e);
+                            log.warn("Failed to commit transaction on connection close, attempting rollback", e);
+                            try (Statement stmt = conn.createStatement()) {
+                                stmt.execute("ROLLBACK");
+                            } catch (SQLException re) {
+                                log.warn("Failed to rollback on connection close", re);
+                            }
                         }
                     }
                     try {

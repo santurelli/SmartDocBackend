@@ -29,6 +29,10 @@ import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
 
 import lombok.extern.slf4j.Slf4j;
 import com.google.gson.Gson;
+import java.util.concurrent.CompletableFuture;
+import it.tinna.smartdoc.server.batch.BatchScheduler;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
+import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
 
 @RestController
 @Slf4j
@@ -38,6 +42,12 @@ public class FattureController {
     private final FattureDelegate fattureDelegate;
     private final StatisticheDelegate statisticheDelegate;
     private final LoginDelegate loginDelegate;
+
+    @Autowired(required = false)
+    private BatchScheduler batchScheduler;
+
+    @Autowired
+    private FatturaElettronicaDelegate fatturaElettronicaDelegate;
 
     @Autowired
     public FattureController(FattureDelegate fattureDelegate, StatisticheDelegate statisticheDelegate, LoginDelegate loginDelegate) {
@@ -174,6 +184,15 @@ public class FattureController {
     @PutMapping("/{id}/send-sdi")
     public ResponseEntity<GenericResponseDto<Boolean>> sendSdi(@PathVariable long id) throws SQLException {
         fattureDelegate.sendToSdi(id);
+        if (batchScheduler != null) {
+            String dbKey = DatabaseContextHolder.getClientDatabase();
+            try {
+                fatturaElettronicaDelegate.resetStatoInvioFattura(dbKey, id);
+            } catch (SQLException e) {
+                log.warn("Errore nel reset stato invio fattura {}: {}", id, e.getMessage());
+            }
+            CompletableFuture.runAsync(() -> batchScheduler.runInvioFatture(dbKey, new long[]{ id }));
+        }
         return ResponseEntity.ok(new GenericResponseDto<>(true, null));
     }
 

@@ -22,13 +22,19 @@ import it.tinna.smartdoc.server.database.TenantAwareDataSource;
 @Configuration
 public class DataSourceConfig {
 
-    // Common Credentials
+    // Common Credentials (service DB - superuser)
     @Value("${datasource.common.username}")
     private String commonUsername;
     @Value("${datasource.common.password}")
     private String commonPassword;
     @Value("${datasource.common.driver-class-name}")
     private String commonDriverClassName;
+
+    // Shared DB Credentials (utente normale, soggetto a RLS)
+    @Value("${datasource.shared.username:${datasource.common.username}}")
+    private String sharedDbUsername;
+    @Value("${datasource.shared.password:${datasource.common.password}}")
+    private String sharedDbPassword;
 
     // Service DB
     @Value("${spring.datasource.url}")
@@ -43,8 +49,8 @@ public class DataSourceConfig {
                 .type(HikariDataSource.class)
                 .driverClassName(commonDriverClassName)
                 .url(url)
-                .username(commonUsername)
-                .password(commonPassword)
+                .username(sharedDbUsername)
+                .password(sharedDbPassword)
                 .build();
         
         dataSource.setMaximumPoolSize(20);      // Pool unico condiviso

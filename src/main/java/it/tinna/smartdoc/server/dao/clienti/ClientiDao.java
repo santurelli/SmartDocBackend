@@ -138,7 +138,17 @@ public class ClientiDao extends BaseDao
                                     Integer orderColumn,
                                     String orderDir) throws SQLException
     {
-        String query = FileQueryReader.getQuery("CLIENTI_S01");
+        return getList(strToSearch, length, start, orderColumn, orderDir, false);
+    }
+
+    public List<ClienteDto> getList(String strToSearch,
+                                    Integer length,
+                                    Integer start,
+                                    Integer orderColumn,
+                                    String orderDir,
+                                    boolean light) throws SQLException
+    {
+        String query = FileQueryReader.getQuery(light ? "CLIENTI_S01_LIGHT" : "CLIENTI_S01");
         List<Object> params = new ArrayList<>();
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));
         params.add(StringUtils.isEmpty(strToSearch) ? null : StringUtility.formatForLike(strToSearch));

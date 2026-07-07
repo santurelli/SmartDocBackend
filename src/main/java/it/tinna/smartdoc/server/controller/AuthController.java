@@ -33,6 +33,10 @@ public class AuthController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("serviceJdbcTemplate")
+    private org.springframework.jdbc.core.JdbcTemplate serviceJdbcTemplate;
+
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
         try {
@@ -48,6 +52,15 @@ public class AuthController {
             // Generate Token
             java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
             extraClaims.put("dbName", loginRequest.getEnte());
+
+            // Fetch label from d_e_enti in service DB
+            try {
+                String enteLabel = serviceJdbcTemplate.queryForObject(
+                    "SELECT label FROM d_e_enti WHERE nome_db = ?", String.class, loginRequest.getEnte());
+                extraClaims.put("enteLabel", org.apache.commons.lang3.StringUtils.defaultIfEmpty(enteLabel, loginRequest.getEnte()));
+            } catch (Exception e) {
+                extraClaims.put("enteLabel", loginRequest.getEnte());
+            }
             
             // Fetch Global Config
             try {

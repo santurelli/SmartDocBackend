@@ -62,21 +62,31 @@ public class BatchScheduler {
             for (MunicipalityDto tenant : activeTenants) {
                 String dbKey = tenant.getDbName();
                 log.info("Avvio Job invio per tenant: {}", dbKey);
-                
-                try {
-                    JobParameters params = new JobParametersBuilder()
-                            .addString(BatchConstants.JOBPARAM_DB_KEY, dbKey)
-                            .addLong("timestamp", System.currentTimeMillis())
-                            .toJobParameters();
-                    
-                    jobLauncher.run(jobInvioFatture, params);
-                    log.info("Job completato con successo per tenant: {}", dbKey);
-                } catch (Exception e) {
-                    log.error("Errore durante l'esecuzione del job per il tenant: {}", dbKey, e);
-                }
+                runInvioFatture(dbKey, null);
             }
         } catch (Exception e) {
             log.error("Errore generico durante il recupero dei tenant o l'avvio dello scheduler di invio", e);
+        }
+    }
+
+    public void runInvioFatture(String dbKey, long[] idFatture) {
+        log.info("Avvio Job invio per tenant: {}, idFatture: {}", dbKey, idFatture);
+        try {
+            JobParametersBuilder builder = new JobParametersBuilder()
+                    .addString(BatchConstants.JOBPARAM_DB_KEY, dbKey)
+                    .addLong("timestamp", System.currentTimeMillis());
+            if (idFatture != null && idFatture.length > 0) {
+                StringBuilder sb = new StringBuilder();
+                for (int i = 0; i < idFatture.length; i++) {
+                    if (i > 0) sb.append(",");
+                    sb.append(idFatture[i]);
+                }
+                builder.addString(BatchConstants.JOBPARAM_ID_FATTURE, sb.toString());
+            }
+            jobLauncher.run(jobInvioFatture, builder.toJobParameters());
+            log.info("Job completato con successo per tenant: {}", dbKey);
+        } catch (Exception e) {
+            log.error("Errore durante l'esecuzione del job per il tenant: {}", dbKey, e);
         }
     }
 

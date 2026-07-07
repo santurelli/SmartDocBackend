@@ -1430,6 +1430,42 @@
 				  	) a
 		</content>
 	</query>
+	<query name="CLIENTI_S01_LIGHT">
+		<content delimiterParsingDisabled="true">
+			SELECT a.*, '' AS ultimoDocVendita
+			  FROM (
+					SELECT d_e_clienti.k_d_e_clienti as id,
+					  	   d_e_clienti.codice,
+					  	   d_e_clienti.denominazione,
+					  	   COALESCE(d_e_clienti.referente, '') AS referente,
+					  	   COALESCE(d_e_clienti.codice_fiscale, '') as codiceFiscale,
+					  	   COALESCE(d_e_clienti.partita_iva, '') as partitaIva,
+					  	   d_e_clienti.note,
+					  	   COALESCE(d_e_indirizzi_clienti.indirizzo || ' ' || d_e_indirizzi_clienti.citta , '') AS citta,
+					  	   d_e_indirizzi_clienti.codice_ufficio AS codiceSdi,
+					  	   COUNT(*) OVER() AS total,
+					  	   COALESCE(d_e_agenti.denominazione, '') AS descAgente
+					  FROM d_e_clienti
+				 LEFT JOIN d_e_agenti
+				 		ON d_e_clienti.k_d_e_agenti = d_e_agenti.k_d_e_agenti
+				 LEFT JOIN d_e_indirizzi_clienti
+				 		ON d_e_indirizzi_clienti.k_d_e_indirizzi = (SELECT k_d_e_indirizzi
+				 													  FROM d_e_indirizzi_clienti
+				 													 WHERE id_richiedente = d_e_clienti.k_d_e_clienti
+				 													   AND fl_deleted = 0
+				 												  ORDER BY (CASE WHEN tipologia = 'O' THEN 1 WHEN tipologia = 'L' THEN 2 ELSE 3 END)
+				 												     LIMIT 1)
+					 WHERE d_e_clienti.fl_deleted = 0
+					   AND (   LOWER(d_e_clienti.codice) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.codice))
+					   		OR LOWER(d_e_clienti.denominazione) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.denominazione))
+					   		OR LOWER(COALESCE(d_e_clienti.partita_iva, '')) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.partita_iva), '')
+					   		OR LOWER(COALESCE(d_e_clienti.codice_fiscale, '')) LIKE COALESCE(LOWER(?), LOWER(d_e_clienti.codice_fiscale), '')
+					   	   )
+				  	   ORDER BY ${ORDER_BY}
+				  	   ${LIMIT}
+				  	) a
+		</content>
+	</query>
 	<query name="CLIENTI_S02">
 		<content delimiterParsingDisabled="true">
 			SELECT COUNT(*)
@@ -2192,6 +2228,18 @@
 			   SET notificata = 0,
 			   	   dt_notifica = NULL
 			 WHERE k_d_e_fatture_elettroniche = ?
+		</content>
+	</query>
+	<query name="FATTURAELETTRONICA_U08">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_fatture_elettroniche
+			   SET progressivo_file = NULL,
+			   	   k_d_e_supporti_inviati = NULL,
+			   	   dt_invio_sdi = NULL,
+			   	   tipo_esito_sdi = NULL,
+			   	   errore_validazione_xml = NULL
+			 WHERE db_key = ?
+			   AND k_d_e_fatture = ?
 		</content>
 	</query>
 	<query name="CONFORDINE_D01">
@@ -5839,6 +5887,15 @@
 		     AND fl_deleted = 0
 		</content>
 	</query>
+	<query name="MAGAZZINI_S_PREDEFINITO">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_magazzini AS id
+			  FROM d_e_magazzini
+			 WHERE fl_predefinito = 1
+			   AND fl_deleted = 0
+			 LIMIT 1
+		</content>
+	</query>
 	<query name="MAGAZZINI_U01">
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_magazzini
@@ -8487,7 +8544,7 @@
 				   CASE x.tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
-				   ELSE get_totale_disponibile(x.id, 1) END AS quantitaEsistente,
+				   ELSE get_totale_disponibile(x.id, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) END AS quantitaEsistente,
 				   CASE x.tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
@@ -10991,6 +11048,7 @@
 		            OR LOWER(d_e_utenti.cognome) LIKE COALESCE(LOWER(?), LOWER(d_e_utenti.cognome))
 		            OR LOWER(d_e_utenti.username) LIKE COALESCE(LOWER(?), LOWER(d_e_utenti.username)))
 		       AND fl_deleted = 0
+		       AND d_e_utenti.username != 'support'
 		  ORDER BY ${ORDER_BY}
 				   ${LIMIT}
 		</content>

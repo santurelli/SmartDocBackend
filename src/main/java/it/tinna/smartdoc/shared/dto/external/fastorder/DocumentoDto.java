@@ -16,4 +16,5 @@ public class DocumentoDto extends BaseDto {
     private Integer idScontrino;
     private Integer numero;
     private String numeroPrint;
+    private String suffisso;
 }

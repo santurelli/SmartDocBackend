@@ -318,16 +318,17 @@ public class InviaSupportiSdiTasklet implements Tasklet, StepExecutionListener
                                     for ( DatiFatturaInviataSdiDto dfiDto : datiFattureList )
                                     {
                                         fatturaelettronicaDelegate.memorizzaInvioSdi(dfiDto.getIdFatturaElettronica(), dfiDto.getProgressivoFile(), idSupporto);
-                                        if ( !StringUtils.containsIgnoreCase(dbKey, "justdesign") )
+                                        // Impostiamo il tenant PRIMA della chiamata al delegate in modo che
+                                        // il proxy @Transactional di Spring ottenga la connessione già col
+                                        // DatabaseContextHolder corretto (evita la race con NOT_SUPPORTED).
+                                        DatabaseContextHolder.set(dbKey);
+                                        if ( dfiDto.getTipoDocumento() == TipoDocumentoEnum.FATTURA )
                                         {
-                                            if ( dfiDto.getTipoDocumento() == TipoDocumentoEnum.FATTURA )
-                                            {
-                                                fatturaelettronicaDelegate.impostaInviataSdi(dbKey, dfiDto.getIdFattura());
-                                            }
-                                            else
-                                            {
-                                                fatturaelettronicaDelegate.impostaNotaCreditoInviataSdi(dbKey, dfiDto.getIdFattura());
-                                            }
+                                            fatturaelettronicaDelegate.impostaInviataSdi(dbKey, dfiDto.getIdFattura());
+                                        }
+                                        else
+                                        {
+                                            fatturaelettronicaDelegate.impostaNotaCreditoInviataSdi(dbKey, dfiDto.getIdFattura());
                                         }
                                     }
                                 }

@@ -134,22 +134,34 @@ public class FattureDao extends BaseDao
 
     public FatturaDto getById(long id) throws SQLException
     {
-        try
+        for (int attempt = 1; attempt <= 2; attempt++)
         {
-            BeanPropertyRowMapper<FatturaDto> rowMapper = new BeanPropertyRowMapper<>();
-            rowMapper.setMappedClass(FatturaDto.class);
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S03"), rowMapper, id);
+            try
+            {
+                BeanPropertyRowMapper<FatturaDto> rowMapper = new BeanPropertyRowMapper<>();
+                rowMapper.setMappedClass(FatturaDto.class);
+                return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURE_S03"), rowMapper, id);
+            }
+            catch ( EmptyResultDataAccessException e )
+            {
+                if (attempt < 2)
+                {
+                    _log.warn("Fattura {} non trovata al tentativo {}, riprovo dopo 300ms (possibile race condition RLS/pool)", id, attempt);
+                    try { Thread.sleep(300); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+                }
+                else
+                {
+                    _log.error("Nessuna fattura trovata con id {} dopo {} tentativi", id, attempt);
+                    return null;
+                }
+            }
+            catch ( DataAccessException e )
+            {
+                _log.error("Errore nel recupero della fattura con id {}", id, e);
+                throw new SQLException(e);
+            }
         }
-        catch ( EmptyResultDataAccessException e )
-        {
-            _log.error("Nessuna fattura trovata con id {}", id);
-            return null;
-        }
-        catch ( DataAccessException e )
-        {
-            _log.error("Errore nel recupero della fattura con id {}", id, e);
-            throw new SQLException(e);
-        }
+        return null;
     }
 
     public List<FatturaDto> getByProgetto(long idProgetto,

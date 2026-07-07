@@ -42,6 +42,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.xml.sax.SAXException;
 
@@ -79,6 +80,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
     @Autowired
     private it.tinna.smartdoc.server.dao.nazioni.NazioniDao nazioniDao;
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      NotificaMancataConsegnaType notificaMancataConsegna) throws SQLException
     {
@@ -88,6 +90,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         propagaEsitoSdiAlTenant(dao, progressivoFile);
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      NotificaScartoType notificaScarto) throws SQLException
     {
@@ -110,6 +113,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         propagaEsitoSdiAlTenant(dao, progressivoFile);
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void aggiornaDatiEsitoSdi(File fileEsitoSdi,
                                      RicevutaConsegnaType ricevutaConsegna) throws SQLException
     {
@@ -999,6 +1003,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         dao.impostaFattureNonNotificate(params);
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void impostaInviataSdi(String dbKey,
                                   long idFattura) throws SQLException
     {
@@ -1015,6 +1020,7 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         }
     }
 
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void impostaNotaCreditoInviataSdi(String dbKey,
                                              long idFattura) throws SQLException
     {
@@ -1046,6 +1052,13 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         return dao.isFatturaInviabile(dbKey, idFattura);
     }
 
+    public void resetStatoInvioFattura(String dbKey, long idFattura) throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
+        dao.resetStatoInvioFattura(dbKey, idFattura);
+    }
+
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public void memorizzaEsitoSdi(String progressivoFile) throws SQLException
     {
         FatturaElettronicaDao dao = new FatturaElettronicaDao(serviceJdbcTemplate);
@@ -1175,7 +1188,19 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         xml.append("        <TipoDocumento>TD07</TipoDocumento>\n");
         xml.append("        <Divisa>EUR</Divisa>\n");
         xml.append("        <Data>").append(FastDateFormat.getInstance("yyyy-MM-dd").format(dateFattura)).append("</Data>\n");
-        xml.append("        <Numero>").append(dto.getNumDocumento()).append("</Numero>\n");
+        String numDocumentoSemplificata = dto.getNumDocumento().toString();
+        if ( StringUtils.isNotEmpty(dto.getParticella()) )
+        {
+            if ( dto.getParticella().startsWith(" ") || dto.getParticella().startsWith("/") || dto.getParticella().startsWith("\\") )
+            {
+                numDocumentoSemplificata = numDocumentoSemplificata + dto.getParticella();
+            }
+            else
+            {
+                numDocumentoSemplificata = numDocumentoSemplificata + " " + dto.getParticella();
+            }
+        }
+        xml.append("        <Numero>").append(numDocumentoSemplificata).append("</Numero>\n");
         xml.append("      </DatiGeneraliDocumento>\n");
         xml.append("    </DatiGenerali>\n");
 

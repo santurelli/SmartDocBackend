@@ -32,8 +32,11 @@ public class InvioNoteCreditoReader implements ItemStreamReader<FatturaElettroni
     @Setter
     private String                             dbKey;
 
-    @Setter
-    private long[]                             idFatture;
+    private String                             idFattureParam;
+
+    public void setIdFatture(String idFattureParam) {
+        this.idFattureParam = idFattureParam;
+    }
 
     private List<FatturaElettronicaWrapperDto> elencoNoteCredito;
 
@@ -51,6 +54,14 @@ public class InvioNoteCreditoReader implements ItemStreamReader<FatturaElettroni
         try
         {
             DatabaseContextHolder.set(dbKey);
+            long[] idFatture = null;
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(idFattureParam)) {
+                String[] parts = idFattureParam.split(",");
+                idFatture = new long[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    idFatture[i] = Long.parseLong(parts[i].trim());
+                }
+            }
             List<Long> list = notecreditoDelegate.getNoteCreditoDaInviare(idFatture);
             logger.info("Trovate {} note credito", list.size());
             for (long idFattura : list)

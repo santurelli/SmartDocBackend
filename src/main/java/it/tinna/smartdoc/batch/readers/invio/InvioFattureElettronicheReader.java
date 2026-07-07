@@ -36,8 +36,12 @@ public class InvioFattureElettronicheReader implements ItemStreamReader<FatturaE
     @Setter
     private String                             dbKey;
 
-    @Setter
-    private long[]                             idFatture;
+    // CSV di id (es. "1,2,3") iniettato dal job parameter; null = tutte le fatture DA INVIARE
+    private String                             idFattureParam;
+
+    public void setIdFatture(String idFattureParam) {
+        this.idFattureParam = idFattureParam;
+    }
 
     private List<FatturaElettronicaWrapperDto> elencoFatture;
 
@@ -55,6 +59,14 @@ public class InvioFattureElettronicheReader implements ItemStreamReader<FatturaE
         try
         {
             DatabaseContextHolder.set(dbKey);
+            long[] idFatture = null;
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(idFattureParam)) {
+                String[] parts = idFattureParam.split(",");
+                idFatture = new long[parts.length];
+                for (int i = 0; i < parts.length; i++) {
+                    idFatture[i] = Long.parseLong(parts[i].trim());
+                }
+            }
             List<Long> list = fattureDelegate.getFattureElettronicheDaInviare(idFatture);
             logger.info("Trovate {} fatture elettroniche da elaborare", list.size());
             for (long idFattura : list)

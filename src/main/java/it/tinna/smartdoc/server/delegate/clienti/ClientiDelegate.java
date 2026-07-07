@@ -106,20 +106,18 @@ public class ClientiDelegate extends BaseDelegate
                                     Integer orderColumn,
                                     String orderDir) throws SQLException
     {
+        return getList(strToSearch, length, start, orderColumn, orderDir, false);
+    }
+
+    public List<ClienteDto> getList(String strToSearch,
+                                    Integer length,
+                                    Integer start,
+                                    Integer orderColumn,
+                                    String orderDir,
+                                    Boolean light) throws SQLException
+    {
         ClientiDao dao = new ClientiDao(jdbcTemplate);
-        List<ClienteDto> listaClienti = dao.getList(strToSearch, length, start, orderColumn, orderDir);
-        // IndirizziDao indirizziDao = new IndirizziDao(conn);
-        // ContattiDao contattiDao = new ContattiDao(conn);
-        // for (ClienteDto dto: listaClienti) {
-        // dto.setElencoIndirizzi(indirizziDao.getListByIdRichiedente(IndirizzoDto.Richiedente.CLIENTI.getValore(),
-        // dto.getId()));
-        // for (IndirizzoDto iDto: dto.getElencoIndirizzi()) {
-        // iDto.setDescrTipologia(IndirizzoDto.TipologiaIndirizzo.getDescrizioneByValue(iDto.getTipologia()).getDescrizione());
-        // }
-        // dto.setElencoContatti(contattiDao.getListByIdRichiedente(ContattoDto.Richiedente.CLIENTI.getValore(),
-        // dto.getId()));
-        // }
-        return listaClienti;
+        return dao.getList(strToSearch, length, start, orderColumn, orderDir, light != null && light);
     }
 
     public List<ClienteDto> getListForCombo() throws SQLException

@@ -130,28 +130,38 @@ public class FatturaElettronicaDao extends BaseDao
     public void aggiornaStatoFattura(long idFattura,
                                      StatoFatturaElettronica statoFattura) throws SQLException
     {
-        try
+        String sql = FileQueryReader.getQuery("FATTURAELETTRONICA_U01");
+        try (Connection conn = jdbcTemplate.getDataSource().getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("FATTURAELETTRONICA_U01"), statoFattura.name(), idFattura);
+            pstmt.setString(1, statoFattura.name());
+            pstmt.setLong(2, idFattura);
+            int updated = pstmt.executeUpdate();
+            _log.info("aggiornaStatoFattura: idFattura={}, stato={}, righe modificate={}", idFattura, statoFattura.name(), updated);
         }
-        catch ( DataAccessException e )
+        catch ( SQLException e )
         {
             _log.error("Errore nell'aggiornamento della fattura {} con lo stato {}", idFattura, statoFattura.name(), e);
-            throw new SQLException(e);
+            throw e;
         }
     }
 
     public void aggiornaStatoNotaCredito(long idNotaCredito,
                                          StatoFatturaElettronica statoFattura) throws SQLException
     {
-        try
+        String sql = FileQueryReader.getQuery("FATTURAELETTRONICA_U01B");
+        try (Connection conn = jdbcTemplate.getDataSource().getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql))
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("FATTURAELETTRONICA_U01B"), statoFattura.name(), idNotaCredito);
+            pstmt.setString(1, statoFattura.name());
+            pstmt.setLong(2, idNotaCredito);
+            int updated = pstmt.executeUpdate();
+            _log.info("aggiornaStatoNotaCredito: idNotaCredito={}, stato={}, righe modificate={}", idNotaCredito, statoFattura.name(), updated);
         }
-        catch ( DataAccessException e )
+        catch ( SQLException e )
         {
             _log.error("Errore nell'aggiornamento della nota credito {} con lo stato {}", idNotaCredito, statoFattura.name(), e);
-            throw new SQLException(e);
+            throw e;
         }
     }
 
@@ -205,6 +215,19 @@ public class FatturaElettronicaDao extends BaseDao
         catch ( DataAccessException e )
         {
             _log.error("Errore nella verifica della inviabilità della fattura {} con dbKey {}", idFattura, dbKey, e);
+            throw new SQLException(e);
+        }
+    }
+
+    public void resetStatoInvioFattura(String dbKey, long idFattura) throws SQLException
+    {
+        try
+        {
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTURAELETTRONICA_U08"), dbKey, idFattura);
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel reset dello stato invio per la fattura {} con dbKey {}", idFattura, dbKey, e);
             throw new SQLException(e);
         }
     }
@@ -412,8 +435,7 @@ public class FatturaElettronicaDao extends BaseDao
             throw new SQLException(e);
         }
     }
-
-    public long memorizzaFatturaElettronica(String dbKey,
+    public long memorizzaFatturaElettronica(String dbKey,
                                             FatturaElettronicaWrapperDto dto) throws SQLException
     {
         try
@@ -432,6 +454,26 @@ public class FatturaElettronicaDao extends BaseDao
                 }
             }
             String tipoDocumento = dto.getFattura() instanceof FatturaDto ? TipoDocumentoEnum.FATTURA.name() : TipoDocumentoEnum.NOTA_CREDITO.name();
+
+            // Check if record already exists in d_e_fatture_elettroniche
+            String selectSql = "SELECT k_d_e_fatture_elettroniche FROM d_e_fatture_elettroniche WHERE db_key = ? AND k_d_e_fatture = ? AND tipo_documento = ? ORDER BY k_d_e_fatture_elettroniche DESC LIMIT 1";
+            List<Long> ids = jdbcTemplate.queryForList(selectSql, Long.class, dbKey, dto.getFattura().getId(), tipoDocumento);
+            if (ids != null && !ids.isEmpty()) {
+                long existingId = ids.get(0);
+                String updateSql = "UPDATE d_e_fatture_elettroniche SET file_inviato = ?, errore_validazione_xml = ?, xml_non_valido = ?, numero_documento = ?, data_documento = ?, soggetto = ? WHERE k_d_e_fatture_elettroniche = ?";
+                jdbcTemplate.update(updateSql, 
+                    StringUtils.defaultIfBlank(dto.getFattura().getXmlFattura(), null), 
+                    StringUtils.defaultIfBlank(dto.getFattura().getErroreValidazioneXml(), null), 
+                    StringUtils.defaultIfBlank(dto.getFattura().getXmlNonValido(), null), 
+                    numeroDocumento.toString(), 
+                    dto.getFattura().getDataDocumento(), 
+                    dto.getFattura().getClienteDto().getDenominazione(),
+                    existingId
+                );
+                _log.info("Aggiornato record esistente in d_e_fatture_elettroniche con id {}", existingId);
+                return existingId;
+            }
+
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTURAELETTRONICA_I03"), Long.class, dbKey, dto.getFattura().getId(), tipoDocumento, StringUtils.defaultIfBlank(dto.getFattura().getXmlFattura(), null), StringUtils.defaultIfBlank(dto.getFattura().getErroreValidazioneXml(), null), StringUtils.defaultIfBlank(dto.getFattura().getXmlNonValido(), null), numeroDocumento.toString(), dto.getFattura().getDataDocumento(), dto.getFattura().getClienteDto().getDenominazione());
         }
         catch ( DataAccessException e )

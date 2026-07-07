@@ -99,7 +99,7 @@ public class PrimaNotaDao extends BaseDao
         query = StrSubstitutor.replace(query, valuesMap);
         try
         {
-            BeanPropertyRowMapper<PrimaNotaDto> rowMapper = new BeanPropertyRowMapper<>();
+BeanPropertyRowMapper<PrimaNotaDto> rowMapper = new BeanPropertyRowMapper<>();
             rowMapper.setMappedClass(PrimaNotaDto.class);
             return jdbcTemplate.query(query, rowMapper, params.toArray());
         }
