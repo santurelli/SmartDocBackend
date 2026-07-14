@@ -80,7 +80,8 @@ public class ArticoliController {
             response.setTotalFiltered(total);
             
             return ResponseEntity.ok(response);
-        } catch (SQLException e) {
+        } catch (Exception e) {
+            log.error("Errore nel recupero lista articoli", e);
             return ResponseEntity.internalServerError().body("Error fetching list: " + e.getMessage());
         }
     }
