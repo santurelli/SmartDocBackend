@@ -6087,7 +6087,8 @@
 					   quantita_movimento AS quantita,
 					   id_um_movimento AS idUnitaMisura,
 					   prezzo AS prezzoUnitario,
-					   idmagazzino AS idMagazzino
+					   idmagazzino AS idMagazzino,
+					   COUNT(*) OVER() AS total
 				  FROM v_movimenti_prodotti
 				 WHERE DATE_TRUNC('day', data_movimento) &gt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
 				   AND DATE_TRUNC('day', data_movimento) &lt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
