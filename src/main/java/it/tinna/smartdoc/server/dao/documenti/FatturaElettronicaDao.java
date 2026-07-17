@@ -131,18 +131,34 @@ public class FatturaElettronicaDao extends BaseDao
                                      StatoFatturaElettronica statoFattura) throws SQLException
     {
         String sql = FileQueryReader.getQuery("FATTURAELETTRONICA_U01");
-        try (Connection conn = jdbcTemplate.getDataSource().getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql))
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
         {
-            pstmt.setString(1, statoFattura.name());
-            pstmt.setLong(2, idFattura);
-            int updated = pstmt.executeUpdate();
-            _log.info("aggiornaStatoFattura: idFattura={}, stato={}, righe modificate={}", idFattura, statoFattura.name(), updated);
+            try
+            {
+                int updated = jdbcTemplate.update(sql, statoFattura.name(), idFattura);
+                _log.info("aggiornaStatoFattura (transazionale): idFattura={}, stato={}, righe modificate={}", idFattura, statoFattura.name(), updated);
+            }
+            catch ( org.springframework.dao.DataAccessException e )
+            {
+                _log.error("Errore nell'aggiornamento transazionale della fattura {} con lo stato {}", idFattura, statoFattura.name(), e);
+                throw new SQLException(e);
+            }
         }
-        catch ( SQLException e )
+        else
         {
-            _log.error("Errore nell'aggiornamento della fattura {} con lo stato {}", idFattura, statoFattura.name(), e);
-            throw e;
+            try (Connection conn = jdbcTemplate.getDataSource().getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setString(1, statoFattura.name());
+                pstmt.setLong(2, idFattura);
+                int updated = pstmt.executeUpdate();
+                _log.info("aggiornaStatoFattura (connessione diretta): idFattura={}, stato={}, righe modificate={}", idFattura, statoFattura.name(), updated);
+            }
+            catch ( SQLException e )
+            {
+                _log.error("Errore nell'aggiornamento diretto della fattura {} con lo stato {}", idFattura, statoFattura.name(), e);
+                throw e;
+            }
         }
     }
 
@@ -150,18 +166,34 @@ public class FatturaElettronicaDao extends BaseDao
                                          StatoFatturaElettronica statoFattura) throws SQLException
     {
         String sql = FileQueryReader.getQuery("FATTURAELETTRONICA_U01B");
-        try (Connection conn = jdbcTemplate.getDataSource().getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql))
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
         {
-            pstmt.setString(1, statoFattura.name());
-            pstmt.setLong(2, idNotaCredito);
-            int updated = pstmt.executeUpdate();
-            _log.info("aggiornaStatoNotaCredito: idNotaCredito={}, stato={}, righe modificate={}", idNotaCredito, statoFattura.name(), updated);
+            try
+            {
+                int updated = jdbcTemplate.update(sql, statoFattura.name(), idNotaCredito);
+                _log.info("aggiornaStatoNotaCredito (transazionale): idNotaCredito={}, stato={}, righe modificate={}", idNotaCredito, statoFattura.name(), updated);
+            }
+            catch ( org.springframework.dao.DataAccessException e )
+            {
+                _log.error("Errore nell'aggiornamento transazionale della nota credito {} con lo stato {}", idNotaCredito, statoFattura.name(), e);
+                throw new SQLException(e);
+            }
         }
-        catch ( SQLException e )
+        else
         {
-            _log.error("Errore nell'aggiornamento della nota credito {} con lo stato {}", idNotaCredito, statoFattura.name(), e);
-            throw e;
+            try (Connection conn = jdbcTemplate.getDataSource().getConnection();
+                 PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setString(1, statoFattura.name());
+                pstmt.setLong(2, idNotaCredito);
+                int updated = pstmt.executeUpdate();
+                _log.info("aggiornaStatoNotaCredito (connessione diretta): idNotaCredito={}, stato={}, righe modificate={}", idNotaCredito, statoFattura.name(), updated);
+            }
+            catch ( SQLException e )
+            {
+                _log.error("Errore nell'aggiornamento diretto della nota credito {} con lo stato {}", idNotaCredito, statoFattura.name(), e);
+                throw e;
+            }
         }
     }
 

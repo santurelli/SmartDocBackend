@@ -78,6 +78,7 @@ public class FattureController {
             @RequestParam(required = false) String tipo,
             @RequestParam(required = false) String statoFatturaElettronica,
             @RequestParam(required = false) String numDocumento,
+            @RequestParam(required = false) String particella,
             @RequestParam(required = false) String stato) throws SQLException {
         
         Integer orderColumnIdx = 1;
@@ -85,7 +86,7 @@ public class FattureController {
         else if ("d_e_clienti.denominazione".equals(orderColumn)) orderColumnIdx = 3;
         else if ("data_fattura".equals(orderColumn)) orderColumnIdx = 1;
         
-        it.tinna.smartdoc.shared.dto.documenti.FattureListResponse list = fattureDelegate.getList(tipo, idCliente, dataInizio, dataFine, idAgente, stato, statoFatturaElettronica, length, start, orderColumnIdx, orderDir, numDocumento);
+        it.tinna.smartdoc.shared.dto.documenti.FattureListResponse list = fattureDelegate.getList(tipo, idCliente, dataInizio, dataFine, idAgente, stato, statoFatturaElettronica, length, start, orderColumnIdx, orderDir, numDocumento, particella);
         return ResponseEntity.ok(new GenericResponseDto<>(list, null));
     }
 

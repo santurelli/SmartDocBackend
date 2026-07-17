@@ -192,7 +192,7 @@ public class FattureDelegate extends BaseDelegate
             _log.error("Errore nell'apertura dello stream per il template dell'elenco fatture", e);
             throw e;
         }
-        list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc", null);
+        list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, null, null, 1, "asc", null, null);
         for ( MovimentiDocumentoDto mdDto : list )
         {
             if ( mdDto.getFlFatturaElettronica() == 1 )
@@ -959,10 +959,11 @@ public class FattureDelegate extends BaseDelegate
                                                        Integer start,
                                                        Integer orderColumn,
                                                        String orderDir,
-                                                       String numDocumento) throws SQLException
+                                                       String numDocumento,
+                                                       String particella) throws SQLException
     {
         FattureDao dao = new FattureDao(jdbcTemplate);
-        return dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento);
+        return dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento, particella);
     }
 
     public FattureListResponse getList(String tipoDocumento,
@@ -976,11 +977,12 @@ public class FattureDelegate extends BaseDelegate
                                        Integer start,
                                        Integer orderColumn,
                                        String orderDir,
-                                       String numDocumento) throws SQLException
+                                       String numDocumento,
+                                       String particella) throws SQLException
     {
         FattureDao dao = new FattureDao(jdbcTemplate);
         FattureListResponse dto = new FattureListResponse();
-        List<MovimentiDocumentoDto> list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento);
+        List<MovimentiDocumentoDto> list = dao.getList(tipoDocumento, idCliente, dtFrom, dtTo, idAgente, stato, statoFatturaElettronica, length, start, orderColumn, orderDir, numDocumento, particella);
         BigDecimal totFatturato = BigDecimal.ZERO;
         BigDecimal totDaSaldare = BigDecimal.ZERO;
         BigDecimal totSaldato = BigDecimal.ZERO;

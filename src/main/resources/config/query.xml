@@ -4172,6 +4172,7 @@
 				   ${TIPO_FATTURA}
 		    	   ${STATO}
 		    	   ${NUM_DOCUMENTO}
+		    	   ${PARTICELLA}
 		  	  ORDER BY ${ORDER_BY}
 		  			   ${LIMIT}
 		</content>
