@@ -14,6 +14,8 @@ public class BatchConstants
 
     public static final String EXECUTIONCONTEXT_ELENCO_FATTURE             = "ELENCO_FATTURE";
 
+    public static final String EXECUTIONCONTEXT_ELENCO_AUTOFATTURE         = "ELENCO_AUTOFATTURE";
+
     public static final String EXECUTIONCONTEXT_JOBDIR                     = "JOBDIR_KEY";
 
     public static final String EXECUTIONCONTEXT_FATTURE_ESITO_SDI          = "FATTURE_ESITO_SDI";

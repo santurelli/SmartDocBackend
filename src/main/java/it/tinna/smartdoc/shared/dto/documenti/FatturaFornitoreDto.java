@@ -7,6 +7,7 @@ import java.util.List;
 public class FatturaFornitoreDto extends DocumentoAcquistoDto implements HasContabilita {
 	
 	private Integer idParametrizzazione;
+	private String tipoDocumentoSdi;
 	private BigDecimal imponibileContabilita;
 	private BigDecimal impostaContabilita;
 	private BigDecimal totaleContabilita;
@@ -20,6 +21,14 @@ public class FatturaFornitoreDto extends DocumentoAcquistoDto implements HasCont
 	
 	public List<Integer> getIdOrdini() {
 		return idOrdini;
+	}
+
+	public String getTipoDocumentoSdi() {
+		return tipoDocumentoSdi;
+	}
+
+	public void setTipoDocumentoSdi(String tipoDocumentoSdi) {
+		this.tipoDocumentoSdi = tipoDocumentoSdi;
 	}
 
 	@Override

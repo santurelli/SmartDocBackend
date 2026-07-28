@@ -1017,6 +1017,11 @@ public class FattureFornitoreDelegate extends BaseDelegate
                     documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idBollaCarico, ISharedConstants.TIPODOCASSOCIATO_BOLLACARICO);
                 }
             }
+            if ( org.apache.commons.lang3.StringUtils.isNotBlank(dto.getTipoDocumentoSdi()) )
+            {
+                new it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao(jdbcTemplate)
+                    .aggiornaStatoAutofattura(idFattura, it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.DI);
+            }
             return idFattura;
         } catch (Exception e) {
             _log.error("Errore durante l'inserimento della fattura fornitore: {}", new Gson().toJson(dto), e);
@@ -1063,7 +1068,11 @@ public class FattureFornitoreDelegate extends BaseDelegate
                     ffDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
                 }
             }
-            ffDao.aggiornaTotaliFatturaFornitore(dto.getId());
+            if ( org.apache.commons.lang3.StringUtils.isNotBlank(dto.getTipoDocumentoSdi()) )
+            {
+                new it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao(jdbcTemplate)
+                    .aggiornaStatoAutofattura(dto.getId(), it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.DI);
+            }
         } catch (Exception e) {
             _log.error("Errore durante l'aggiornamento della fattura fornitore {}: {}", dto.getId(), new Gson().toJson(dto), e);
             throw e;
@@ -1108,8 +1117,6 @@ public class FattureFornitoreDelegate extends BaseDelegate
         } else {
             dao.updateScadenzaPagamento(dto);
         }
-
-        dao.aggiornaTotaliFatturaFornitore(currentDto.getIdDocumento());
     }
 
 }

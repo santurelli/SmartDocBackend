@@ -197,6 +197,41 @@ public class FatturaElettronicaDao extends BaseDao
         }
     }
 
+    public void aggiornaStatoAutofattura(long idFatturaFornitore,
+                                         StatoFatturaElettronica statoFattura) throws SQLException
+    {
+        String sql = FileQueryReader.getQuery("FATTURAELETTRONICA_U01C");
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive())
+        {
+            try
+            {
+                int updated = jdbcTemplate.update(sql, statoFattura.name(), idFatturaFornitore);
+                _log.info("aggiornaStatoAutofattura (transazionale): idFatturaFornitore={}, stato={}, righe modificate={}", idFatturaFornitore, statoFattura.name(), updated);
+            }
+            catch ( org.springframework.dao.DataAccessException e )
+            {
+                _log.error("Errore nell'aggiornamento transazionale dell'autofattura {} con lo stato {}", idFatturaFornitore, statoFattura.name(), e);
+                throw new SQLException(e);
+            }
+        }
+        else
+        {
+            try (java.sql.Connection conn = jdbcTemplate.getDataSource().getConnection();
+                 java.sql.PreparedStatement pstmt = conn.prepareStatement(sql))
+            {
+                pstmt.setString(1, statoFattura.name());
+                pstmt.setLong(2, idFatturaFornitore);
+                int updated = pstmt.executeUpdate();
+                _log.info("aggiornaStatoAutofattura (connessione diretta): idFatturaFornitore={}, stato={}, righe modificate={}", idFatturaFornitore, statoFattura.name(), updated);
+            }
+            catch ( java.sql.SQLException e )
+            {
+                _log.error("Errore nell'aggiornamento diretto dell'autofattura {} con lo stato {}", idFatturaFornitore, statoFattura.name(), e);
+                throw e;
+            }
+        }
+    }
+
     public void aggiornaDatiInvioSupporto(EsitoFTPType esitoInvio) throws SQLException
     {
         try

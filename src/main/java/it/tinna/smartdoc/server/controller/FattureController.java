@@ -1,38 +1,33 @@
 package it.tinna.smartdoc.server.controller;
 
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.google.gson.Gson;
+import it.tinna.smartdoc.server.batch.BatchScheduler;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
+import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
+import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
+import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
+import it.tinna.smartdoc.server.delegate.statistiche.StatisticheDelegate;
+import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
+import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
+import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
+import it.tinna.smartdoc.shared.dto.login.UtenteDto;
+import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.statistiche.DatiGlobaliDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
-import it.tinna.smartdoc.server.delegate.statistiche.StatisticheDelegate;
-import it.tinna.smartdoc.server.delegate.documenti.FattureDelegate;
-import it.tinna.smartdoc.shared.dto.statistiche.DatiGlobaliDto;
-import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
-import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
-import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
-import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.security.core.context.SecurityContextHolder;
-import it.tinna.smartdoc.server.security.UserDetailsImpl;
-import it.tinna.smartdoc.shared.dto.login.UtenteDto;
-import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
-import lombok.extern.slf4j.Slf4j;
-import com.google.gson.Gson;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import it.tinna.smartdoc.server.batch.BatchScheduler;
-import it.tinna.smartdoc.server.database.DatabaseContextHolder;
-import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
 
 @RestController
 @Slf4j

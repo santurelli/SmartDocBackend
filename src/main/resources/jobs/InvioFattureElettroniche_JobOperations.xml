@@ -49,6 +49,9 @@
 	<bean id="aggiornaFattureInviateTasklet" class="it.tinna.smartdoc.batch.tasklet.AggiornaFattureInviateTasklet" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 	</bean>
+	<bean id="aggiornaAutofattureInviateTasklet" class="it.tinna.smartdoc.batch.tasklet.AggiornaAutofattureInviateTasklet" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
+	</bean>
 	<!--################################### READER SECTION ###############################################-->
 	<bean id="invioFattureReader" class="it.tinna.smartdoc.batch.readers.invio.InvioFattureElettronicheReader" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
@@ -57,6 +60,9 @@
 	<bean id="invioNoteCreditoReader" class="it.tinna.smartdoc.batch.readers.invio.InvioNoteCreditoReader" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 		<property name="idFatture" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_ID_FATTURE]}"></property>
+	</bean>
+	<bean id="invioAutofattureReader" class="it.tinna.smartdoc.batch.readers.invio.InvioAutofattureReader" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 	</bean>
 	<!--################################### PROCESSOR SECTION ###############################################-->
 	<bean id="invioFattureProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor" scope="step">
@@ -68,6 +74,14 @@
 		</property>
 	</bean>
 	<bean id="invioNoteCreditoProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor" scope="step">
+		<property name="delegates">
+			<list value-type="org.springframework.batch.item.ItemProcessor">
+				<ref bean="memorizzaFatturaElettronicaProcessor" />
+				<ref bean="generaNomeFileProcessor" />
+			</list>
+		</property>
+	</bean>
+	<bean id="invioAutofattureProcessor" class="org.springframework.batch.item.support.CompositeItemProcessor" scope="step">
 		<property name="delegates">
 			<list value-type="org.springframework.batch.item.ItemProcessor">
 				<ref bean="memorizzaFatturaElettronicaProcessor" />
@@ -90,6 +104,10 @@
 	<bean id="invioNoteCreditoWriter" class="it.tinna.smartdoc.batch.writers.invio.InvioFattureElettronicheWriter" scope="step">
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 		<property name="comandoFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_INVIO_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_FIRMA)}"></property>
+		<property name="stepExecution" value="#{stepExecution}"></property>
+	</bean>
+	<bean id="invioAutofattureWriter" class="it.tinna.smartdoc.batch.writers.invio.InvioAutofattureWriter" scope="step">
+		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property>
 	</bean>
 </beans>

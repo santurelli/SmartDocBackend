@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.freemarker.FreeMarkerTemplateUtils;
@@ -111,6 +112,7 @@ public class RegistriIvaDelegate extends BaseDelegate
         return bytes;
     }
 
+    @Cacheable(value = "anni-doc-iva", cacheResolver = "companyCacheResolver")
     public List<Integer> getElencoAnniDocIva() throws SQLException
     {
         RegistriIvaDao dao = new RegistriIvaDao(jdbcTemplate);

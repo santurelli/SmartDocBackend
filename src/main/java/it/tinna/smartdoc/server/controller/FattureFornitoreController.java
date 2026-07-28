@@ -64,6 +64,18 @@ public class FattureFornitoreController {
         }
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<GenericResponseDto<Integer>> update(@PathVariable long id, @RequestBody FatturaFornitoreDto dto) throws SQLException {
+        try {
+            dto.setId(id);
+            fattureFornitoreDelegate.update(dto);
+            return ResponseEntity.ok(new GenericResponseDto<>((int) id, null));
+        } catch (Exception e) {
+            log.error("Errore durante l'aggiornamento della fattura fornitore {}: {}", id, new Gson().toJson(dto), e);
+            throw e;
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<GenericResponseDto<Boolean>> delete(@PathVariable long id) throws SQLException {
         FatturaFornitoreDto dto = new FatturaFornitoreDto();

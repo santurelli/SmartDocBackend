@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
+﻿<?xml version="1.0" encoding="ISO-8859-1" ?>
 <root>
     <query name="AGENTI_D01">
 		<content delimiterParsingDisabled="true">
@@ -2170,6 +2170,23 @@
 			UPDATE d_e_notecredito
 			   SET stato_fattura_elettronica = ?
 			 WHERE k_d_e_notecredito = ?
+		</content>
+	</query>
+	<query name="FATTURAELETTRONICA_U01C">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_fatturefornitore
+			   SET stato_fattura_elettronica = ?
+			 WHERE k_d_e_fatturefornitore = ?
+		</content>
+	</query>
+	<query name="FATTUREFORNITORE_AUTOFATTURE_DA_INVIARE">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_fatturefornitore AS id
+			  FROM d_e_fatturefornitore
+			 WHERE fl_deleted = 0
+			   AND tipo_documento_sdi IS NOT NULL
+			   AND UPPER(stato_fattura_elettronica) = 'DI'
+		  ORDER BY data_fattura, num_fattura
 		</content>
 	</query>
 	<query name="FATTURAELETTRONICA_U02">
@@ -4473,9 +4490,14 @@
 				   		percentuale_ritenuta_previdenziale,
 						contropartita_ritenuta_previdenziale,
 				   		importo_ritenuta_acconto,
+						fl_ritenuta_acconto,
+						perc_ritenuta_acconto,
+						tipo_ritenuta,
+						causale_pagamento,
+						tipo_documento_sdi,
 						user_created,
 						dt_created)
-				 VALUES(?,TO_DATE(?,'DD/MM/YYYY'),?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,TO_DATE(?,'DD/MM/YYYY'),?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			returning k_d_e_fatturefornitore;
 		</content>
 	</query>
@@ -4587,7 +4609,13 @@
 				   percentuale_ritenuta_previdenziale AS percRitenutaPrevidenziale,
 				   contropartita_ritenuta_previdenziale AS idContropartitaRitenutaPrevidenziale,
 				   d_e_conti.descrizione AS descrContropartitaRitenutaPrevidenziale,
-				   importo_ritenuta_acconto AS importoRitenutaAcconto
+				   importo_ritenuta_acconto AS importoRitenutaAcconto,
+				   tipo_documento_sdi AS tipoDocumentoSdi,
+				   stato_fattura_elettronica AS statoFatturaElettronica,
+				   fl_ritenuta_acconto AS flRitenutaAcconto,
+				   perc_ritenuta_acconto AS percRitenutaAcconto,
+				   tipo_ritenuta AS tipoRitenuta,
+				   causale_pagamento AS causalePagamento
 			  FROM d_e_fatturefornitore
 		 LEFT JOIN d_e_tipipagamento
 		 		ON d_e_fatturefornitore.k_d_e_tipipagamento = d_e_tipipagamento.k_d_e_tipipagamento
@@ -4772,7 +4800,9 @@
 				  	   d_e_fornitori.denominazione AS descFornitore,
 				  	   get_totale_fatturafornitore(d_e_fatturefornitore.k_d_e_fatturefornitore) AS totale,
 				  	   get_totalepagato_fatturafornitore(d_e_fatturefornitore.k_d_e_fatturefornitore) AS totalePagato, 
-	                   get_totaledapagare_fatturafornitore(d_e_fatturefornitore.k_d_e_fatturefornitore) AS totaleDaPagare
+	                   get_totaledapagare_fatturafornitore(d_e_fatturefornitore.k_d_e_fatturefornitore) AS totaleDaPagare,
+				  	   d_e_fatturefornitore.tipo_documento_sdi AS tipoDocumentoSdi,
+				  	   d_e_fatturefornitore.stato_fattura_elettronica AS statoFatturaElettronica
 				  FROM d_e_fatturefornitore
 	              JOIN d_e_fornitori
 	                ON d_e_fatturefornitore.k_d_e_fornitori = d_e_fornitori.k_d_e_fornitori
@@ -4830,7 +4860,29 @@
 		  		   COALESCE(d_e_fatturefornitore.particella, '')
 		</content>
 	</query>
-	<query name="FATTUREFORNITORE_S14">
+
+	<query name="RITENUTE_770_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT f.k_d_e_fornitori                             AS idFornitore,
+			       f.denominazione                               AS denominazioneFornitore,
+			       COALESCE(f.codice_fiscale, '')                AS codiceFiscaleFornitore,
+			       COALESCE(f.partita_iva, '')                   AS partitaIvaFornitore,
+			       ff.causale_pagamento                          AS causalePagamento,
+			       ff.tipo_ritenuta                              AS tipoRitenuta,
+			       SUM(get_totale_fatturafornitore(ff.k_d_e_fatturefornitore))  AS totaleCompensi,
+			       SUM(COALESCE(ff.importo_ritenuta_acconto, 0)) AS totaleRitenute,
+			       COUNT(*)                                      AS numeroFatture
+			  FROM d_e_fatturefornitore ff
+			  JOIN d_e_fornitori f ON ff.k_d_e_fornitori = f.k_d_e_fornitori
+			 WHERE ff.fl_ritenuta_acconto = 1
+			   AND ff.fl_deleted = 0
+			   AND EXTRACT(YEAR FROM ff.data_fattura) = ?
+			   AND (? IS NULL OR ff.k_d_e_fornitori = ?)
+		  GROUP BY f.k_d_e_fornitori, f.denominazione, f.codice_fiscale, f.partita_iva,
+		           ff.causale_pagamento, ff.tipo_ritenuta
+		  ORDER BY f.denominazione, ff.causale_pagamento
+		</content>
+	</query>	<query name="FATTUREFORNITORE_S14">
 		<content delimiterParsingDisabled="true">
 			SELECT d_e_fatturefornitore.k_d_e_fatturefornitore AS id,
 				   COALESCE(num_doc_fornitore, '') AS numeroDocumentoFornitore,
@@ -4887,6 +4939,11 @@
 				   percentuale_ritenuta_previdenziale = ?,
 				   contropartita_ritenuta_previdenziale = ?,
 				   importo_ritenuta_acconto = ?,
+				   fl_ritenuta_acconto = ?,
+				   perc_ritenuta_acconto = ?,
+				   tipo_ritenuta = ?,
+				   causale_pagamento = ?,
+				   tipo_documento_sdi = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_fatturefornitore = ?
@@ -4911,18 +4968,18 @@
 	</query>
 	<query name="FATTUREFORNITORE_S15">
 		<content delimiterParsingDisabled="true">
-			SELECT get_totale_fatturafornitore(?)
+			SELECT get_totale_fatturafornitore(?::integer)
 		</content>
 	</query>
 	<query name="FATTUREFORNITORE_S16">
 		<content delimiterParsingDisabled="true">
-			SELECT get_totalepagato_fatturafornitore(?)
+			SELECT get_totalepagato_fatturafornitore(?::integer)
 		</content>
 	</query>
 	<query name="FATTUREFORNITORE_U03">
 		<content delimiterParsingDisabled="true">
-			UPDATE d_e_fatturefornitore 
-               SET saldato = CASE WHEN get_totaledapagare_fatturafornitore(?) &lt;= 0 THEN 1 ELSE 0 END
+			UPDATE d_e_fatturefornitore
+               SET saldato = CASE WHEN get_totaledapagare_fatturafornitore(?::integer) &lt;= 0 THEN 1 ELSE 0 END
              WHERE k_d_e_fatturefornitore = ?
 		</content>
 	</query>
@@ -5488,11 +5545,17 @@
 	</query>
 	<query name="IVADOCUMENTI_S02">
 		<content delimiterParsingDisabled="true">
-			SELECT EXTRACT(YEAR FROM data_documento) AS anno
-			  FROM v_documenti_clienti
-			 WHERE tipo_documento IN ('F', 'B', 'FF', 'NCC')
-		  GROUP BY EXTRACT(YEAR FROM data_documento)
-		  ORDER BY EXTRACT(YEAR FROM data_documento)
+			SELECT anno FROM (
+			  SELECT DISTINCT EXTRACT(YEAR FROM data_fattura)::integer AS anno FROM d_e_fatture       WHERE fl_deleted = 0
+			  UNION
+			  SELECT DISTINCT EXTRACT(YEAR FROM data_fattura)::integer AS anno FROM d_e_fatturefornitore WHERE fl_deleted = 0
+			  UNION
+			  SELECT DISTINCT EXTRACT(YEAR FROM data_notacredito)::integer AS anno FROM d_e_notecredito      WHERE fl_deleted = 0
+			  UNION
+			  SELECT DISTINCT EXTRACT(YEAR FROM data_notacredito)::integer AS anno FROM d_e_notecreditofornitore WHERE fl_deleted = 0
+			) t
+			WHERE anno IS NOT NULL
+			ORDER BY anno
 		</content>
 	</query>
 	<query name="IVADOCUMENTI_S03">
@@ -5680,6 +5743,40 @@
 		</content>
 	</query>
 	
+	<query name="LIPE_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT
+			    COALESCE(SUM(CASE WHEN tipo_documento IN ('F', 'NCC')
+			        THEN CASE WHEN tipo_documento = 'NCC'
+			                  THEN -(totale - COALESCE(iva_debito, 0))
+			                  ELSE  (totale - COALESCE(iva_debito, 0)) END
+			        ELSE 0 END), 0)::numeric(14,2) AS imponibile_vendite,
+
+			    COALESCE(SUM(CASE WHEN tipo_documento IN ('F', 'NCC') AND COALESCE(split_payment, 0) = 0
+			        THEN CASE WHEN tipo_documento = 'NCC'
+			                  THEN -COALESCE(iva_debito, 0)
+			                  ELSE  COALESCE(iva_debito, 0) END
+			        ELSE 0 END), 0)::numeric(14,2) AS iva_esigibile,
+
+			    COALESCE(SUM(CASE WHEN tipo_documento IN ('FF', 'NCF')
+			        THEN CASE WHEN tipo_documento = 'NCF'
+			                  THEN -(totale - COALESCE(iva_credito, 0))
+			                  ELSE  (totale - COALESCE(iva_credito, 0)) END
+			        ELSE 0 END), 0)::numeric(14,2) AS imponibile_acquisti,
+
+			    COALESCE(SUM(CASE WHEN tipo_documento IN ('FF', 'NCF')
+			        THEN CASE WHEN tipo_documento = 'NCF'
+			                  THEN -COALESCE(iva_credito, 0)
+			                  ELSE  COALESCE(iva_credito, 0) END
+			        ELSE 0 END), 0)::numeric(14,2) AS iva_detratta
+
+			FROM v_documenti_clienti
+			WHERE tipo_documento IN ('F', 'FF', 'NCC', 'NCF')
+			  AND EXTRACT(YEAR FROM data_iva) = ?
+			  ${WHERE_PERIODO}
+		</content>
+	</query>
+
 	<query name="LINGUE_S01">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_lingue AS id,

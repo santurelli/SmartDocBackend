@@ -15,7 +15,8 @@ public enum TipoDocumentoEnum
  ACCONTO_ANTICIPO_PARCELLA("Acconto/anticipo su parcella"),
  PARCELLA("Parcella"),
  FATTURA_DIFFERITA("Fattura differita"),
- FATTURA_SEMPLIFICATA("Fattura semplificata");
+ FATTURA_SEMPLIFICATA("Fattura semplificata"),
+ AUTOFATTURA("Autofattura");
 
     private String descrizione;
 

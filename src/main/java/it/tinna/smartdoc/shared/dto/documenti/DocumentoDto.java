@@ -270,6 +270,9 @@ public class DocumentoDto extends BaseDto
     private String                              tipoRitenuta;
 
     @Expose
+    private String                              causalePagamento;
+
+    @Expose
     private Integer                             flRivalsaInps;
 
     @Expose

@@ -12,22 +12,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import it.tinna.smartdoc.batch.constants.BatchConstants;
 import it.tinna.smartdoc.batch.dto.DatiFatturaInviataSdiDto;
-import it.tinna.smartdoc.server.constants.TipoDocumentoEnum;
 import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.server.delegate.documenti.FatturaElettronicaDelegate;
 import it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica;
 import lombok.Setter;
 
-public class AggiornaFattureInviateTasklet implements Tasklet
+public class AggiornaAutofattureInviateTasklet implements Tasklet
 {
 
     private Logger                     logger = LoggerFactory.getLogger(this.getClass());
 
     @Setter
     private String                     dbKey;
-
-    @Setter
-    private int                        test;
 
     @Autowired
     private FatturaElettronicaDelegate fatturaelettronicaDelegate;
@@ -37,7 +33,9 @@ public class AggiornaFattureInviateTasklet implements Tasklet
     public RepeatStatus execute(StepContribution contribution,
                                 ChunkContext chunkContext) throws Exception
     {
-        List<DatiFatturaInviataSdiDto> datiFattureList = (List<DatiFatturaInviataSdiDto>) chunkContext.getStepContext().getStepExecution().getJobExecution().getExecutionContext().get(BatchConstants.EXECUTIONCONTEXT_ELENCO_FATTURE);
+        List<DatiFatturaInviataSdiDto> datiFattureList = (List<DatiFatturaInviataSdiDto>) chunkContext
+                .getStepContext().getStepExecution().getJobExecution()
+                .getExecutionContext().get(BatchConstants.EXECUTIONCONTEXT_ELENCO_AUTOFATTURE);
         try
         {
             DatabaseContextHolder.set(dbKey);
@@ -45,16 +43,8 @@ public class AggiornaFattureInviateTasklet implements Tasklet
             {
                 for ( DatiFatturaInviataSdiDto dfiDto : datiFattureList )
                 {
-                    if ( TipoDocumentoEnum.NOTA_CREDITO.equals(dfiDto.getTipoDocumento()) )
-                    {
-                        fatturaelettronicaDelegate.aggiornaStatoNotaCredito(dfiDto.getIdFattura(), StatoFatturaElettronica.IN);
-                        logger.info("Aggiornata nota credito {} come inviata allo SDI", dfiDto.getIdFattura());
-                    }
-                    else
-                    {
-                        fatturaelettronicaDelegate.aggiornaStatoFattura(dfiDto.getIdFattura(), StatoFatturaElettronica.IN);
-                        logger.info("Aggiornata fattura {} come inviata allo SDI", dfiDto.getIdFattura());
-                    }
+                    fatturaelettronicaDelegate.aggiornaStatoAutofattura(dfiDto.getIdFattura(), StatoFatturaElettronica.IN);
+                    logger.info("Aggiornata autofattura {} come inviata allo SDI", dfiDto.getIdFattura());
                 }
             }
         }

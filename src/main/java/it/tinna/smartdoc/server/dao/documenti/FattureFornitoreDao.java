@@ -379,7 +379,7 @@ public class FattureFornitoreDao extends BaseDao
     {
         try
         {
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTUREFORNITORE_I01"), Integer.class, dto.getNumeroDocumentoFornitore(), dto.getDataDocumentoFornitore(), dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null), StringUtils.defaultIfEmpty(dto.getDataDocumento(), null), dto.getIdProgetto(), dto.getIdFornitore(), dto.getIdTipoPagamento(), dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(), dto.getConto(), dto.getBic(), dto.getAcconto(), dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(), dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(), dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(), dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(), dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(), dto.getTipoComunicazione(), dto.getIdMagazzino(), dto.getIdRitenutaPrevidenziale(), dto.getPercRitenutaPrevidenziale(), dto.getIdContropartitaRitenutaPrevidenziale(), dto.getImportoRitenutaAcconto(), dto.getUserCreated());
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FATTUREFORNITORE_I01"), Integer.class, dto.getNumeroDocumentoFornitore(), dto.getDataDocumentoFornitore(), dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null), StringUtils.defaultIfEmpty(dto.getDataDocumento(), null), (dto.getIdProgetto() == null || dto.getIdProgetto() == 0) ? null : dto.getIdProgetto(), dto.getIdFornitore(), dto.getIdTipoPagamento(), dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(), dto.getConto(), dto.getBic(), dto.getAcconto(), dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(), dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(), dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(), dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(), dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(), dto.getTipoComunicazione(), dto.getIdMagazzino(), dto.getIdRitenutaPrevidenziale(), dto.getPercRitenutaPrevidenziale(), dto.getIdContropartitaRitenutaPrevidenziale(), dto.getImportoRitenutaAcconto(), dto.getFlRitenutaAcconto(), dto.getPercRitenutaAcconto(), dto.getTipoRitenuta(), dto.getCausalePagamento(), dto.getTipoDocumentoSdi(), dto.getUserCreated());
         }
         catch ( DataAccessException e )
         {
@@ -427,6 +427,20 @@ public class FattureFornitoreDao extends BaseDao
         }
     }
 
+    public List<Long> getAutofattureDaInviare() throws SQLException
+    {
+        try
+        {
+            return jdbcTemplate.query(FileQueryReader.getQuery("FATTUREFORNITORE_AUTOFATTURE_DA_INVIARE"),
+                (rs, rowNum) -> rs.getLong("id"));
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero delle autofatture da inviare", e);
+            throw new SQLException(e);
+        }
+    }
+
     public boolean isExistentNumero(Integer numero,
                                     String particella,
                                     String data,
@@ -448,7 +462,7 @@ public class FattureFornitoreDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("FATTUREFORNITORE_U01"), dto.getNumeroDocumentoFornitore(), dto.getDataDocumentoFornitore(), dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null), StringUtils.defaultIfEmpty(dto.getDataDocumento(), null), dto.getIdProgetto(), dto.getIdFornitore(), dto.getIdTipoPagamento(), dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(), dto.getConto(), dto.getBic(), dto.getAcconto(), dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(), dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(), dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(), dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(), dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(), dto.getTipoComunicazione(), dto.getIdMagazzino(), dto.getIdRitenutaPrevidenziale(), dto.getPercRitenutaPrevidenziale(), dto.getIdContropartitaRitenutaPrevidenziale(), dto.getImportoRitenutaAcconto(), dto.getUserLastUpdate(), dto.getId());
+            jdbcTemplate.update(FileQueryReader.getQuery("FATTUREFORNITORE_U01"), dto.getNumeroDocumentoFornitore(), dto.getDataDocumentoFornitore(), dto.getNumDocumento(), StringUtils.defaultIfEmpty(dto.getParticella(), null), StringUtils.defaultIfEmpty(dto.getDataDocumento(), null), (dto.getIdProgetto() == null || dto.getIdProgetto() == 0) ? null : dto.getIdProgetto(), dto.getIdFornitore(), dto.getIdTipoPagamento(), dto.getDescrizioneBanca(), dto.getIban(), dto.getCin(), dto.getAbi(), dto.getCab(), dto.getConto(), dto.getBic(), dto.getAcconto(), dto.getIndirizzoIntestazione(), dto.getCapIntestazione(), dto.getCittaIntestazione(), dto.getProvinciaIntestazione(), dto.getNazioneIntestazione(), dto.getIndirizzoDestinazione(), dto.getCapDestinazione(), dto.getCittaDestinazione(), dto.getProvinciaDestinazione(), dto.getNazioneDestinazione(), dto.getEsigibilitaDifferita(), dto.getIdCausaleEsigibilitaDifferita(), dto.getTipoComunicazione(), dto.getIdMagazzino(), dto.getIdRitenutaPrevidenziale(), dto.getPercRitenutaPrevidenziale(), dto.getIdContropartitaRitenutaPrevidenziale(), dto.getImportoRitenutaAcconto(), dto.getFlRitenutaAcconto(), dto.getPercRitenutaAcconto(), dto.getTipoRitenuta(), dto.getCausalePagamento(), dto.getTipoDocumentoSdi(), dto.getUserLastUpdate(), dto.getId());
         }
         catch ( DataAccessException e )
         {

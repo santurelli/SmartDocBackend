@@ -188,6 +188,20 @@ public class FatturaElettronicaDelegate extends BaseDelegate
         dao.aggiornaStatoFattura(idFattura, statoFattura);
     }
 
+    public void aggiornaStatoNotaCredito(long idNotaCredito,
+                                         StatoFatturaElettronica statoFattura) throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        dao.aggiornaStatoNotaCredito(idNotaCredito, statoFattura);
+    }
+
+    public void aggiornaStatoAutofattura(long idFatturaFornitore,
+                                         StatoFatturaElettronica statoFattura) throws SQLException
+    {
+        FatturaElettronicaDao dao = new FatturaElettronicaDao(jdbcTemplate);
+        dao.aggiornaStatoAutofattura(idFatturaFornitore, statoFattura);
+    }
+
     public List<EsitoSdiDto> getEsitiInvioSdi(List<Long> idFatture,
                                               String dbKey) throws SQLException
     {
@@ -1206,9 +1220,19 @@ public class FatturaElettronicaDelegate extends BaseDelegate
 
         for (ProdottoDocumentoDto p : dto.getProdotti()) {
             AliquotaIvaDto ai = aiDao.getById(p.getIdAliquotaIva());
+            // FSM10: <Importo> deve essere il totale IVA inclusa
+            BigDecimal imponibile = BigDecimal.valueOf(p.getPrezzoImponibile());
+            BigDecimal importoConIva;
+            if (ai != null && ai.getImposta() != null && ai.getImposta().doubleValue() > 0) {
+                BigDecimal aliquota = BigDecimal.valueOf(ai.getImposta().doubleValue());
+                importoConIva = imponibile.multiply(BigDecimal.ONE.add(aliquota.divide(new BigDecimal(100), 10, RoundingMode.HALF_UP)))
+                                          .setScale(2, RoundingMode.HALF_UP);
+            } else {
+                importoConIva = imponibile.setScale(2, RoundingMode.HALF_UP);
+            }
             xml.append("    <DatiBeniServizi>\n");
             xml.append("      <Descrizione>").append(escapeXml(StringUtils.defaultIfBlank(p.getFmDescrizione(), p.getDescProdotto()))).append("</Descrizione>\n");
-            xml.append("      <Importo>").append(String.format(java.util.Locale.US, "%.2f", p.getPrezzoImponibile())).append("</Importo>\n");
+            xml.append("      <Importo>").append(String.format(java.util.Locale.US, "%.2f", importoConIva)).append("</Importo>\n");
             xml.append("      <DatiIVA>\n");
             if (ai != null && ai.getImposta() != null && ai.getImposta().doubleValue() > 0) {
                 xml.append("        <Aliquota>").append(String.format(java.util.Locale.US, "%.2f", ai.getImposta())).append("</Aliquota>\n");
