@@ -1,7 +1,9 @@
 package it.tinna.smartdoc.server.controller;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.tinna.smartdoc.server.delegate.fornitori.FornitoriDelegate;
+import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
 import it.tinna.smartdoc.shared.dto.fornitori.FornitoreDto;
+import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 
@@ -78,7 +82,9 @@ public class FornitoriController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            Integer id = (int) fornitoriDelegate.insert(dto, new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>());
+            List<IndirizzoDto> indirizziIns = dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new ArrayList<>();
+            List<ContattoDto> contattiIns = dto.getElencoContatti() != null ? dto.getElencoContatti() : new ArrayList<>();
+            Integer id = (int) fornitoriDelegate.insert(dto, indirizziIns, new ArrayList<>(), contattiIns, new ArrayList<>());
             response.setPayload(id);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
@@ -102,7 +108,15 @@ public class FornitoriController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            fornitoriDelegate.update(dto, new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>(), new java.util.ArrayList<>());
+            List<IndirizzoDto> indirizzi = dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new ArrayList<>();
+            List<IndirizzoDto> indirizziToAdd = indirizzi.stream().filter(i -> i.getId() == 0).collect(Collectors.toList());
+            List<IndirizzoDto> indirizziToEdit = indirizzi.stream().filter(i -> i.getId() != 0).collect(Collectors.toList());
+
+            List<ContattoDto> contatti = dto.getElencoContatti() != null ? dto.getElencoContatti() : new ArrayList<>();
+            List<ContattoDto> contattiToAdd = contatti.stream().filter(c -> c.getId() == 0).collect(Collectors.toList());
+            List<ContattoDto> contattiToEdit = contatti.stream().filter(c -> c.getId() != 0).collect(Collectors.toList());
+
+            fornitoriDelegate.update(dto, indirizziToAdd, indirizziToEdit, contattiToAdd, contattiToEdit);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
             response.setErrorText(e.getMessage());

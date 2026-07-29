@@ -66,6 +66,7 @@ public class ContattiDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getTelefono(), null),
                     StringUtils.defaultIfEmpty(dto.getCellulare(), null), StringUtils.defaultIfEmpty(dto.getFax(), null),
                     StringUtils.defaultIfEmpty(dto.getEmail(), null), StringUtils.defaultIfEmpty(dto.getPec(), null),
+                    dto.getFlUsaPerSolleciti() != null ? dto.getFlUsaPerSolleciti() : 0,
                     dto.getIdRichiedente(), dto.getUserCreated());
         } catch (DataAccessException e) {
             _log.error("Errore nell'inserimento del contatto di tipo {}", richiedente, e);
@@ -84,6 +85,7 @@ public class ContattiDao extends BaseDao {
                     StringUtils.defaultIfEmpty(dto.getTelefono(), null),
                     StringUtils.defaultIfEmpty(dto.getCellulare(), null), StringUtils.defaultIfEmpty(dto.getFax(), null),
                     StringUtils.defaultIfEmpty(dto.getEmail(), null), StringUtils.defaultIfEmpty(dto.getPec(), null),
+                    dto.getFlUsaPerSolleciti() != null ? dto.getFlUsaPerSolleciti() : 0,
                     dto.getUserLastUpdate(), dto.getId());
         } catch (DataAccessException e) {
             _log.error("Errore nell'aggiornamento del contatto {} di tipo {}", dto.getId(), richiedente, e);

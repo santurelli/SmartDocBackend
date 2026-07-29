@@ -1929,7 +1929,17 @@
 			  FROM d_e_enti
 		 	 WHERE fl_deleted = 0
 		 	   AND fl_fattura_elettronica = 1
-		  ORDER BY label	 
+		  ORDER BY label
+		</content>
+	</query>
+	<query name="COMUNI_S08">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_enti AS id,
+				   label,
+				   nome_db AS dbName
+			  FROM d_e_enti
+		 	 WHERE fl_deleted = 0
+		  ORDER BY label
 		</content>
 	</query>
 	<query name="COMUNI_S07">
@@ -2684,8 +2694,8 @@
 	</query>
 	<query name="CONTATTI_I01">
 		<content delimiterParsingDisabled="true">
-			INSERT INTO ${nometabella} (tipologia, descrizione, telefono, cellulare, fax, email, pec, id_richiedente, user_created, dt_created) 
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			INSERT INTO ${nometabella} (tipologia, descrizione, telefono, cellulare, fax, email, pec, fl_usa_per_solleciti, id_richiedente, user_created, dt_created)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
 			RETURNING k_d_e_contatti
 		</content>
 	</query>
@@ -2699,10 +2709,11 @@
 				fax = ?,
 				email = ?,
 				pec = ?,
+				fl_usa_per_solleciti = ?,
 				user_last_update = ?,
 				dt_last_update = CURRENT_TIMESTAMP,
 				fl_deleted = 0
-			WHERE k_d_e_contatti = ? 
+			WHERE k_d_e_contatti = ?
 		</content>
 	</query>
 	<query name="CONTATTI_D01">
@@ -2722,7 +2733,8 @@
 				   COALESCE(cellulare, '') AS cellulare,
 				   COALESCE(fax, '') AS fax,
 				   COALESCE(email, '') AS email,
-				   COALESCE(pec, '') AS pec
+				   COALESCE(pec, '') AS pec,
+				   COALESCE(fl_usa_per_solleciti, 0) AS flUsaPerSolleciti
 			  FROM ${nometabella}
 			 WHERE id_richiedente = ?
 			   AND (   COALESCE(descrizione, '') != ''
@@ -4877,7 +4889,7 @@
 			 WHERE ff.fl_ritenuta_acconto = 1
 			   AND ff.fl_deleted = 0
 			   AND EXTRACT(YEAR FROM ff.data_fattura) = ?
-			   AND (? IS NULL OR ff.k_d_e_fornitori = ?)
+			   AND (?::integer IS NULL OR ff.k_d_e_fornitori = ?::integer)
 		  GROUP BY f.k_d_e_fornitori, f.denominazione, f.codice_fiscale, f.partita_iva,
 		           ff.causale_pagamento, ff.tipo_ritenuta
 		  ORDER BY f.denominazione, ff.causale_pagamento
@@ -11542,6 +11554,207 @@
 				   user_deleted = ?,
 				   dt_deleted = CURRENT_TIMESTAMP
 			 WHERE k_d_e_causaliesigibilitadifferita = ?
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_scadenzario_regole AS id,
+				   tipo,
+				   giorni_offset AS giorniOffset,
+				   oggetto,
+				   corpo,
+				   attivo,
+				   ordine
+			  FROM d_e_scadenzario_regole
+			 WHERE tipo = COALESCE(?, tipo)
+			 ORDER BY tipo, ordine, giorni_offset
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_scadenzario_regole AS id,
+				   tipo,
+				   giorni_offset AS giorniOffset,
+				   oggetto,
+				   corpo,
+				   attivo,
+				   ordine
+			  FROM d_e_scadenzario_regole
+			 WHERE k_d_e_scadenzario_regole = ?
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_scadenzario_regole AS id,
+				   tipo,
+				   giorni_offset AS giorniOffset,
+				   oggetto,
+				   corpo,
+				   attivo,
+				   ordine
+			  FROM d_e_scadenzario_regole
+			 WHERE attivo = 1
+			   AND tipo = ?
+			 ORDER BY ordine, giorni_offset
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_scadenzario_regole
+					   (tipo, giorni_offset, oggetto, corpo, attivo, ordine, user_created, dt_created)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			returning k_d_e_scadenzario_regole
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_scadenzario_regole
+			   SET tipo = ?,
+				   giorni_offset = ?,
+				   oggetto = ?,
+				   corpo = ?,
+				   attivo = ?,
+				   ordine = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_scadenzario_regole = ?
+		</content>
+	</query>
+	<query name="SCADENZARIOREGOLE_D01">
+		<content delimiterParsingDisabled="true">
+			DELETE FROM d_e_scadenzario_regole
+			 WHERE k_d_e_scadenzario_regole = ?
+		</content>
+	</query>
+	<query name="SCADENZARIOPROMEMORIA_INCASSO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT sp.k_d_e_scadenzepagamentifatture AS idScadenza,
+				   COALESCE(f.num_fattura::varchar, '') || COALESCE('/' || f.particella, '') AS numeroDocumento,
+				   TO_CHAR(f.data_fattura, 'DD/MM/YYYY') AS dataDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo,
+				   get_totale_fattura(f.k_d_e_fatture) AS totaleFattura,
+				   c.denominazione AS nomeSoggetto,
+				   (SELECT COALESCE(NULLIF(cc.email, ''), NULLIF(cc.pec, ''))
+					  FROM d_e_contatti_clienti cc
+					 WHERE cc.id_richiedente = c.k_d_e_clienti
+					   AND cc.fl_deleted = 0
+					   AND cc.fl_usa_per_solleciti = 1
+					 ORDER BY cc.k_d_e_contatti
+					 LIMIT 1) AS emailDestinatario
+			  FROM d_e_scadenzepagamentifatture sp
+			  JOIN d_e_fatture f
+				ON sp.k_d_e_fatture = f.k_d_e_fatture
+			  JOIN d_e_clienti c
+				ON f.k_d_e_clienti = c.k_d_e_clienti
+			 WHERE sp.data = ?::date
+			   AND COALESCE(sp.saldato, 0) = 0
+			   AND f.tipo_fattura IN ('FATTURA', 'FATTURA_ACCOMPAGNATORIA', 'FATTURA_SEMPLIFICATA', 'NOTA_DEBITO')
+		</content>
+	</query>
+	<query name="SCADENZARIOPROMEMORIA_PAGAMENTO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT sp.k_d_e_scadenzepagamentifatturefornitore AS idScadenza,
+				   COALESCE(ff.num_fattura::varchar, '') || COALESCE('/' || ff.particella, '') AS numeroDocumento,
+				   TO_CHAR(ff.data_fattura, 'DD/MM/YYYY') AS dataDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo,
+				   get_totale_fatturafornitore(ff.k_d_e_fatturefornitore) AS totaleFattura,
+				   fo.denominazione AS nomeSoggetto,
+				   CAST(NULL AS varchar) AS emailDestinatario
+			  FROM d_e_scadenzepagamentifatturefornitore sp
+			  JOIN d_e_fatturefornitore ff
+				ON sp.k_d_e_fatturefornitore = ff.k_d_e_fatturefornitore
+			  JOIN d_e_fornitori fo
+				ON ff.k_d_e_fornitori = fo.k_d_e_fornitori
+			 WHERE sp.data = ?::date
+			   AND COALESCE(sp.saldato, 0) = 0
+		</content>
+	</query>
+	<query name="SCADENZARIOINVIO_EXISTS_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_e_scadenzario_invii
+			 WHERE k_d_e_scadenzario_regole = ?
+			   AND tipo = ?
+			   AND k_d_e_scadenza = ?
+			   AND esito = 'OK'
+		</content>
+	</query>
+	<query name="SCADENZARIOINVIO_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_scadenzario_invii
+					   (k_d_e_scadenzario_regole, tipo, k_d_e_scadenza, destinatario, esito, dettaglio_errore, oggetto, dt_invio)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+		</content>
+	</query>
+	<query name="SCADENZARIOINVIO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT si.k_d_e_scadenzario_invii AS id,
+				   TO_CHAR(si.dt_invio, 'DD/MM/YYYY HH24:MI') AS dtInvio,
+				   si.oggetto AS oggetto,
+				   si.destinatario AS destinatario,
+				   si.esito AS esito,
+				   si.dettaglio_errore AS dettaglioErrore,
+				   COALESCE(f.num_fattura::varchar, '') || COALESCE('/' || f.particella, '') AS numeroDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo
+			  FROM d_e_scadenzario_invii si
+			  JOIN d_e_scadenzario_regole r
+				ON si.k_d_e_scadenzario_regole = r.k_d_e_scadenzario_regole
+			  JOIN d_e_scadenzepagamentifatture sp
+				ON si.k_d_e_scadenza = sp.k_d_e_scadenzepagamentifatture
+			  JOIN d_e_fatture f
+				ON sp.k_d_e_fatture = f.k_d_e_fatture
+			 WHERE si.tipo = 'INCASSO'
+			   AND f.k_d_e_clienti = ?
+			 ORDER BY si.dt_invio DESC
+		</content>
+	</query>
+	<query name="SCADENZARIOINVIO_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT si.k_d_e_scadenzario_invii AS id,
+				   TO_CHAR(si.dt_invio, 'DD/MM/YYYY HH24:MI') AS dtInvio,
+				   si.oggetto AS oggetto,
+				   si.destinatario AS destinatario,
+				   si.esito AS esito,
+				   si.dettaglio_errore AS dettaglioErrore,
+				   COALESCE(f.num_fattura::varchar, '') || COALESCE('/' || f.particella, '') AS numeroDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo
+			  FROM d_e_scadenzario_invii si
+			  JOIN d_e_scadenzario_regole r
+				ON si.k_d_e_scadenzario_regole = r.k_d_e_scadenzario_regole
+			  JOIN d_e_scadenzepagamentifatture sp
+				ON si.k_d_e_scadenza = sp.k_d_e_scadenzepagamentifatture
+			  JOIN d_e_fatture f
+				ON sp.k_d_e_fatture = f.k_d_e_fatture
+			 WHERE si.tipo = 'INCASSO'
+			   AND f.k_d_e_fatture = ?
+			 ORDER BY si.dt_invio DESC
+		</content>
+	</query>
+	<query name="SCADENZARIOINVIO_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT si.k_d_e_scadenzario_invii AS id,
+				   TO_CHAR(si.dt_invio, 'DD/MM/YYYY HH24:MI') AS dtInvio,
+				   si.oggetto AS oggetto,
+				   si.destinatario AS destinatario,
+				   si.esito AS esito,
+				   si.dettaglio_errore AS dettaglioErrore,
+				   COALESCE(ff.num_fattura::varchar, '') || COALESCE('/' || ff.particella, '') AS numeroDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo
+			  FROM d_e_scadenzario_invii si
+			  JOIN d_e_scadenzario_regole r
+				ON si.k_d_e_scadenzario_regole = r.k_d_e_scadenzario_regole
+			  JOIN d_e_scadenzepagamentifatturefornitore sp
+				ON si.k_d_e_scadenza = sp.k_d_e_scadenzepagamentifatturefornitore
+			  JOIN d_e_fatturefornitore ff
+				ON sp.k_d_e_fatturefornitore = ff.k_d_e_fatturefornitore
+			 WHERE si.tipo = 'PAGAMENTO'
+			   AND ff.k_d_e_fatturefornitore = ?
+			 ORDER BY si.dt_invio DESC
 		</content>
 	</query>
 </root>

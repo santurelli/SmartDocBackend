@@ -89,6 +89,9 @@ public class ContattoDto extends BaseDto {
     // @Expose
     private String pec;
 
+    // @Expose
+    private Integer flUsaPerSolleciti;
+
     private long idRichiedente;
 
     public void setReferente(String referente) {

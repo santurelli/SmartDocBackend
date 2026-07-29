@@ -64,6 +64,18 @@ public class MunicipalityDao extends BaseDao {
         }
     }
 
+    public List<MunicipalityDto> getAziendeAttive() throws SQLException {
+        BeanPropertyRowMapper<MunicipalityDto> rowMapper = new BeanPropertyRowMapper<>(MunicipalityDto.class);
+        try {
+            return jdbcTemplate.query(FileQueryReader.getQuery("COMUNI_S08"), rowMapper);
+        } catch (EmptyResultDataAccessException e) {
+            return new ArrayList<>();
+        } catch (DataAccessException e) {
+            _log.error("Errore nel recupero delle aziende attive", e);
+            throw new SQLException(e);
+        }
+    }
+
     public String getEmailErroriSdi(String dbKey) throws SQLException {
         try {
             return jdbcTemplate.queryForObject(FileQueryReader.getQuery("ENTI_S02"), String.class, dbKey);

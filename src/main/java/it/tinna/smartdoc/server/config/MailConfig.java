@@ -48,4 +48,17 @@ public class MailConfig {
         service.setTo(new String[]{toJustDesign});
         return service;
     }
+
+    /**
+     * Bean generico, senza destinatari predefiniti: il chiamante passa i destinatari
+     * ad ogni invio (usato ad es. dallo scadenzario promemoria).
+     */
+    @Bean(name = "mailSenderServiceGeneric")
+    public MailSenderService mailSenderServiceGeneric(JavaMailSender mailSender) {
+        MailSenderService service = new MailSenderService();
+        service.setMailSender(mailSender);
+        service.setFrom(from);
+        service.setFromName(fromName);
+        return service;
+    }
 }

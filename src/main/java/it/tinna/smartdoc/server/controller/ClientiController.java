@@ -1,7 +1,9 @@
 package it.tinna.smartdoc.server.controller;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +19,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import it.tinna.smartdoc.server.delegate.clienti.ClientiDelegate;
 import it.tinna.smartdoc.shared.dto.clienti.ClienteDto;
+import it.tinna.smartdoc.shared.dto.contatti.ContattoDto;
+import it.tinna.smartdoc.shared.dto.indirizzi.IndirizzoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 
@@ -107,11 +111,15 @@ public class ClientiController {
                 return ResponseEntity.badRequest().body(response);
             }
 
-            clientiDelegate.update(dto,
-                new java.util.ArrayList<>(),
-                dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new java.util.ArrayList<>(),
-                new java.util.ArrayList<>(),
-                dto.getElencoContatti() != null ? dto.getElencoContatti() : new java.util.ArrayList<>());
+            List<IndirizzoDto> indirizzi = dto.getElencoIndirizzi() != null ? dto.getElencoIndirizzi() : new ArrayList<>();
+            List<IndirizzoDto> indirizziToAdd = indirizzi.stream().filter(i -> i.getId() == 0).collect(Collectors.toList());
+            List<IndirizzoDto> indirizziToEdit = indirizzi.stream().filter(i -> i.getId() != 0).collect(Collectors.toList());
+
+            List<ContattoDto> contatti = dto.getElencoContatti() != null ? dto.getElencoContatti() : new ArrayList<>();
+            List<ContattoDto> contattiToAdd = contatti.stream().filter(c -> c.getId() == 0).collect(Collectors.toList());
+            List<ContattoDto> contattiToEdit = contatti.stream().filter(c -> c.getId() != 0).collect(Collectors.toList());
+
+            clientiDelegate.update(dto, indirizziToAdd, indirizziToEdit, contattiToAdd, contattiToEdit);
             return ResponseEntity.ok(response);
         } catch (SQLException e) {
             response.setErrorText(e.getMessage());
