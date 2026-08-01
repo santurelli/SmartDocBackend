@@ -134,5 +134,161 @@ public class AuthController {
             return ResponseEntity.internalServerError().body("Errore durante l'aggiornamento della password: " + e.getMessage());
         }
     }
+
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("sharedJdbcTemplate")
+    private org.springframework.jdbc.core.JdbcTemplate sharedJdbcTemplate;
+
+    @PostMapping("/completa-registrazione")
+    public ResponseEntity<?> completaRegistrazione(@RequestBody java.util.Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(token) || org.apache.commons.lang3.StringUtils.isBlank(newPassword)) {
+            return ResponseEntity.badRequest().body("Token e nuova password sono obbligatori");
+        }
+
+        try {
+            String tokenPattern = "TOKEN:" + token.trim();
+            java.util.List<java.util.Map<String, Object>> users = sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<java.util.List<java.util.Map<String, Object>>>) (java.sql.Connection conn) -> {
+                String sql = "SELECT k_d_e_utenti, username, tenant_id FROM d_e_utenti WHERE password = ? AND fl_deleted = 0";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, tokenPattern);
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+                        if (rs.next()) {
+                            java.util.Map<String, Object> map = new java.util.HashMap<>();
+                            map.put("k_d_e_utenti", rs.getLong("k_d_e_utenti"));
+                            map.put("username", rs.getString("username"));
+                            map.put("tenant_id", rs.getObject("tenant_id"));
+                            list.add(map);
+                        }
+                        return list;
+                    }
+                }
+            });
+
+            if (users == null || users.isEmpty()) {
+                return ResponseEntity.badRequest().body("Token di attivazione non valido o già utilizzato.");
+            }
+
+            java.util.Map<String, Object> userRow = users.get(0);
+            Number userId = (Number) userRow.get("k_d_e_utenti");
+            Object tenantIdObj = userRow.get("tenant_id");
+            String encodedPassword = passwordEncoder.encode(newPassword.trim());
+
+            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
+                if (tenantIdObj != null) {
+                    try (java.sql.Statement stmt = conn.createStatement()) {
+                        stmt.execute("SET app.current_tenant = '" + tenantIdObj + "'");
+                    }
+                }
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE d_e_utenti SET password = ? WHERE k_d_e_utenti = ?")) {
+                    ps.setString(1, encodedPassword);
+                    ps.setLong(2, userId.longValue());
+                    ps.executeUpdate();
+                }
+                return null;
+            });
+
+            return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Errore durante il completamento della registrazione: " + e.getMessage());
+        }
+    }
+
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("mailSenderServiceGeneric")
+    private it.tinna.smartdoc.service.mail.MailSenderService mailSenderServiceGeneric;
+
+    @PostMapping("/registrazione-prova")
+    public ResponseEntity<?> registrazioneProva(@RequestBody java.util.Map<String, Object> request) {
+        String ragioneSociale = (String) request.get("ragioneSociale");
+        String partitaIva = (String) request.get("partitaIva");
+        String email = (String) request.get("email");
+        Object planObj = request.get("tipoAccount");
+        Integer tipoAccount = planObj != null ? Integer.parseInt(planObj.toString()) : 3;
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(ragioneSociale) || 
+            org.apache.commons.lang3.StringUtils.isBlank(partitaIva) || 
+            org.apache.commons.lang3.StringUtils.isBlank(email)) {
+            return ResponseEntity.badRequest().body("Ragione Sociale, Partita IVA ed Email sono obbligatorie");
+        }
+
+        String pivaClean = partitaIva.trim().replaceAll("[^a-zA-Z0-9]", "");
+        String emailClean = email.trim();
+
+        try {
+            Integer countExisting = serviceJdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM d_e_enti WHERE fl_deleted = 0 AND (partita_iva = ? OR lower(email_errori_sdi) = lower(?))",
+                    Integer.class, pivaClean, emailClean
+            );
+
+            if (countExisting != null && countExisting > 0) {
+                return ResponseEntity.badRequest().body("Questa Partita IVA o Email risulta già registrata nel sistema.");
+            }
+
+            String dbName = "sd_" + pivaClean.toLowerCase();
+            String label = ragioneSociale.trim();
+
+            org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
+            serviceJdbcTemplate.update(connection -> {
+                java.sql.PreparedStatement ps = connection.prepareStatement(
+                        "INSERT INTO d_e_enti (label, nome_db, partita_iva, tipo_account, fl_fattura_elettronica, dt_attivazione, email_errori_sdi, fl_deleted) VALUES (?, ?, ?, ?, 1, CURRENT_DATE, ?, 0)",
+                        java.sql.Statement.RETURN_GENERATED_KEYS
+                );
+                ps.setString(1, label);
+                ps.setString(2, dbName);
+                ps.setString(3, pivaClean);
+                ps.setInt(4, tipoAccount);
+                ps.setString(5, emailClean);
+                return ps;
+            }, keyHolder);
+
+            Number newTenantKey = (Number) keyHolder.getKeys().get("k_d_e_enti");
+            if (newTenantKey == null) {
+                newTenantKey = (Number) keyHolder.getKeys().get("id");
+            }
+            long tenantId = newTenantKey.longValue();
+
+            String activationToken = java.util.UUID.randomUUID().toString();
+            String initialTokenPassword = "TOKEN:" + activationToken;
+
+            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
+                try (java.sql.Statement stmt = conn.createStatement()) {
+                    stmt.execute("SET app.current_tenant = '" + tenantId + "'");
+                }
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                        "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted, new_version) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0, 1)")) {
+                    ps.setString(1, emailClean);
+                    ps.setString(2, initialTokenPassword);
+                    ps.setString(3, emailClean);
+                    ps.setString(4, label);
+                    ps.setLong(5, tenantId);
+                    ps.executeUpdate();
+                }
+                return null;
+            });
+
+            String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken;
+            String subject = "Attiva i tuoi 3 Mesi Gratis su SmartDoc!";
+            String body = "Gentile " + label + ",\n\n"
+                    + "Grazie per aver scelto la Prova Gratuita di 3 Mesi di SmartDoc!\n\n"
+                    + "I tuoi 90 giorni di prova sono stati attivati a costo zero. Per completare la registrazione e scegliere la tua password di accesso, clicca sul link seguente:\n\n"
+                    + activationUrl + "\n\n"
+                    + "Cordiali saluti,\n"
+                    + "Il Team di SmartDoc\n"
+                    + "https://www.smart-doc.it";
+
+            mailSenderServiceGeneric.send(subject, body, null, null, new String[]{emailClean});
+
+            return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Errore durante la registrazione della prova gratuita: " + e.getMessage());
+        }
+    }
 }
 

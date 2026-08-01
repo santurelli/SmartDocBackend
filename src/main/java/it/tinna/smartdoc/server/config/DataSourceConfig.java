@@ -111,6 +111,11 @@ public class DataSourceConfig {
         return new JdbcTemplate(dataSource);
     }
 
+    @Bean(name = "sharedJdbcTemplate")
+    public JdbcTemplate sharedJdbcTemplate(@Qualifier("shareddbDataSource") DataSource dataSource) {
+        return new JdbcTemplate(dataSource);
+    }
+
     @Bean(name = "serviceTransactionManager")
     public PlatformTransactionManager serviceTransactionManager(@Qualifier("servicedbDataSource") DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);

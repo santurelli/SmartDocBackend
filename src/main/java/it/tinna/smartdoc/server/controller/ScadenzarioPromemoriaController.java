@@ -46,6 +46,21 @@ public class ScadenzarioPromemoriaController
     {
         try
         {
+            org.springframework.security.core.Authentication authentication = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !(authentication.getPrincipal() instanceof it.tinna.smartdoc.server.security.UserDetailsImpl))
+            {
+                return ResponseEntity.status(403).body("Accesso negato.");
+            }
+
+            it.tinna.smartdoc.server.security.UserDetailsImpl userDetails = (it.tinna.smartdoc.server.security.UserDetailsImpl) authentication.getPrincipal();
+            String username = userDetails.getUsername() != null ? userDetails.getUsername().toLowerCase() : "";
+
+            if (!username.contains("support"))
+            {
+                log.warn("Tentativo non autorizzato di esecuzione manuale del batch promemoria da parte dell'utente: {}", username);
+                return ResponseEntity.status(403).body("Operazione consentita solo all'utente di supporto.");
+            }
+
             scadenzarioPromemoriaDelegate.processaPromemoria();
             return ResponseEntity.ok().build();
         }
