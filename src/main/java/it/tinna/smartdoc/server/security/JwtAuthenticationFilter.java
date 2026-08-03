@@ -72,7 +72,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         role = "ROLE_USER";
                     }
 
-                    if (dbName != null) {
+                    String impersonatedDb = request.getHeader("X-Impersonated-Tenant-Db");
+                    if (tipoAccount != null && tipoAccount == 5 && impersonatedDb != null && !impersonatedDb.trim().isEmpty()) {
+                        log.info("Studio Impersonation Mode Active: switching Database Context from {} to {}", dbName, impersonatedDb);
+                        DatabaseContextHolder.setClientDatabase(impersonatedDb.trim());
+                    } else if (dbName != null) {
                         log.info("Setting Database Context to: {}", dbName);
                         DatabaseContextHolder.setClientDatabase(dbName);
                     } else {
