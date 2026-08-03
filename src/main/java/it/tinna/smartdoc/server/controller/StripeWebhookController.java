@@ -73,7 +73,7 @@ public class StripeWebhookController {
 
         log.info("Stripe Event Type: {}", event.getType());
 
-        if ("checkout.session.completed".equals(event.getType())) {
+        if ("checkout.session.completed".equals(event.getType()) || "invoice.payment_succeeded".equals(event.getType())) {
             EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
             StripeObject stripeObject = dataObjectDeserializer.getObject().orElse(null);
 
@@ -83,9 +83,35 @@ public class StripeWebhookController {
             } else {
                 log.warn("Payload non deserializzato come Session per event type: {}", event.getType());
             }
+        } else if ("customer.subscription.deleted".equals(event.getType()) || "invoice.payment_failed".equals(event.getType())) {
+            EventDataObjectDeserializer dataObjectDeserializer = event.getDataObjectDeserializer();
+            StripeObject stripeObject = dataObjectDeserializer.getObject().orElse(null);
+            
+            String email = null;
+            if (stripeObject instanceof com.stripe.model.Invoice) {
+                email = ((com.stripe.model.Invoice) stripeObject).getCustomerEmail();
+            } else if (stripeObject instanceof com.stripe.model.Subscription) {
+                email = ((com.stripe.model.Subscription) stripeObject).getCustomer();
+            }
+
+            if (email != null && !email.trim().isEmpty()) {
+                expireAccountPlan(email);
+            }
         }
 
         return ResponseEntity.ok("Received");
+    }
+
+    private void expireAccountPlan(String email) {
+        try {
+            int updatedRows = serviceJdbcTemplate.update(
+                    "UPDATE d_e_enti SET tipo_account = 0 WHERE fl_deleted = 0 AND (lower(email_errori_sdi) = lower(?) OR lower(label) = lower(?))",
+                    email.trim(), email.trim()
+            );
+            log.info("Impostato tipo_account = 0 (SCADUTO) per cliente {} (righe aggiornate: {}).", email, updatedRows);
+        } catch (Exception e) {
+            log.error("Errore durante la disattivazione del piano per email: " + email, e);
+        }
     }
 
     private void processCheckoutSession(Session session) {
@@ -110,30 +136,54 @@ public class StripeWebhookController {
             targetTipoAccount = 3; // Default a Professional se non specificato
         }
 
-        // 2. Se non presente in metadata, cerca per Partita IVA o Email
         String partitaIva = metadata != null ? metadata.get("partitaIva") : null;
         if (partitaIva == null && metadata != null) {
             partitaIva = metadata.get("piva");
         }
 
-        updateOrCreateAccountPlan(partitaIva, customerEmail, companyName, targetTipoAccount);
+        String tipoRinnovo = "ANNUAL";
+        if (metadata != null && metadata.containsKey("tipoRinnovo")) {
+            tipoRinnovo = metadata.get("tipoRinnovo");
+        } else if (metadata != null && metadata.containsKey("interval")) {
+            tipoRinnovo = "month".equalsIgnoreCase(metadata.get("interval")) ? "MONTHLY" : "ANNUAL";
+        }
+
+        updateOrCreateAccountPlan(partitaIva, customerEmail, companyName, targetTipoAccount, tipoRinnovo);
     }
 
-    private void updateOrCreateAccountPlan(String partitaIva, String email, String companyName, Integer tipoAccount) {
+    private void updateOrCreateAccountPlan(String partitaIva, String email, String companyName, Integer tipoAccount, String tipoRinnovo) {
         try {
             int updatedRows = 0;
             if (partitaIva != null && !partitaIva.trim().isEmpty()) {
                 updatedRows = serviceJdbcTemplate.update(
-                        "UPDATE d_e_enti SET tipo_account = ?, dt_attivazione = CURRENT_DATE WHERE fl_deleted = 0 AND partita_iva = ?",
-                        tipoAccount, partitaIva.trim()
+                        "UPDATE d_e_enti SET tipo_account = ?, fl_prova = 0, dt_attivazione = CURRENT_DATE, tipo_rinnovo = ? WHERE fl_deleted = 0 AND partita_iva = ?",
+                        tipoAccount, tipoRinnovo, partitaIva.trim()
                 );
             }
 
             if (updatedRows == 0 && email != null && !email.trim().isEmpty()) {
                 updatedRows = serviceJdbcTemplate.update(
-                        "UPDATE d_e_enti SET tipo_account = ?, dt_attivazione = CURRENT_DATE WHERE fl_deleted = 0 AND (lower(email_errori_sdi) = lower(?) OR lower(label) = lower(?))",
-                        tipoAccount, email.trim(), email.trim()
+                        "UPDATE d_e_enti SET tipo_account = ?, fl_prova = 0, dt_attivazione = CURRENT_DATE, tipo_rinnovo = ? WHERE fl_deleted = 0 AND (lower(email_errori_sdi) = lower(?) OR lower(label) = lower(?))",
+                        tipoAccount, tipoRinnovo, email.trim(), email.trim()
                 );
+            }
+
+            // 3. Se ancora non trovato, cerca l'utente in d_e_utenti (Shared DB) per recuperare il tenant_id
+            if (updatedRows == 0 && email != null && !email.trim().isEmpty()) {
+                try {
+                    Long tenantIdFound = sharedJdbcTemplate.queryForObject(
+                            "SELECT tenant_id FROM d_e_utenti WHERE fl_deleted = 0 AND (lower(email) = lower(?) OR lower(username) = lower(?)) LIMIT 1",
+                            Long.class, email.trim(), email.trim()
+                    );
+                    if (tenantIdFound != null) {
+                        updatedRows = serviceJdbcTemplate.update(
+                                "UPDATE d_e_enti SET tipo_account = ?, fl_prova = 0, dt_attivazione = CURRENT_DATE, tipo_rinnovo = ? WHERE k_d_e_enti = ?",
+                                tipoAccount, tipoRinnovo, tenantIdFound
+                        );
+                    }
+                } catch (org.springframework.dao.EmptyResultDataAccessException e) {
+                    // Nessun utente trovato in d_e_utenti
+                }
             }
 
             if (updatedRows > 0) {
@@ -209,19 +259,76 @@ public class StripeWebhookController {
         try {
             String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken;
             String subject = "Benvenuto in SmartDoc! Completa l'attivazione del tuo account";
-            String body = "Gentile " + companyName + ",\n\n"
-                    + "Grazie per aver acquistato SmartDoc!\n\n"
-                    + "Il tuo account è stato creato con successo. Per scegliere la tua password personale ed iniziare ad utilizzare il gestionale, clicca sul link seguente:\n\n"
-                    + activationUrl + "\n\n"
-                    + "Se non riesci a cliccare sul link, copialo ed incollalo nel tuo browser.\n\n"
-                    + "Cordiali saluti,\n"
-                    + "Il Team di SmartDoc\n"
-                    + "https://www.smart-doc.it";
+            String bodyHtml = buildActivationHtmlEmail(companyName, activationUrl);
 
-            mailSenderServiceGeneric.send(subject, body, null, null, new String[]{recipientEmail});
+            mailSenderServiceGeneric.send(subject, bodyHtml, null, null, new String[]{recipientEmail});
             log.info("Email di attivazione inviata con successo a {}", recipientEmail);
         } catch (Exception e) {
             log.error("Errore durante l'invio dell'email di attivazione a " + recipientEmail, e);
         }
+    }
+
+    private String buildActivationHtmlEmail(String companyName, String activationUrl) {
+        return "<!DOCTYPE html>"
+             + "<html>"
+             + "<head>"
+             + "  <meta charset=\"UTF-8\">"
+             + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+             + "  <title>Benvenuto in SmartDoc!</title>"
+             + "</head>"
+             + "<body style=\"margin:0; padding:0; background-color:#f1f5f9; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing:antialiased;\">"
+             + "  <center>"
+             + "    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color:#f1f5f9; padding:40px 16px;\">"
+             + "      <tr>"
+             + "        <td align=\"center\">"
+             + "          <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"600\" style=\"max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(15,23,42,0.08); border:1px solid #e2e8f0;\">"
+             + "            <tr>"
+             + "              <td style=\"background-color:#0f172a; padding:32px 36px; text-align:left;\">"
+             + "                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">"
+             + "                  <tr>"
+             + "                    <td>"
+             + "                      <span style=\"font-size:26px; font-weight:900; color:#ffffff; letter-spacing:-0.5px;\">Smart<span style=\"color:#3b82f6;\">Doc</span></span>"
+             + "                    </td>"
+             + "                    <td align=\"right\">"
+             + "                      <span style=\"background-color:#f59e0b; color:#0f172a; font-size:11px; font-weight:800; text-transform:uppercase; padding:6px 14px; border-radius:20px; letter-spacing:0.5px;\">🎁 3 MESI GRATIS</span>"
+             + "                    </td>"
+             + "                  </tr>"
+             + "                </table>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"padding:36px; text-align:left;\">"
+             + "                <h2 style=\"margin:0 0 12px 0; font-size:22px; font-weight:800; color:#0f172a;\">Benvenuto in SmartDoc! 🚀</h2>"
+             + "                <p style=\"margin:0 0 20px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  Gentile <strong>" + companyName + "</strong>,<br><br>"
+             + "                  Grazie per aver scelto SmartDoc! Il tuo account è stato attivato con successo."
+             + "                </p>"
+             + "                <p style=\"margin:0 0 28px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  Per accedere al tuo gestionale ed impostare la tua password personale, clicca sul pulsante qui sotto:"
+             + "                </p>"
+             + "                <div style=\"text-align:center; margin:32px 0;\">"
+             + "                  <a href=\"" + activationUrl + "\" target=\"_blank\" style=\"display:inline-block; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; box-shadow:0 6px 20px rgba(37,99,235,0.35);\">"
+             + "                    Attiva Account e Scegli Password →"
+             + "                  </a>"
+             + "                </div>"
+             + "                <p style=\"margin:20px 0 0 0; font-size:12px; color:#94a3b8; line-height:1.5;\">"
+             + "                  Se il pulsante non funziona, copia ed incolla questo link nel tuo browser:<br>"
+             + "                  <a href=\"" + activationUrl + "\" style=\"color:#2563eb; text-decoration:underline; word-break:break-all;\">" + activationUrl + "</a>"
+             + "                </p>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"background-color:#f8fafc; padding:24px 36px; border-top:1px solid #e2e8f0; text-align:center; font-size:12px; color:#64748b;\">"
+             + "                SmartDoc &middot; Gestionale di Fatturazione Elettronica Cloud<br>"
+             + "                <a href=\"https://www.smart-doc.it\" style=\"color:#2563eb; text-decoration:none; font-weight:600;\">www.smart-doc.it</a> &middot; Supporto: <a href=\"mailto:info@smart-doc.it\" style=\"color:#2563eb; text-decoration:none;\">info@smart-doc.it</a>"
+             + "              </td>"
+             + "            </tr>"
+             + "          </table>"
+             + "        </td>"
+             + "      </tr>"
+             + "    </table>"
+             + "  </center>"
+             + "</body>"
+             + "</html>";
     }
 }

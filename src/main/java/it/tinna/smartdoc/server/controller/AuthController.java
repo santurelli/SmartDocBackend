@@ -53,13 +53,21 @@ public class AuthController {
             java.util.Map<String, Object> extraClaims = new java.util.HashMap<>();
             extraClaims.put("dbName", loginRequest.getEnte());
 
-            // Fetch label from d_e_enti in service DB
+            // Fetch label and tipo_account from d_e_enti in service DB
             try {
-                String enteLabel = serviceJdbcTemplate.queryForObject(
-                    "SELECT label FROM d_e_enti WHERE nome_db = ?", String.class, loginRequest.getEnte());
+                java.util.Map<String, Object> entiMap = serviceJdbcTemplate.queryForMap(
+                    "SELECT label, tipo_account FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0 LIMIT 1", loginRequest.getEnte());
+                String enteLabel = (String) entiMap.get("label");
+                Number tipoAccountNum = (Number) entiMap.get("tipo_account");
+                int tipoAccount = tipoAccountNum != null ? tipoAccountNum.intValue() : 1;
+
                 extraClaims.put("enteLabel", org.apache.commons.lang3.StringUtils.defaultIfEmpty(enteLabel, loginRequest.getEnte()));
+                extraClaims.put("tipoAccount", tipoAccount);
+                extraClaims.put("tipo_account", tipoAccount);
             } catch (Exception e) {
                 extraClaims.put("enteLabel", loginRequest.getEnte());
+                extraClaims.put("tipoAccount", 1);
+                extraClaims.put("tipo_account", 1);
             }
             
             // Fetch Global Config
@@ -233,17 +241,20 @@ public class AuthController {
             String dbName = "sd_" + pivaClean.toLowerCase();
             String label = ragioneSociale.trim();
 
+            int flProva = (tipoAccount == 5) ? 0 : 1;
+
             org.springframework.jdbc.support.KeyHolder keyHolder = new org.springframework.jdbc.support.GeneratedKeyHolder();
             serviceJdbcTemplate.update(connection -> {
                 java.sql.PreparedStatement ps = connection.prepareStatement(
-                        "INSERT INTO d_e_enti (label, nome_db, partita_iva, tipo_account, fl_fattura_elettronica, dt_attivazione, email_errori_sdi, fl_deleted) VALUES (?, ?, ?, ?, 1, CURRENT_DATE, ?, 0)",
+                        "INSERT INTO d_e_enti (label, nome_db, partita_iva, tipo_account, fl_prova, tipo_rinnovo, fl_fattura_elettronica, dt_attivazione, email_errori_sdi, fl_deleted, new_version) VALUES (?, ?, ?, ?, ?, 'ANNUAL', 1, CURRENT_DATE, ?, 0, 1)",
                         java.sql.Statement.RETURN_GENERATED_KEYS
                 );
                 ps.setString(1, label);
                 ps.setString(2, dbName);
                 ps.setString(3, pivaClean);
                 ps.setInt(4, tipoAccount);
-                ps.setString(5, emailClean);
+                ps.setInt(5, flProva);
+                ps.setString(6, emailClean);
                 return ps;
             }, keyHolder);
 
@@ -261,7 +272,7 @@ public class AuthController {
                     stmt.execute("SET app.current_tenant = '" + tenantId + "'");
                 }
                 try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted, new_version) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0, 1)")) {
+                        "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
                     ps.setString(1, emailClean);
                     ps.setString(2, initialTokenPassword);
                     ps.setString(3, emailClean);
@@ -271,24 +282,108 @@ public class AuthController {
                 }
                 return null;
             });
-
             String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken;
-            String subject = "Attiva i tuoi 3 Mesi Gratis su SmartDoc!";
-            String body = "Gentile " + label + ",\n\n"
-                    + "Grazie per aver scelto la Prova Gratuita di 3 Mesi di SmartDoc!\n\n"
-                    + "I tuoi 90 giorni di prova sono stati attivati a costo zero. Per completare la registrazione e scegliere la tua password di accesso, clicca sul link seguente:\n\n"
-                    + activationUrl + "\n\n"
-                    + "Cordiali saluti,\n"
-                    + "Il Team di SmartDoc\n"
-                    + "https://www.smart-doc.it";
+            boolean isStudio = (tipoAccount == 5);
+            String subject = isStudio ? "Attiva il tuo Account Studio Contabile Partner su SmartDoc!" : "Attiva i tuoi 3 Mesi Gratis su SmartDoc!";
+            String bodyHtml = buildActivationHtmlEmail(label, activationUrl, isStudio);
 
-            mailSenderServiceGeneric.send(subject, body, null, null, new String[]{emailClean});
+            mailSenderServiceGeneric.send(subject, bodyHtml, null, null, new String[]{emailClean});
 
             return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Errore durante la registrazione della prova gratuita: " + e.getMessage());
         }
+    }
+    private String buildActivationHtmlEmail(String companyName, String activationUrl, boolean isStudio) {
+        String emailSubject = isStudio ? "Attiva il tuo Account Studio Contabile Partner su SmartDoc!" : "Attiva i tuoi 3 Mesi Gratis su SmartDoc!";
+        String badgeText = isStudio ? "💼 STUDIO PARTNER GRATIS" : "🎁 3 MESI GRATIS";
+        String titleText = isStudio ? "Benvenuto nel Programma Studio Partner! 💼" : "Benvenuto in SmartDoc! 🚀";
+        String mainText = isStudio
+            ? "Gentile <strong>" + companyName + "</strong>,<br><br>Grazie per esserti registrato come <strong>Studio Contabile Partner</strong> su SmartDoc! Il tuo account multi-azienda <strong>gratuito per sempre</strong> è stato creato con successo."
+            : "Gentile <strong>" + companyName + "</strong>,<br><br>Grazie per aver scelto SmartDoc! I tuoi <strong>90 giorni di prova gratuita</strong> a costo zero sono stati attivati con successo.";
+
+        String featureTitle = isStudio ? "Cosa include il tuo Account Studio Partner:" : "Cosa include la tua prova gratuita:";
+        String featuresList = isStudio
+            ? "<li>Dashboard Multi-Azienda centralizzata</li>" +
+              "<li>Download Batch XML e CSV Prima Nota in 1-Click</li>" +
+              "<li>Accredito ed utilizzo 100% Gratuito per lo Studio</li>"
+            : "<li>Fatturazione Elettronica SDI illimitata</li>" +
+              "<li>Utenti illimitati (accesso gratuito per il tuo commercialista)</li>" +
+              "<li>Zero costi iniziali e nessuna carta richiesta</li>";
+
+        String buttonText = isStudio ? "Attiva Account Studio e Scegli Password →" : "Attiva Account e Scegli Password →";
+
+        return "<!DOCTYPE html>"
+             + "<html>"
+             + "<head>"
+             + "  <meta charset=\"UTF-8\">"
+             + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+             + "  <title>" + emailSubject + "</title>"
+             + "</head>"
+             + "<body style=\"margin:0; padding:0; background-color:#f1f5f9; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing:antialiased;\">"
+             + "  <center>"
+             + "    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color:#f1f5f9; padding:40px 16px;\">"
+             + "      <tr>"
+             + "        <td align=\"center\">"
+             + "          <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"600\" style=\"max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(15,23,42,0.08); border:1px solid #e2e8f0;\">"
+             + "            <tr>"
+             + "              <td style=\"background-color:#0f172a; padding:32px 36px; text-align:left;\">"
+             + "                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">"
+             + "                  <tr>"
+             + "                    <td>"
+             + "                      <span style=\"font-size:26px; font-weight:900; color:#ffffff; letter-spacing:-0.5px;\">Smart<span style=\"color:#3b82f6;\">Doc</span></span>"
+             + "                    </td>"
+             + "                    <td align=\"right\">"
+             + "                      <span style=\"background-color:" + (isStudio ? "#10b981" : "#f59e0b") + "; color:" + (isStudio ? "#ffffff" : "#0f172a") + "; font-size:11px; font-weight:800; text-transform:uppercase; padding:6px 14px; border-radius:20px; letter-spacing:0.5px;\">" + badgeText + "</span>"
+             + "                    </td>"
+             + "                  </tr>"
+             + "                </table>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"padding:36px; text-align:left;\">"
+             + "                <h2 style=\"margin:0 0 12px 0; font-size:22px; font-weight:800; color:#0f172a;\">" + titleText + "</h2>"
+             + "                <p style=\"margin:0 0 20px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  " + mainText
+             + "                </p>"
+             + "                <p style=\"margin:0 0 28px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  Per accedere al tuo portale studio ed impostare la tua password personale, clicca sul pulsante qui sotto:"
+             + "                </p>"
+             + "                <div style=\"text-align:center; margin:32px 0;\">"
+             + "                  <a href=\"" + activationUrl + "\" target=\"_blank\" style=\"display:inline-block; background:" + (isStudio ? "linear-gradient(135deg, #059669 0%, #047857 100%)" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)") + "; color:#ffffff; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; box-shadow:0 6px 20px rgba(5,150,105,0.35);\">"
+             + "                    " + buttonText
+             + "                  </a>"
+             + "                </div>"
+             + "                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; margin:28px 0 20px 0;\">"
+             + "                  <tr>"
+             + "                    <td style=\"padding:20px 24px;\">"
+             + "                      <div style=\"font-size:12px; font-weight:800; text-transform:uppercase; color:" + (isStudio ? "#059669" : "#2563eb") + "; letter-spacing:0.5px; margin-bottom:8px;\">" + featureTitle + "</div>"
+             + "                      <ul style=\"margin:0; padding-left:18px; font-size:13px; color:#334155; line-height:1.7;\">"
+             + "                        " + featuresList
+             + "                      </ul>"
+             + "                    </td>"
+             + "                  </tr>"
+             + "                </table>"
+             + "                <p style=\"margin:20px 0 0 0; font-size:12px; color:#94a3b8; line-height:1.5;\">"
+             + "                  Se il pulsante non funziona, copia ed incolla questo link nel tuo browser:<br>"
+             + "                  <a href=\"" + activationUrl + "\" style=\"color:#2563eb; text-decoration:underline; word-break:break-all;\">" + activationUrl + "</a>"
+             + "                </p>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"background-color:#f8fafc; padding:24px 36px; border-top:1px solid #e2e8f0; text-align:center; font-size:12px; color:#64748b;\">"
+             + "                SmartDoc &middot; Gestionale di Fatturazione Elettronica Cloud<br>"
+             + "                <a href=\"https://www.smart-doc.it\" style=\"color:#2563eb; text-decoration:none; font-weight:600;\">www.smart-doc.it</a> &middot; Supporto: <a href=\"mailto:info@smart-doc.it\" style=\"color:#2563eb; text-decoration:none;\">info@smart-doc.it</a>"
+             + "              </td>"
+             + "            </tr>"
+             + "          </table>"
+             + "        </td>"
+             + "      </tr>"
+             + "    </table>"
+             + "  </center>"
+             + "</body>"
+             + "</html>";
     }
 }
 

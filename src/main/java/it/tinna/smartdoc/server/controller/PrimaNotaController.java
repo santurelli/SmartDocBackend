@@ -24,7 +24,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import it.tinna.smartdoc.server.delegate.datiazienda.DatiAziendaDelegate;
 import it.tinna.smartdoc.server.delegate.primanota.PrimaNotaDelegate;
+import it.tinna.smartdoc.server.security.UserContextHolder;
+import it.tinna.smartdoc.server.service.primanota.PrimaNotaExportService;
+import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
 import it.tinna.smartdoc.shared.dto.primanota.PagamentoPrimaNotaDto;
 import it.tinna.smartdoc.shared.dto.primanota.PrimaNotaDto;
 import it.tinna.smartdoc.shared.dto.primanota.PrimaNotaSearchCriteriaDto;
@@ -35,8 +39,19 @@ public class PrimaNotaController {
 
     private static final Logger log = LoggerFactory.getLogger(PrimaNotaController.class);
 
+    private static final int TIPO_ACCOUNT_ENTERPRISE = 4;
+
     @Autowired
     private PrimaNotaDelegate primaNotaDelegate;
+
+    @Autowired
+    private DatiAziendaDelegate datiAziendaDelegate;
+
+    private boolean isPianoEnterprise()
+    {
+        Integer tipoAccount = UserContextHolder.getTipoAccount();
+        return tipoAccount != null && tipoAccount >= TIPO_ACCOUNT_ENTERPRISE;
+    }
 
     @GetMapping
     public ResponseEntity<List<PrimaNotaDto>> getList(
@@ -109,7 +124,7 @@ public class PrimaNotaController {
             );
 
             Context context = new Context();
-            context.putVar("rows", list);
+            context.putVar("documenti", list);
             context.putVar("dal", criteria.getDtFrom());
             context.putVar("al", criteria.getDtTo());
 
@@ -131,6 +146,55 @@ public class PrimaNotaController {
             }
         } catch (Exception e) {
             log.error("Errore nell'esportazione excel della prima nota", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/export-csv")
+    public ResponseEntity<byte[]> exportCsv(@RequestBody PrimaNotaSearchCriteriaDto criteria) {
+        if (!isPianoEnterprise()) {
+            return ResponseEntity.status(403).build();
+        }
+        try {
+            List<PrimaNotaDto> list = primaNotaDelegate.getList(
+                criteria.getTipoPagamento(), criteria.getIdSoggetto(), criteria.getDtFrom(), criteria.getDtTo(),
+                criteria.getIdRisorsa(), criteria.getTipologia(), criteria.getIdDivisione(), null, null, 0, "desc");
+
+            PrimaNotaExportService exportService = new PrimaNotaExportService();
+            byte[] content = exportService.buildCsv(list);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv"));
+            headers.setContentDispositionFormData("attachment", "prima_nota.csv");
+            return ResponseEntity.ok().headers(headers).body(content);
+        } catch (Exception e) {
+            log.error("Errore nell'esportazione CSV della prima nota", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PostMapping("/export-datev")
+    public ResponseEntity<byte[]> exportDatev(@RequestBody PrimaNotaSearchCriteriaDto criteria,
+                                              @RequestParam(required = false) String beraterNr,
+                                              @RequestParam(required = false) String mandantNr) {
+        if (!isPianoEnterprise()) {
+            return ResponseEntity.status(403).build();
+        }
+        try {
+            List<PrimaNotaDto> list = primaNotaDelegate.getList(
+                criteria.getTipoPagamento(), criteria.getIdSoggetto(), criteria.getDtFrom(), criteria.getDtTo(),
+                criteria.getIdRisorsa(), criteria.getTipologia(), criteria.getIdDivisione(), null, null, 0, "desc");
+
+            DatiAziendaDto datiAzienda = datiAziendaDelegate.getDatiAzienda();
+            PrimaNotaExportService exportService = new PrimaNotaExportService();
+            byte[] content = exportService.buildDatev(list, datiAzienda, beraterNr, mandantNr, criteria.getDtFrom(), criteria.getDtTo());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.parseMediaType("text/csv"));
+            headers.setContentDispositionFormData("attachment", "EXTF_prima_nota.csv");
+            return ResponseEntity.ok().headers(headers).body(content);
+        } catch (Exception e) {
+            log.error("Errore nell'esportazione Datev della prima nota", e);
             return ResponseEntity.internalServerError().build();
         }
     }

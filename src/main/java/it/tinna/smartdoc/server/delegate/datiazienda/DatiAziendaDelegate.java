@@ -17,12 +17,20 @@ import it.tinna.smartdoc.server.dao.datiazienda.DatiAziendaDao;
 import it.tinna.smartdoc.server.dao.tabdecod.TabDecodDao;
 import it.tinna.smartdoc.server.delegate.BaseDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Transactional(readOnly = true)
 @Service(value = "datiaziendaDelegate")
 public class DatiAziendaDelegate extends BaseDelegate
 {
+
+    @Autowired
+    @Qualifier("serviceJdbcTemplate")
+    private JdbcTemplate serviceJdbcTemplate;
 
     public Map<String, Object> get() throws SQLException
     {
@@ -31,6 +39,50 @@ public class DatiAziendaDelegate extends BaseDelegate
         Map<String, Object> map = new HashMap<>();
         map.put(ISharedConstants.COMBOSMAP_KEY_DATIAZIENDA, this.getDatiAzienda());
         map.put(ISharedConstants.COMBOSMAP_KEY_REGIMIFISCALI, tabDecodDao.getListByCategoria(CategorieTabDecod.REGIME_FISCALE));
+
+        try {
+            String dbKey = DatabaseContextHolder.getClientDatabase();
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(dbKey)) {
+                java.util.Map<String, Object> entiRow = serviceJdbcTemplate.queryForMap(
+                    "SELECT tipo_account, dt_attivazione, fl_prova, COALESCE(tipo_rinnovo, 'ANNUAL') AS tipo_rinnovo FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0 LIMIT 1",
+                    dbKey
+                );
+
+                Number tipoAccountNum = (Number) entiRow.get("tipo_account");
+                Integer tipoAccount = tipoAccountNum != null ? tipoAccountNum.intValue() : 1;
+                java.sql.Date dtAttivazione = (java.sql.Date) entiRow.get("dt_attivazione");
+                Number flProvaNum = (Number) entiRow.get("fl_prova");
+                int flProva = flProvaNum != null ? flProvaNum.intValue() : (tipoAccount == 1 ? 1 : 0);
+                String tipoRinnovo = (String) entiRow.get("tipo_rinnovo");
+
+                long giorniRimanenti = 90;
+
+                if (dtAttivazione != null) {
+                    java.time.LocalDate dateAtt = dtAttivazione.toLocalDate();
+                    java.time.LocalDate now = java.time.LocalDate.now();
+                    long giorniDecorsi = java.time.temporal.ChronoUnit.DAYS.between(dateAtt, now);
+                    
+                    int giorniValidita = (flProva == 1) ? 90 : ("MONTHLY".equalsIgnoreCase(tipoRinnovo) ? 35 : 365);
+                    giorniRimanenti = Math.max(0, giorniValidita - giorniDecorsi);
+
+                    if (tipoAccount > 0 && tipoAccount != 5 && giorniDecorsi > giorniValidita) {
+                        tipoAccount = 0;
+                        serviceJdbcTemplate.update("UPDATE d_e_enti SET tipo_account = 0 WHERE nome_db = ?", dbKey);
+                    }
+                }
+
+                map.put("tipoAccount", tipoAccount);
+                map.put("flProva", flProva);
+                map.put("tipoRinnovo", tipoRinnovo != null ? tipoRinnovo : "ANNUAL");
+                map.put("giorniRimanentiProva", giorniRimanenti);
+            }
+        } catch (Exception e) {
+            _log.warn("Impossibile recuperare tipoAccount/scadenza da d_e_enti: {}", e.getMessage());
+            map.put("tipoAccount", 1);
+            map.put("flProva", 1);
+            map.put("giorniRimanentiProva", 90);
+        }
+
         return map;
     }
 

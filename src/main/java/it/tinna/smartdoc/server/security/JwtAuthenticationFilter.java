@@ -67,16 +67,19 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     String dbName = jwtService.extractClaim(jwt, claims -> claims.get("dbName", String.class));
                     Integer userId = jwtService.extractClaim(jwt, claims -> claims.get("id", Integer.class));
                     String role = jwtService.extractClaim(jwt, claims -> claims.get("role", String.class));
+                    Integer tipoAccount = jwtService.extractClaim(jwt, claims -> claims.get("tipoAccount", Integer.class));
                     if (role == null) {
                         role = "ROLE_USER";
                     }
-                    
+
                     if (dbName != null) {
                         log.info("Setting Database Context to: {}", dbName);
                         DatabaseContextHolder.setClientDatabase(dbName);
                     } else {
                         log.warn("No dbName found in token!");
                     }
+
+                    UserContextHolder.setTipoAccount(tipoAccount);
 
                     // Create UserDetailsImpl
                     UserDetails userDetails = new UserDetailsImpl(
@@ -97,6 +100,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
         } finally {
             DatabaseContextHolder.clearClientDatabase();
+            UserContextHolder.clear();
         }
     }
 }

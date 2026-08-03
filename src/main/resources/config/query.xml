@@ -11758,4 +11758,158 @@
 			 ORDER BY si.dt_invio DESC
 		</content>
 	</query>
+	<query name="RICONCILIAZIONE_SCADENZE_APERTE_INCASSO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT sp.k_d_e_scadenzepagamentifatture AS idScadenza,
+				   COALESCE(f.num_fattura::varchar, '') || COALESCE('/' || f.particella, '') AS numeroDocumento,
+				   TO_CHAR(f.data_fattura, 'DD/MM/YYYY') AS dataDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo,
+				   c.denominazione AS nomeSoggetto
+			  FROM d_e_scadenzepagamentifatture sp
+			  JOIN d_e_fatture f
+				ON sp.k_d_e_fatture = f.k_d_e_fatture
+			  JOIN d_e_clienti c
+				ON f.k_d_e_clienti = c.k_d_e_clienti
+			 WHERE COALESCE(sp.saldato, 0) = 0
+			   AND sp.data BETWEEN (TO_DATE(?, 'DD/MM/YYYY') - INTERVAL '120 days') AND (TO_DATE(?, 'DD/MM/YYYY') + INTERVAL '15 days')
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_SCADENZE_APERTE_PAGAMENTO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT sp.k_d_e_scadenzepagamentifatturefornitore AS idScadenza,
+				   COALESCE(ff.num_fattura::varchar, '') || COALESCE('/' || ff.particella, '') AS numeroDocumento,
+				   TO_CHAR(ff.data_fattura, 'DD/MM/YYYY') AS dataDocumento,
+				   TO_CHAR(sp.data, 'DD/MM/YYYY') AS dataScadenza,
+				   COALESCE(sp.importo, 0.00) AS importo,
+				   fo.denominazione AS nomeSoggetto
+			  FROM d_e_scadenzepagamentifatturefornitore sp
+			  JOIN d_e_fatturefornitore ff
+				ON sp.k_d_e_fatturefornitore = ff.k_d_e_fatturefornitore
+			  JOIN d_e_fornitori fo
+				ON ff.k_d_e_fornitori = fo.k_d_e_fornitori
+			 WHERE COALESCE(sp.saldato, 0) = 0
+			   AND sp.data BETWEEN (TO_DATE(?, 'DD/MM/YYYY') - INTERVAL '120 days') AND (TO_DATE(?, 'DD/MM/YYYY') + INTERVAL '15 days')
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_IMPORT_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_riconciliazione_import
+					   (nome_file, formato, k_d_e_risorse, stato, dettaglio_errore, num_movimenti, num_abbinati_auto, user_import, dt_import)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			returning k_d_e_riconciliazione_import
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_IMPORT_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_riconciliazione_import AS id,
+				   nome_file AS nomeFile,
+				   formato,
+				   k_d_e_risorse AS idRisorsa,
+				   stato,
+				   dettaglio_errore AS dettaglioErrore,
+				   num_movimenti AS numMovimenti,
+				   num_abbinati_auto AS numAbbinatiAuto,
+				   TO_CHAR(dt_import, 'DD/MM/YYYY HH24:MI') AS dtImport
+			  FROM d_e_riconciliazione_import
+			 ORDER BY dt_import DESC
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_MOVIMENTO_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_riconciliazione_movimento
+					   (k_d_e_riconciliazione_import, data_valuta, data_contabile, importo, causale_banca,
+					    controparte, iban_controparte, stato, tipo_scadenza_abbinata, k_scadenza_abbinata,
+					    score_matching, dt_abbinamento)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_MOVIMENTO_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_riconciliazione_movimento AS id,
+				   k_d_e_riconciliazione_import AS idImport,
+				   TO_CHAR(data_valuta, 'DD/MM/YYYY') AS dataValuta,
+				   TO_CHAR(data_contabile, 'DD/MM/YYYY') AS dataContabile,
+				   importo,
+				   causale_banca AS causaleBanca,
+				   controparte,
+				   iban_controparte AS ibanControparte,
+				   stato,
+				   tipo_scadenza_abbinata AS tipoScadenzaAbbinata,
+				   k_scadenza_abbinata AS idScadenzaAbbinata,
+				   score_matching AS scoreMatching,
+				   TO_CHAR(dt_abbinamento, 'DD/MM/YYYY HH24:MI') AS dtAbbinamento
+			  FROM d_e_riconciliazione_movimento
+			 WHERE k_d_e_riconciliazione_import = ?
+			 ORDER BY data_valuta, k_d_e_riconciliazione_movimento
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_MOVIMENTO_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_riconciliazione_movimento
+			   SET stato = ?,
+				   tipo_scadenza_abbinata = ?,
+				   k_scadenza_abbinata = ?,
+				   score_matching = ?,
+				   dt_abbinamento = CURRENT_TIMESTAMP,
+				   user_abbinamento = ?
+			 WHERE k_d_e_riconciliazione_movimento = ?
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_SALDA_INCASSO_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_scadenzepagamentifatture
+			   SET saldato = 1,
+				   dt_pagamento = TO_DATE(?, 'DD/MM/YYYY')
+			 WHERE k_d_e_scadenzepagamentifatture = ?
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_SALDA_PAGAMENTO_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_scadenzepagamentifatturefornitore
+			   SET saldato = 1,
+				   dt_pagamento = TO_DATE(?, 'DD/MM/YYYY')
+			 WHERE k_d_e_scadenzepagamentifatturefornitore = ?
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_CSVMAPPING_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_riconciliazione_csv_mapping AS id,
+				   k_d_e_risorse AS idRisorsa,
+				   delimitatore,
+				   fl_ha_intestazione AS flHaIntestazione,
+				   formato_data AS formatoData,
+				   col_data AS colData,
+				   col_importo AS colImporto,
+				   col_causale AS colCausale,
+				   col_controparte AS colControparte,
+				   col_iban_controparte AS colIbanControparte,
+				   fl_importo_unico_con_segno AS flImportoUnicoConSegno,
+				   col_importo_entrata AS colImportoEntrata,
+				   col_importo_uscita AS colImportoUscita
+			  FROM d_e_riconciliazione_csv_mapping
+			 WHERE k_d_e_risorse = ?
+		</content>
+	</query>
+	<query name="RICONCILIAZIONE_CSVMAPPING_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_riconciliazione_csv_mapping
+					   (k_d_e_risorse, delimitatore, fl_ha_intestazione, formato_data, col_data, col_importo,
+					    col_causale, col_controparte, col_iban_controparte, fl_importo_unico_con_segno,
+					    col_importo_entrata, col_importo_uscita, user_created, dt_created)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			ON CONFLICT (k_d_e_risorse, tenant_id) DO UPDATE SET
+				   delimitatore = EXCLUDED.delimitatore,
+				   fl_ha_intestazione = EXCLUDED.fl_ha_intestazione,
+				   formato_data = EXCLUDED.formato_data,
+				   col_data = EXCLUDED.col_data,
+				   col_importo = EXCLUDED.col_importo,
+				   col_causale = EXCLUDED.col_causale,
+				   col_controparte = EXCLUDED.col_controparte,
+				   col_iban_controparte = EXCLUDED.col_iban_controparte,
+				   fl_importo_unico_con_segno = EXCLUDED.fl_importo_unico_con_segno,
+				   col_importo_entrata = EXCLUDED.col_importo_entrata,
+				   col_importo_uscita = EXCLUDED.col_importo_uscita
+		</content>
+	</query>
 </root>
