@@ -53,6 +53,8 @@ import it.tinna.smartdoc.server.dao.listini.ListiniDao;
 import it.tinna.smartdoc.server.dao.fornitori.FornitoriDao;
 import it.tinna.smartdoc.server.dao.indirizzi.IndirizziDao;
 import it.tinna.smartdoc.server.dao.prodotti.ProdottiDao;
+import it.tinna.smartdoc.server.dao.prodotti.MovimentiMagazzinoDao;
+import it.tinna.smartdoc.shared.dto.prodotti.MovimentoMagazzinoDto;
 import it.tinna.smartdoc.server.dao.progetti.ProgettiDao;
 import it.tinna.smartdoc.server.dao.risorse.RisorseDao;
 import it.tinna.smartdoc.server.dao.speseincasso.SpeseIncassoDao;
@@ -975,6 +977,46 @@ public class FattureFornitoreDelegate extends BaseDelegate
     }
 
     @Transactional(rollbackFor = SQLException.class)
+    /**
+     * Carica a magazzino le righe articolo marcate "scarica" (checkbox "Carica in magazzino").
+     * Serve a coprire il caso di fattura fornitore creata senza una bolla di carico a monte,
+     * o con righe aggiunte manualmente rispetto a quelle importate da una bolla (che hanno
+     * gia' generato il loro carico e arrivano qui con scarica=0).
+     */
+    private void caricaMagazzino(FatturaFornitoreDto dto, int idFattura) throws SQLException
+    {
+        if ( dto.getProdotti() == null )
+        {
+            return;
+        }
+        MovimentiMagazzinoDao movimentiDao = new MovimentiMagazzinoDao(jdbcTemplate);
+        for ( ProdottoDocumentoDto prodottoDto : dto.getProdotti() )
+        {
+            boolean daCaricare = prodottoDto.getScarica() == null || prodottoDto.getScarica() == 1;
+            if ( !daCaricare || prodottoDto.getIdProdotto() == null || prodottoDto.getQuantita() == null || prodottoDto.getQuantita() <= 0 )
+            {
+                continue;
+            }
+            MovimentoMagazzinoDto movimentoDto = new MovimentoMagazzinoDto();
+            movimentoDto.setIdProdotto(prodottoDto.getIdProdotto());
+            movimentoDto.setTipoMovimento("I");
+            movimentoDto.setQuantita(prodottoDto.getQuantita());
+            movimentoDto.setIdUnitaMisura(prodottoDto.getIdUnitaMisura());
+            movimentoDto.setPrezzoUnitario(prodottoDto.getPrezzo());
+            movimentoDto.setIdAliquotaIva(prodottoDto.getIdAliquotaIva());
+            movimentoDto.setDataMovimento(dto.getDataDocumento());
+            movimentoDto.setIdScelta(prodottoDto.getIdScelta());
+            movimentoDto.setIdTono(prodottoDto.getIdTono());
+            movimentoDto.setIdTaglia(prodottoDto.getIdTaglia());
+            movimentoDto.setIdColore(prodottoDto.getIdColore());
+            movimentoDto.setIdMagazzino(dto.getIdMagazzino() != null ? dto.getIdMagazzino() : Integer.valueOf(1));
+            movimentoDto.setIdFornitore(dto.getIdFornitore());
+            movimentoDto.setDescrCausale("Carico da Fattura Fornitore n. " + dto.getNumDocumento());
+            movimentoDto.setUserCreated(dto.getUserCreated());
+            movimentiDao.insertCarico(movimentoDto);
+        }
+    }
+
     public Integer insert(FatturaFornitoreDto dto) throws SQLException
     {
         try {
@@ -1017,6 +1059,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
                     documentiDao.associaDoc(idFattura, ISharedConstants.TIPODOCASSOCIATO_FATTURAFORNITORE, idBollaCarico, ISharedConstants.TIPODOCASSOCIATO_BOLLACARICO);
                 }
             }
+            caricaMagazzino(dto, idFattura);
             if ( org.apache.commons.lang3.StringUtils.isNotBlank(dto.getTipoDocumentoSdi()) )
             {
                 new it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao(jdbcTemplate)

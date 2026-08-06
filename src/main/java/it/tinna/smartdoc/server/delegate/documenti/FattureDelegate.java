@@ -1208,6 +1208,9 @@ public class FattureDelegate extends BaseDelegate
             double totale = fattureDao.getTotale(idFattura);
             double totalePagato = fattureDao.getTotalePagato(idFattura);
             fattureDao.aggiornaTotaliFattura(totale, totalePagato, idFattura);
+            // Nota: NON inseriamo un movimento esplicito in d_e_movimenti_magazzino qui: get_totale_disponibile()
+            // legge gia' direttamente il flag fl_scarica sulle righe di d_e_prodotti_fatture, quindi un movimento
+            // esplicito causerebbe un doppio conteggio.
             return idFattura;
         } catch (Exception e) {
             _log.error("Errore durante l'inserimento della fattura: {}", new Gson().toJson(dto), e);

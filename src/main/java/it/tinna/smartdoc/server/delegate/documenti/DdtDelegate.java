@@ -153,6 +153,9 @@ public class DdtDelegate extends BaseDelegate {
                 ddtDao.insertSpesaIncasso(sDto);
             }
         }
+        // Nota: NON inseriamo un movimento esplicito in d_e_movimenti_magazzino qui: get_totale_disponibile()
+        // legge gia' direttamente il flag fl_scarica sulle righe di d_e_prodotti_ddt, quindi un movimento
+        // esplicito causerebbe un doppio conteggio.
         return id;
     }
 
