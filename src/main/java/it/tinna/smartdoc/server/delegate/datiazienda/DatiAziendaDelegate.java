@@ -161,6 +161,7 @@ public class DatiAziendaDelegate extends BaseDelegate
             existing.setPec(dto.getPec());
             existing.setEmail(dto.getEmail());
             existing.setSitoWeb(dto.getSitoWeb());
+            existing.setSettoreMerceologico(dto.getSettoreMerceologico());
             existing.setDeleteLogo(dto.getDeleteLogo());
             
             if ( dto.getByteLogo() != null ) {

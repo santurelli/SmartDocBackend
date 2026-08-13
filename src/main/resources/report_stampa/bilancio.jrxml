@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="bilancio" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="2c7e9a1d-4f3b-4e8a-9c6d-1a2b3c4d5e6f">
+	<parameter name="datiazienda" class="it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto" isForPrompting="false"/>
+	<parameter name="anno" class="java.lang.Integer" isForPrompting="false"/>
+	<parameter name="statoEsercizio" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="utilePerdita" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="dsAttivo" class="net.sf.jasperreports.engine.JRDataSource" isForPrompting="false"/>
+	<parameter name="dsPassivo" class="net.sf.jasperreports.engine.JRDataSource" isForPrompting="false"/>
+	<parameter name="dsCosti" class="net.sf.jasperreports.engine.JRDataSource" isForPrompting="false"/>
+	<parameter name="dsRicavi" class="net.sf.jasperreports.engine.JRDataSource" isForPrompting="false"/>
+	<parameter name="totAttivo" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="totPassivo" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="totCosti" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="totRicavi" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="SUBREPORT_SEZIONE" class="net.sf.jasperreports.engine.JasperReport" isForPrompting="false"/>
+	<field name="sezione" class="java.lang.String"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="110" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="0" y="0" width="300" height="16" uuid="3a1b2c3d-0001-4001-8001-100000000001"/>
+				<textElement>
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="17" width="300" height="12" uuid="3a1b2c3d-0002-4002-8002-100000000002"/>
+				<textElement>
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getPartitaIva() == null ? "" : "P.IVA " + $P{datiazienda}.getPartitaIva()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="45" width="555" height="24" uuid="3a1b2c3d-0003-4003-8003-100000000003"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="16" isBold="true"/>
+				</textElement>
+				<text><![CDATA[BILANCIO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="70" width="555" height="16" uuid="3a1b2c3d-0004-4004-8004-100000000004"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="11"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Esercizio " + $P{anno} + " - " + $P{statoEsercizio}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00 €">
+				<reportElement x="0" y="88" width="555" height="18" uuid="3a1b2c3d-0005-4005-8005-100000000005"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Utile / Perdita d'esercizio: " + ($P{utilePerdita} == null ? java.math.BigDecimal.ZERO : $P{utilePerdita})]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="24" splitType="Stretch">
+			<subreport>
+				<reportElement positionType="Float" x="0" y="0" width="555" height="24" uuid="3a1b2c3d-0006-4006-8006-100000000006"/>
+				<subreportParameter name="titoloSezione">
+					<subreportParameterExpression><![CDATA[$F{sezione}.equals("ATTIVO") ? "ATTIVO" : $F{sezione}.equals("PASSIVO") ? "PASSIVO (incluso Patrimonio Netto)" : $F{sezione}.equals("COSTI") ? "COSTI" : "RICAVI"]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="totaleLabel">
+					<subreportParameterExpression><![CDATA[$F{sezione}.equals("ATTIVO") ? "TOTALE ATTIVO" : $F{sezione}.equals("PASSIVO") ? "TOTALE PASSIVO" : $F{sezione}.equals("COSTI") ? "TOTALE COSTI" : "TOTALE RICAVI"]]></subreportParameterExpression>
+				</subreportParameter>
+				<subreportParameter name="totale">
+					<subreportParameterExpression><![CDATA[$F{sezione}.equals("ATTIVO") ? $P{totAttivo} : $F{sezione}.equals("PASSIVO") ? $P{totPassivo} : $F{sezione}.equals("COSTI") ? $P{totCosti} : $P{totRicavi}]]></subreportParameterExpression>
+				</subreportParameter>
+				<dataSourceExpression><![CDATA[$F{sezione}.equals("ATTIVO") ? $P{dsAttivo} : $F{sezione}.equals("PASSIVO") ? $P{dsPassivo} : $F{sezione}.equals("COSTI") ? $P{dsCosti} : $P{dsRicavi}]]></dataSourceExpression>
+				<subreportExpression><![CDATA[$P{SUBREPORT_SEZIONE}]]></subreportExpression>
+			</subreport>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="14" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="12" uuid="3a1b2c3d-0008-4008-8008-100000000008"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Pagina " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

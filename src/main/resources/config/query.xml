@@ -912,20 +912,28 @@
 	<query name="CATEGORIE_I01">
 		<content delimiterParsingDisabled="true">
 			INSERT INTO d_e_categorie
-				 	   (descrizione, 
-				 	    user_created, 
+				 	   (descrizione,
+				 	    k_conto_ricavo,
+				 	    k_conto_costo,
+				 	    user_created,
 				 	    dt_created)
-				 VALUES(?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,CURRENT_TIMESTAMP)
 		</content>
 	</query>
 	<query name="CATEGORIE_S01">
 		<content delimiterParsingDisabled="true">
-			SELECT k_d_e_categorie AS id,
-				   descrizione,
+			SELECT c.k_d_e_categorie AS id,
+				   c.descrizione,
+				   c.k_conto_ricavo AS idContoRicavo,
+				   c.k_conto_costo AS idContoCosto,
+				   pcr.codice || ' - ' || pcr.descrizione AS descContoRicavo,
+				   pcc.codice || ' - ' || pcc.descrizione AS descContoCosto,
 				   COUNT(*) OVER() AS total
-			  FROM d_e_categorie
-		   	 WHERE LOWER(descrizione) LIKE COALESCE(lower(?), LOWER(descrizione))
-			   AND fl_deleted = 0
+			  FROM d_e_categorie c
+			  LEFT JOIN d_e_piano_conti pcr ON pcr.k_d_e_piano_conti = c.k_conto_ricavo
+			  LEFT JOIN d_e_piano_conti pcc ON pcc.k_d_e_piano_conti = c.k_conto_costo
+		   	 WHERE LOWER(c.descrizione) LIKE COALESCE(lower(?), LOWER(c.descrizione))
+			   AND c.fl_deleted = 0
 		  ORDER BY ${ORDER_BY}
 				   ${LIMIT}
 		</content>
@@ -933,7 +941,9 @@
 	<query name="CATEGORIE_S02">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_categorie AS id,
-				   descrizione
+				   descrizione,
+				   k_conto_ricavo AS idContoRicavo,
+				   k_conto_costo AS idContoCosto
 			FROM d_e_categorie
 		   WHERE k_d_e_categorie = ?
 		</content>
@@ -959,7 +969,9 @@
 	<query name="CATEGORIE_U01">
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_categorie
-			   SET descrizione = ?, 
+			   SET descrizione = ?,
+				   k_conto_ricavo = ?,
+				   k_conto_costo = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_categorie = ?
@@ -1372,9 +1384,10 @@
 			    		k_d_e_zonecompetenza,
 			    		k_d_e_sottoconticlienti,
 			    		k_d_e_lingue,
-				 	    user_created, 
+			    		k_conto_default,
+				 	    user_created,
 				 	    dt_created)
-				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			RETURNING k_d_e_clienti
 		</content>
 	</query>
@@ -1479,13 +1492,13 @@
 	<query name="CLIENTI_S04">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_clienti AS id,
-			  	   codice,
+			  	   d_e_clienti.codice,
 			  	   tipologia,
 			  	   denominazione,
 			  	   referente,
 			       codice_fiscale AS codiceFiscale,
 			  	   partita_iva AS partitaIva,
-			  	   note,
+			  	   d_e_clienti.note,
 			  	   k_d_e_tipipagamento AS idTipoPagamento,
     		  	   cod_sia AS codSia,
     		  	   banca AS descrizioneBanca,
@@ -1508,10 +1521,14 @@
     		  	   COALESCE(sconto, '') AS sconto,
     		  	   k_d_e_zonecompetenza as idZonaCompetenza,
 			       k_d_e_sottoconticlienti as idSottoconto,
-			       k_d_e_lingue as idLingua
+			       k_d_e_lingue as idLingua,
+			       d_e_clienti.k_conto_default AS idContoContabile,
+			       pc.codice || ' - ' || pc.descrizione AS descContoContabile
 			  FROM d_e_clienti
 		 LEFT JOIN d_e_avvisi
-		 		ON d_e_clienti.k_d_e_avvisi = d_e_avvisi.k_d_e_avvisi	  
+		 		ON d_e_clienti.k_d_e_avvisi = d_e_avvisi.k_d_e_avvisi
+		 LEFT JOIN d_e_piano_conti pc
+		 		ON pc.k_d_e_piano_conti = d_e_clienti.k_conto_default
 			 WHERE k_d_e_clienti = ?
 		</content>
 	</query>
@@ -1662,9 +1679,10 @@
 				k_d_e_zonecompetenza = ?,
 				k_d_e_sottoconticlienti = ?,
 				k_d_e_lingue = ?,
+				k_conto_default = ?,
 				user_last_update = ?,
 				dt_last_update = CURRENT_TIMESTAMP
-			 WHERE k_d_e_clienti = ? 
+			 WHERE k_d_e_clienti = ?
 
 		</content>
 	</query>
@@ -3697,8 +3715,9 @@
 						fm_taglia,
 						fm_colore,
 						k_d_e_divisioni,
-						fl_ritenuta)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0),?)
+						fl_ritenuta,
+						k_conto_override)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0),?,NULLIF(?,0))
 		</content>
 	</query>
 	<query name="FATTURE_I03">
@@ -3866,6 +3885,7 @@
 			SELECT d_e_prodotti_fatture.k_d_e_prodotti_fatture AS id,
 				   d_e_prodotti_fatture.k_d_e_fatture AS idDocumento,
 				   d_e_prodotti_fatture.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti_fatture.k_conto_override AS idContoOverride,
 				   d_e_prodotti.descrizione AS descProdotto,
 				   d_e_prodotti.codice AS codiceProdotto,
 				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
@@ -4534,8 +4554,9 @@
 						fm_scelta,
 						fm_taglia,
 						fm_colore,
-						k_d_e_divisioni)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0));
+						k_d_e_divisioni,
+						k_conto_override)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0));
 		</content>
 	</query>
 	<query name="FATTUREFORNITORE_I03">
@@ -4641,6 +4662,7 @@
 			SELECT d_e_prodotti_fatturefornitore.k_d_e_prodotti_fatturefornitore AS id,
 				   d_e_prodotti_fatturefornitore.k_d_e_fatturefornitore AS idDocumento,
 				   d_e_prodotti_fatturefornitore.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti_fatturefornitore.k_conto_override AS idContoOverride,
 				   d_e_prodotti.descrizione AS descProdotto,
 				   d_e_prodotti.codice AS codiceProdotto,
 				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
@@ -5092,9 +5114,10 @@
 			    		documenti_mail,
 			    		k_d_e_avvisi,
 			    		k_d_e_notedocumenti,
-				 	    user_created, 
+			    		k_conto_default,
+				 	    user_created,
 				 	    dt_created)
-				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			RETURNING k_d_e_fornitori
 		</content>
 	</query>
@@ -5151,12 +5174,12 @@
 	<query name="FORNITORI_S04">
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_fornitori AS id,
-			  	   codice,
+			  	   d_e_fornitori.codice,
 			  	   denominazione,
 			  	   referente,
 			       codice_fiscale AS codiceFiscale,
 			  	   partita_iva AS partitaIva,
-			  	   note,
+			  	   d_e_fornitori.note,
 			  	   k_d_e_tipipagamento AS idTipoPagamento,
     		  	   cod_sia AS codSia,
     		  	   banca AS descrizioneBanca,
@@ -5173,10 +5196,14 @@
     		  	   k_d_e_tipiporto AS idTipoPorto,
     		  	   documenti_mail AS documentiMail,
     		  	   k_d_e_avvisi AS idAvviso,
-    		  	   k_d_e_notedocumenti AS idNota
+    		  	   k_d_e_notedocumenti AS idNota,
+				   d_e_fornitori.k_conto_default AS idContoContabile,
+				   pc.codice || ' - ' || pc.descrizione AS descContoContabile
 			  FROM d_e_fornitori
-			 WHERE k_d_e_fornitori = ?
-			   AND fl_deleted = 0
+		 LEFT JOIN d_e_piano_conti pc
+		 		ON pc.k_d_e_piano_conti = d_e_fornitori.k_conto_default
+			 WHERE d_e_fornitori.k_d_e_fornitori = ?
+			   AND d_e_fornitori.fl_deleted = 0
 		</content>
 	</query>
 	<query name="FORNITORI_S05">
@@ -5311,6 +5338,7 @@
 			       documenti_mail = ?,
 			       k_d_e_avvisi = ?,
 			       k_d_e_notedocumenti = ?,
+		       k_conto_default = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_fornitori = ?
@@ -6341,8 +6369,6 @@
 						citta_destinazione,
 						provincia_destinazione,
 						nazione_destinazione,
-						codice_fiscale,
-						partita_iva,
 						dt_liquidazione_provvigione,
 						fl_esigibilitadifferita,
 						k_d_e_causaliesigibilitadifferita,
@@ -6367,7 +6393,7 @@
 						id_aliquota_iva_rivalsa,
 						user_created,
 						dt_created)
-				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,TO_DATE(?,'DD/MM/YYYY'),?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_notecredito;
 		</content>
 	</query>
@@ -6395,8 +6421,9 @@
 						fm_scelta,
 						fm_taglia,
 						fm_colore,
-						k_d_e_divisioni, fl_ritenuta)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),?,?,?,?,?,?,?,NULLIF(?,0), ?)
+						k_d_e_divisioni, fl_ritenuta,
+						k_conto_override)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),?,?,?,?,?,?,?,NULLIF(?,0), ?, NULLIF(?,0))
 		</content>
 	</query>
 	<query name="NOTECREDITO_I03">
@@ -6518,6 +6545,7 @@
 			select d_e_prodotti_notecredito.k_d_e_prodotti_notecredito AS id,
 				   d_e_prodotti_notecredito.k_d_e_notecredito AS idDocumento,
 				   d_e_prodotti_notecredito.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti_notecredito.k_conto_override AS idContoOverride,
 				   d_e_prodotti_notecredito.fl_ritenuta,
 				   d_e_prodotti.descrizione AS descProdotto,
 				   d_e_prodotti.codice AS codiceProdotto,
@@ -6990,8 +7018,9 @@
 						fm_scelta,
 						fm_taglia,
 						fm_colore,
-						k_d_e_divisioni)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0));
+						k_d_e_divisioni,
+						k_conto_override)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?, 0),?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0));
 		</content>
 	</query>
 	<query name="NOTECREDITOFORNITORE_I03">
@@ -7092,6 +7121,7 @@
 			SELECT d_e_prodotti_notecreditofornitore.k_d_e_prodotti_notecreditofornitore AS id,
 				   d_e_prodotti_notecreditofornitore.k_d_e_notecreditofornitore AS idDocumento,
 				   d_e_prodotti_notecreditofornitore.k_d_e_prodotti AS idProdotto,
+				   d_e_prodotti_notecreditofornitore.k_conto_override AS idContoOverride,
 				   d_e_prodotti.descrizione AS descProdotto,
 				   d_e_prodotti.codice AS codiceProdotto,
 				   d_e_prodotti.escludi_provvigione AS esclusoDaProvvigione,
@@ -8315,9 +8345,11 @@
 				 	   	scultura,
 				 	   	indice_velocita,
 				 	   	dot,
-				 	    user_created, 
+				 	   	k_conto_ricavo,
+				 	   	k_conto_costo,
+				 	    user_created,
 				 	    dt_created)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_prodotti
 		</content>
 	</query>
@@ -8414,6 +8446,10 @@
  				   COALESCE(cod_prod_fornitore, '') AS codicePerFornitore,
 				   COALESCE(d_e_prodotti.k_d_e_divisioni, 0) AS idDivisione,
 				   COALESCE(d_e_prodotti.k_d_e_conti, 0) AS idConto,
+				   d_e_prodotti.k_conto_ricavo AS idContoRicavo,
+				   d_e_prodotti.k_conto_costo AS idContoCosto,
+				   pcr.codice || ' - ' || pcr.descrizione AS descContoRicavo,
+				   pcc.codice || ' - ' || pcc.descrizione AS descContoCosto,
 				   COALESCE(d_e_prodotti.k_d_e_categorie, 0) AS idCategoria,
 				   COALESCE(d_e_prodotti.k_d_e_sottocategorie, 0) AS idSottoCategoria,
 				   COALESCE(d_e_formatiarticolo.k_d_e_formatiarticolo, 0) AS idFormato,
@@ -8592,6 +8628,10 @@
 		 		ON d_e_prodotti.k_d_e_calibriarticolo = d_e_calibriarticolo.k_d_e_calibriarticolo
 		 LEFT JOIN d_e_fornitori
 		 		ON d_e_prodotti.k_d_e_fornitori = d_e_fornitori.k_d_e_fornitori
+		 LEFT JOIN d_e_piano_conti pcr
+		 		ON pcr.k_d_e_piano_conti = d_e_prodotti.k_conto_ricavo
+		 LEFT JOIN d_e_piano_conti pcc
+		 		ON pcc.k_d_e_piano_conti = d_e_prodotti.k_conto_costo
 		     WHERE k_d_e_prodotti = ?
 		</content>
 	</query>
@@ -9214,6 +9254,8 @@
 	 	   		   scultura = ?,
 	 	   		   indice_velocita = ?,
 	 	   		   dot = ?,
+	 	   		   k_conto_ricavo = ?,
+	 	   		   k_conto_costo = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_prodotti = ?
@@ -9937,10 +9979,12 @@
 		<content delimiterParsingDisabled="true">
 			INSERT INTO d_e_sottocategorie
 				 	   (parent_id,
-				 	    descrizione, 
-				 	    user_created, 
+				 	    descrizione,
+				 	    k_conto_ricavo,
+				 	    k_conto_costo,
+				 	    user_created,
 				 	    dt_created)
-				 VALUES(?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,?,CURRENT_TIMESTAMP)
 		</content>
 	</query>
 	<query name="SOTTOCATEGORIE_S01">
@@ -9949,14 +9993,18 @@
 				   parent_id AS parentId,
 				   d_e_sottocategorie.descrizione,
 				   d_e_categorie.descrizione AS parentDescription,
+				   d_e_sottocategorie.k_conto_ricavo AS idContoRicavo,
+				   d_e_sottocategorie.k_conto_costo AS idContoCosto,
+				   pcr.codice || ' - ' || pcr.descrizione AS descContoRicavo,
+				   pcc.codice || ' - ' || pcc.descrizione AS descContoCosto,
 				   COUNT(*) OVER() AS total
-			FROM d_e_sottocategorie,
-				 d_e_categorie
-		   WHERE parent_id = COALESCE(?, parent_id)
-		   	 AND lower(d_e_sottocategorie.descrizione) LIKE COALESCE(lower(?), lower(d_e_sottocategorie.descrizione))
-		   	 AND d_e_categorie.k_d_e_categorie = d_e_sottocategorie.parent_id
-			 AND d_e_sottocategorie.fl_deleted = 0
-			 AND d_e_sottocategorie.parent_id = d_e_categorie.k_d_e_categorie
+		FROM d_e_sottocategorie
+		JOIN d_e_categorie ON d_e_categorie.k_d_e_categorie = d_e_sottocategorie.parent_id
+		LEFT JOIN d_e_piano_conti pcr ON pcr.k_d_e_piano_conti = d_e_sottocategorie.k_conto_ricavo
+		LEFT JOIN d_e_piano_conti pcc ON pcc.k_d_e_piano_conti = d_e_sottocategorie.k_conto_costo
+	   WHERE parent_id = COALESCE(?, parent_id)
+	   	 AND lower(d_e_sottocategorie.descrizione) LIKE COALESCE(lower(?), lower(d_e_sottocategorie.descrizione))
+		 AND d_e_sottocategorie.fl_deleted = 0
 		ORDER BY ${ORDER_BY}
 				 ${LIMIT}
 		</content>
@@ -9965,7 +10013,9 @@
 		<content delimiterParsingDisabled="true">
 			SELECT k_d_e_sottocategorie AS id,
 				   parent_id AS parentId,
-				   descrizione
+				   descrizione,
+				   k_conto_ricavo AS idContoRicavo,
+				   k_conto_costo AS idContoCosto
 			FROM d_e_sottocategorie
 		   WHERE k_d_e_sottocategorie = ?
 		</content>
@@ -9997,7 +10047,9 @@
 	<query name="SOTTOCATEGORIE_U01">
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_sottocategorie
-			   SET descrizione = ?, 
+			   SET descrizione = ?,
+				   k_conto_ricavo = ?,
+				   k_conto_costo = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_sottocategorie = ?
@@ -11042,12 +11094,12 @@
                 denominazione, indirizzo, cap, citta, provincia, telefono, email, pec, fax, partita_iva, codice_fiscale, sito_web,
                 indirizzo_server_mail, porta_server_mail, username_server_mail, password_server_mail, fl_ssl_mail, fl_tsl_mail, fl_server_mail_proprietario,
                 indirizzo_pec, porta_pec, username_pec, password_pec, fl_ssl_pec, fl_tsl_pec,
-                regime_fiscale, imglogo, user_created
+                regime_fiscale, imglogo, settore_merceologico, user_created
             ) VALUES (
                 ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?, ?,
                 ?, ?, ?, ?, ?, ?,
-                ?, ?, ?
+                ?, ?, ?, ?
             )
         </content>
     </query>
@@ -11057,7 +11109,7 @@
                 denominazione = ?, indirizzo = ?, cap = ?, citta = ?, provincia = ?, telefono = ?, email = ?, pec = ?, fax = ?, partita_iva = ?, codice_fiscale = ?, sito_web = ?,
                 indirizzo_server_mail = ?, porta_server_mail = ?, username_server_mail = ?, password_server_mail = ?, fl_ssl_mail = ?, fl_tsl_mail = ?, fl_server_mail_proprietario = ?,
                 indirizzo_pec = ?, porta_pec = ?, username_pec = ?, password_pec = ?, fl_ssl_pec = ?, fl_tsl_pec = ?,
-                regime_fiscale = ?, imglogo = ?, user_last_update = ?
+                regime_fiscale = ?, imglogo = ?, settore_merceologico = ?, user_last_update = ?
         </content>
     </query>
     <query name="TIPIPORTO_D01">
@@ -11960,6 +12012,89 @@
 			   AND d_e_ordini.k_d_e_fornitori = ?
 			   AND get_stato_ordine(d_e_ordini.k_d_e_ordini) != 'Concluso'
 		  ORDER BY d_e_ordini.data_ordine DESC
+		</content>
+	</query>
+
+	<query name="PIANODEICONTI_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_piano_conti
+			   SET fl_deleted = 1,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_piano_conti = ?
+			   AND fl_bloccato = 0
+		</content>
+	</query>
+	<query name="PIANODEICONTI_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_piano_conti
+					   (codice, descrizione, k_padre, tipo, ruolo_default, fl_predefinito, fl_bloccato, note, user_created, dt_created)
+				 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			  RETURNING k_d_e_piano_conti
+		</content>
+	</query>
+	<query name="PIANODEICONTI_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_piano_conti AS id,
+				   codice,
+				   descrizione,
+				   k_padre AS idPadre,
+				   tipo,
+				   ruolo_default AS ruoloDefault,
+				   fl_predefinito AS predefinito,
+				   fl_bloccato AS bloccato,
+				   note,
+				   COUNT(*) OVER() AS total
+			  FROM d_e_piano_conti
+		     WHERE fl_deleted = 0
+			   AND (LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione)) OR LOWER(codice) LIKE COALESCE(LOWER(?), LOWER(codice)))
+		  ORDER BY codice ASC
+		</content>
+	</query>
+	<query name="PIANODEICONTI_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_piano_conti AS id,
+				   codice,
+				   descrizione,
+				   k_padre AS idPadre,
+				   tipo,
+				   ruolo_default AS ruoloDefault,
+				   fl_predefinito AS predefinito,
+				   fl_bloccato AS bloccato,
+				   note
+			  FROM d_e_piano_conti
+		     WHERE k_d_e_piano_conti = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="PIANODEICONTI_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_e_piano_conti
+		     WHERE LOWER(codice) = LOWER(?)
+			   AND k_d_e_piano_conti != ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="PIANODEICONTI_S04">
+		<content delimiterParsingDisabled="true">
+			SELECT COUNT(*)
+			  FROM d_e_piano_conti
+		     WHERE fl_deleted = 0
+		</content>
+	</query>
+	<query name="PIANODEICONTI_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_piano_conti
+			   SET codice = ?,
+				   descrizione = ?,
+				   k_padre = ?,
+				   tipo = ?,
+				   ruolo_default = ?,
+				   note = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_piano_conti = ?
 		</content>
 	</query>
 </root>

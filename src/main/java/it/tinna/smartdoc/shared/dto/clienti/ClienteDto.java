@@ -35,6 +35,10 @@ public class ClienteDto extends BaseClienteDto {
 
     private String codiceSdi;
 
+    private Integer idContoContabile;
+
+    private String descContoContabile;
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof ClienteDto) {

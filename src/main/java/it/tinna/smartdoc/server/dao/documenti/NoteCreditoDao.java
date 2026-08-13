@@ -524,8 +524,6 @@ public class NoteCreditoDao extends BaseDao
                                                dto.getCittaDestinazione(),
                                                dto.getProvinciaDestinazione(),
                                                dto.getNazioneDestinazione(),
-                                               dto.getCodiceFiscale(),
-                                               dto.getPartitaIva(),
                                                StringUtils.isEmpty(dto.getDtLiquidazioneProvvigione()) ? null : DateUtility.toTimestamp(dto.getDtLiquidazioneProvvigione()),
                                                dto.getEsigibilitaDifferita(),
                                                dto.getIdCausaleEsigibilitaDifferita(),
@@ -561,7 +559,7 @@ public class NoteCreditoDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("NOTECREDITO_I02"), dto.getIdDocumento(), dto.getIdProdotto(), dto.getQuantita(), dto.getIdUnitaMisura(), dto.getPrezzo(), dto.getSconto(), dto.getPrezzoImponibile(), dto.getIdAliquotaIva(), dto.getNota(), dto.getIdColore(), dto.getIdTaglia(), dto.getIdScelta(), dto.getIdTono(), dto.getIdConto(), dto.getFmCodice(), dto.getFmDescrizione(), dto.getFmUnitaMisura(), dto.getFmTono(), dto.getFmScelta(), dto.getFmTaglia(), dto.getFmColore(), dto.getIdDivisione(), dto.getFlRitenuta());
+            jdbcTemplate.update(FileQueryReader.getQuery("NOTECREDITO_I02"), dto.getIdDocumento(), dto.getIdProdotto(), dto.getQuantita(), dto.getIdUnitaMisura(), dto.getPrezzo(), dto.getSconto(), dto.getPrezzoImponibile(), dto.getIdAliquotaIva(), dto.getNota(), dto.getIdColore(), dto.getIdTaglia(), dto.getIdScelta(), dto.getIdTono(), dto.getIdConto(), dto.getFmCodice(), dto.getFmDescrizione(), dto.getFmUnitaMisura(), dto.getFmTono(), dto.getFmScelta(), dto.getFmTaglia(), dto.getFmColore(), dto.getIdDivisione(), dto.getFlRitenuta(), dto.getIdContoOverride());
         }
         catch ( DataAccessException e )
         {

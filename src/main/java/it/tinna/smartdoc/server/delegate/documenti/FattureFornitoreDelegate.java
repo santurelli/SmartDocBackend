@@ -117,6 +117,9 @@ public class FattureFornitoreDelegate extends BaseDelegate
     @Autowired
     private FornitoriDelegate   fornitoriDelegate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate registrazioneContabileDelegate;
+
     // public FattureFornitoreDelegate(JdbcTemplate jdbcTemplate)
     // {
     // super(jdbcTemplate);
@@ -193,6 +196,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
         for ( FatturaFornitoreDto dto : lista )
         {
             dao.delete(dto);
+            registrazioneContabileDelegate.eliminaRegistrazione("FATTURA_FORNITORE", dto.getId());
         }
     }
 
@@ -1065,6 +1069,8 @@ public class FattureFornitoreDelegate extends BaseDelegate
                 new it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao(jdbcTemplate)
                     .aggiornaStatoAutofattura(idFattura, it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.DI);
             }
+            dto.setId(idFattura);
+            registrazioneContabileDelegate.generaDaFatturaFornitore(dto);
             return idFattura;
         } catch (Exception e) {
             _log.error("Errore durante l'inserimento della fattura fornitore: {}", new Gson().toJson(dto), e);
@@ -1116,6 +1122,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
                 new it.tinna.smartdoc.server.dao.documenti.FatturaElettronicaDao(jdbcTemplate)
                     .aggiornaStatoAutofattura(dto.getId(), it.tinna.smartdoc.shared.dto.documenti.StatoFatturaElettronica.DI);
             }
+            registrazioneContabileDelegate.generaDaFatturaFornitore(dto);
         } catch (Exception e) {
             _log.error("Errore durante l'aggiornamento della fattura fornitore {}: {}", dto.getId(), new Gson().toJson(dto), e);
             throw e;

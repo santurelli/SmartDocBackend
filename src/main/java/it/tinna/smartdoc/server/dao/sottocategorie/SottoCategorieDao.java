@@ -75,8 +75,8 @@ public class SottoCategorieDao extends BaseDao {
 
     public void insert(SottoCategoriaDto dto, Integer userId) throws SQLException {
         try {
-            jdbcTemplate.update(FileQueryReader.getQuery("SOTTOCATEGORIE_I01"), 
-                    dto.getParentId(), dto.getDescrizione(), userId);
+            jdbcTemplate.update(FileQueryReader.getQuery("SOTTOCATEGORIE_I01"),
+                    dto.getParentId(), dto.getDescrizione(), dto.getIdContoRicavo(), dto.getIdContoCosto(), userId);
         } catch (DataAccessException e) {
             throw new SQLException(e);
         }
@@ -84,8 +84,8 @@ public class SottoCategorieDao extends BaseDao {
 
     public void update(SottoCategoriaDto dto, Integer userId) throws SQLException {
         try {
-            jdbcTemplate.update(FileQueryReader.getQuery("SOTTOCATEGORIE_U01"), 
-                    dto.getDescrizione(), userId, dto.getId());
+            jdbcTemplate.update(FileQueryReader.getQuery("SOTTOCATEGORIE_U01"),
+                    dto.getDescrizione(), dto.getIdContoRicavo(), dto.getIdContoCosto(), userId, dto.getId());
         } catch (DataAccessException e) {
             throw new SQLException(e);
         }

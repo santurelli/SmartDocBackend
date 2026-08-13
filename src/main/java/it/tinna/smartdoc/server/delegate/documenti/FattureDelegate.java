@@ -128,6 +128,9 @@ public class FattureDelegate extends BaseDelegate
     @Autowired
     private AliquoteIvaDelegate aliquoteIvaDelegate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate registrazioneContabileDelegate;
+
     // public FattureDelegate(JdbcTemplate jdbcTemplate)
     // {
     // super(jdbcTemplate);
@@ -237,6 +240,7 @@ public class FattureDelegate extends BaseDelegate
         for ( FatturaDto dto : lista )
         {
             dao.delete(dto);
+            registrazioneContabileDelegate.eliminaRegistrazione("FATTURA", dto.getId());
         }
     }
 
@@ -1146,6 +1150,7 @@ public class FattureDelegate extends BaseDelegate
             double totale = fattureDao.getTotale(dto.getId());
             double totalePagato = fattureDao.getTotalePagato(dto.getId());
             fattureDao.aggiornaTotaliFattura(totale, totalePagato, dto.getId());
+            registrazioneContabileDelegate.generaDaFattura(dto);
         } catch (Exception e) {
             _log.error("Errore durante l'aggiornamento della fattura {}: {}", dto.getId(), new Gson().toJson(dto), e);
             throw e;
@@ -1211,6 +1216,8 @@ public class FattureDelegate extends BaseDelegate
             // Nota: NON inseriamo un movimento esplicito in d_e_movimenti_magazzino qui: get_totale_disponibile()
             // legge gia' direttamente il flag fl_scarica sulle righe di d_e_prodotti_fatture, quindi un movimento
             // esplicito causerebbe un doppio conteggio.
+            dto.setId(idFattura);
+            registrazioneContabileDelegate.generaDaFattura(dto);
             return idFattura;
         } catch (Exception e) {
             _log.error("Errore durante l'inserimento della fattura: {}", new Gson().toJson(dto), e);

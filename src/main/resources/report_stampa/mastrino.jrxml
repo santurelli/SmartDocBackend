@@ -1,0 +1,215 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="mastrino" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="6e1a2b3c-4d5e-4f6a-8b9c-0d1e2f3a4b5c">
+	<parameter name="datiazienda" class="it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto" isForPrompting="false"/>
+	<parameter name="codiceConto" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="descrizioneConto" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="periodo" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="totaleDare" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="totaleAvere" class="java.math.BigDecimal" isForPrompting="false"/>
+	<parameter name="saldoFinale" class="java.math.BigDecimal" isForPrompting="false"/>
+	<field name="dataRegistrazione" class="java.lang.String"/>
+	<field name="descrizione" class="java.lang.String"/>
+	<field name="tipoDocumento" class="java.lang.String"/>
+	<field name="numeroDocumento" class="java.lang.String"/>
+	<field name="importoDare" class="java.math.BigDecimal"/>
+	<field name="importoAvere" class="java.math.BigDecimal"/>
+	<field name="saldoProgressivo" class="java.math.BigDecimal"/>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="98" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="0" y="0" width="300" height="16" uuid="6e1a2b3c-0001-4001-8001-100000000001"/>
+				<textElement>
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="17" width="300" height="12" uuid="6e1a2b3c-0002-4002-8002-100000000002"/>
+				<textElement>
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getPartitaIva() == null ? "" : "P.IVA " + $P{datiazienda}.getPartitaIva()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="45" width="555" height="20" uuid="6e1a2b3c-0003-4003-8003-100000000003"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[MASTRINO]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="66" width="555" height="16" uuid="6e1a2b3c-0004-4004-8004-100000000004"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{codiceConto} + " - " + $P{descrizioneConto}]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="82" width="555" height="14" uuid="6e1a2b3c-0005-4005-8005-100000000005"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{periodo}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<columnHeader>
+		<band height="20" splitType="Stretch">
+			<staticText>
+				<reportElement x="0" y="0" width="60" height="18" uuid="6e1a2b3c-0006-4006-8006-100000000006"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement>
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Data]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="60" y="0" width="180" height="18" uuid="6e1a2b3c-0007-4007-8007-100000000007"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement>
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Descrizione]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="240" y="0" width="105" height="18" uuid="6e1a2b3c-0008-4008-8008-100000000008"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement>
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Documento]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="345" y="0" width="65" height="18" uuid="6e1a2b3c-0009-4009-8009-100000000009"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Dare]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="410" y="0" width="65" height="18" uuid="6e1a2b3c-0010-4010-8010-100000000010"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Avere]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="475" y="0" width="80" height="18" uuid="6e1a2b3c-0011-4011-8011-100000000011"/>
+				<box bottomPadding="2">
+					<bottomPen lineWidth="1.0"/>
+				</box>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Saldo]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="16" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="60" height="16" uuid="6e1a2b3c-0012-4012-8012-100000000012"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{dataRegistrazione}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="60" y="0" width="180" height="16" uuid="6e1a2b3c-0013-4013-8013-100000000013"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descrizione}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="240" y="0" width="105" height="16" uuid="6e1a2b3c-0014-4014-8014-100000000014"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{tipoDocumento} + " n. " + $F{numeroDocumento}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="345" y="0" width="65" height="16" uuid="6e1a2b3c-0015-4015-8015-100000000015"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importoDare} == null || $F{importoDare}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{importoDare}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="410" y="0" width="65" height="16" uuid="6e1a2b3c-0016-4016-8016-100000000016"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importoAvere} == null || $F{importoAvere}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{importoAvere}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="475" y="0" width="80" height="16" uuid="6e1a2b3c-0017-4017-8017-100000000017"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{saldoProgressivo}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="14" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="12" uuid="6e1a2b3c-0023-4023-8023-100000000023"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Pagina " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band height="24" splitType="Stretch">
+			<line>
+				<reportElement x="345" y="0" width="210" height="1" uuid="6e1a2b3c-0018-4018-8018-100000000018"/>
+			</line>
+			<staticText>
+				<reportElement x="60" y="4" width="180" height="16" uuid="6e1a2b3c-0019-4019-8019-100000000019"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Totali]]></text>
+			</staticText>
+			<textField pattern="#,##0.00">
+				<reportElement x="345" y="4" width="65" height="16" uuid="6e1a2b3c-0020-4020-8020-100000000020"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{totaleDare}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="410" y="4" width="65" height="16" uuid="6e1a2b3c-0021-4021-8021-100000000021"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{totaleAvere}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="475" y="4" width="80" height="16" uuid="6e1a2b3c-0022-4022-8022-100000000022"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="9" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{saldoFinale}]]></textFieldExpression>
+			</textField>
+		</band>
+	</summary>
+</jasperReport>

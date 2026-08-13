@@ -61,6 +61,14 @@ public class ProdottoDocumentoDto extends BaseDto {
     private Integer idColore;
     private Integer idConto;
 
+    /**
+     * Override manuale del conto contabile per questa riga (Fase 3+): se valorizzato, il motore di
+     * generazione automatica delle scritture lo usa al posto della cascata articolo/sottocategoria/categoria.
+     * Non e' idConto (campo preesistente per una funzionalita' diversa, non contabile).
+     */
+    @Expose
+    private Integer idContoOverride;
+
     @Expose
     private Long idDivisione;
 

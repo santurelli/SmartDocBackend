@@ -110,6 +110,9 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
     @Autowired
     private FornitoriDelegate   fornitoriDelegate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate registrazioneContabileDelegate;
+
     // public FattureFornitoreDelegate(JdbcTemplate jdbcTemplate)
     // {
     // super(jdbcTemplate);
@@ -186,6 +189,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
         for ( NotaCreditoFornitoreDto dto : lista )
         {
             dao.delete(dto);
+            registrazioneContabileDelegate.eliminaRegistrazione("NOTA_CREDITO_FORNITORE", dto.getId());
         }
     }
 
@@ -973,6 +977,8 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                 ffDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
             }
         }
+        dto.setId(idNotaCredito);
+        registrazioneContabileDelegate.generaDaNotaCreditoFornitore(dto);
         return idNotaCredito;
     }
 
@@ -1014,6 +1020,7 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                 documentiDao.insertScadenzaPagamento(scadenzaPagamentoDocumentoDto);
             }
         }
+        registrazioneContabileDelegate.generaDaNotaCreditoFornitore(dto);
     }
 
     public void updateScadenzaPagamento(ScadenzaPagamentoDocumentoDto dto) throws SQLException

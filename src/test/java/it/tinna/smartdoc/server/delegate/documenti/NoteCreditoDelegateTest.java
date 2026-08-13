@@ -23,6 +23,7 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import it.tinna.smartdoc.server.dao.documenti.NoteCreditoDao;
+import it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate;
 import it.tinna.smartdoc.shared.dto.documenti.NotaCreditoDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
 
@@ -36,6 +37,9 @@ public class NoteCreditoDelegateTest {
 
     @Mock
     private JdbcTemplate jdbcTemplate;
+
+    @Mock
+    private RegistrazioneContabileDelegate registrazioneContabileDelegate;
 
     @BeforeEach
     public void setUp() {

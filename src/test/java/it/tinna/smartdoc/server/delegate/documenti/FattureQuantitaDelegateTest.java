@@ -23,6 +23,7 @@ import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.ProdottoDocumentoDto;
 import it.tinna.smartdoc.shared.dto.documenti.TipoFattura;
 import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
+import it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate;
 
 /**
  * Unit test to verify that the article quantity update logic (stock decrease) 
@@ -38,6 +39,9 @@ public class FattureQuantitaDelegateTest {
 
     @Mock
     private ConfigurazioneDelegate configurazioneDelegate;
+
+    @Mock
+    private RegistrazioneContabileDelegate registrazioneContabileDelegate;
 
     @BeforeEach
     public void setUp() throws Exception {

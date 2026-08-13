@@ -112,6 +112,18 @@ public class ProdottoDto extends BaseDto
     private String                  descCategoria;
 
     @Expose
+    private Integer                 idContoRicavo;
+
+    @Expose
+    private Integer                 idContoCosto;
+
+    @Expose
+    private String                  descContoRicavo;
+
+    @Expose
+    private String                  descContoCosto;
+
+    @Expose
     private String                  descrizione;
 
     @SuppressWarnings("unused")

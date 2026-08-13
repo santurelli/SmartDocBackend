@@ -71,7 +71,7 @@ public class DatiAziendaDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("DATIAZIENDA_I01"), dto.getDenominazione(), dto.getIndirizzo(), dto.getCap(), dto.getCitta(), dto.getProvincia(), dto.getTelefono(), dto.getEmail(), dto.getPec(), dto.getFax(), dto.getPartitaIva(), dto.getCodiceFiscale(), dto.getSitoWeb(), dto.getIndirizzoServerMail(), dto.getPortaServerMail(), dto.getUsernameServerMail(), dto.getPasswordServerMailCriptata(), dto.isSslMail(), dto.isTslMail(), dto.isServerProprietario(), dto.getIndirizzoServerPec(), dto.getPortaServerPec(), dto.getUsernameServerPec(), dto.getPasswordServerPecCriptata(), dto.isSslPec(), dto.isTslPec(), dto.getIdRegimeFiscale(), dto.getByteLogo(), dto.getUserCreated());
+            jdbcTemplate.update(FileQueryReader.getQuery("DATIAZIENDA_I01"), dto.getDenominazione(), dto.getIndirizzo(), dto.getCap(), dto.getCitta(), dto.getProvincia(), dto.getTelefono(), dto.getEmail(), dto.getPec(), dto.getFax(), dto.getPartitaIva(), dto.getCodiceFiscale(), dto.getSitoWeb(), dto.getIndirizzoServerMail(), dto.getPortaServerMail(), dto.getUsernameServerMail(), dto.getPasswordServerMailCriptata(), dto.isSslMail(), dto.isTslMail(), dto.isServerProprietario(), dto.getIndirizzoServerPec(), dto.getPortaServerPec(), dto.getUsernameServerPec(), dto.getPasswordServerPecCriptata(), dto.isSslPec(), dto.isTslPec(), dto.getIdRegimeFiscale(), dto.getByteLogo(), dto.getSettoreMerceologico(), dto.getUserCreated());
         }
         catch ( DataAccessException e )
         {
@@ -84,7 +84,7 @@ public class DatiAziendaDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("DATIAZIENDA_U01"), dto.getDenominazione(), dto.getIndirizzo(), dto.getCap(), dto.getCitta(), dto.getProvincia(), dto.getTelefono(), dto.getEmail(), dto.getPec(), dto.getFax(), dto.getPartitaIva(), dto.getCodiceFiscale(), dto.getSitoWeb(), dto.getIndirizzoServerMail(), dto.getPortaServerMail(), dto.getUsernameServerMail(), dto.getPasswordServerMailCriptata(), dto.isSslMail(), dto.isTslMail(), dto.isServerProprietario(), dto.getIndirizzoServerPec(), dto.getPortaServerPec(), dto.getUsernameServerPec(), dto.getPasswordServerPecCriptata(), dto.isSslPec(), dto.isTslPec(), dto.getIdRegimeFiscale(), dto.getByteLogo(), dto.getUserLastUpdate());
+            jdbcTemplate.update(FileQueryReader.getQuery("DATIAZIENDA_U01"), dto.getDenominazione(), dto.getIndirizzo(), dto.getCap(), dto.getCitta(), dto.getProvincia(), dto.getTelefono(), dto.getEmail(), dto.getPec(), dto.getFax(), dto.getPartitaIva(), dto.getCodiceFiscale(), dto.getSitoWeb(), dto.getIndirizzoServerMail(), dto.getPortaServerMail(), dto.getUsernameServerMail(), dto.getPasswordServerMailCriptata(), dto.isSslMail(), dto.isTslMail(), dto.isServerProprietario(), dto.getIndirizzoServerPec(), dto.getPortaServerPec(), dto.getUsernameServerPec(), dto.getPasswordServerPecCriptata(), dto.isSslPec(), dto.isTslPec(), dto.getIdRegimeFiscale(), dto.getByteLogo(), dto.getSettoreMerceologico(), dto.getUserLastUpdate());
         }
         catch ( DataAccessException e )
         {

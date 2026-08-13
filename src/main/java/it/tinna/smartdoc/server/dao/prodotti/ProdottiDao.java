@@ -242,7 +242,9 @@ public class ProdottiDao extends BaseDao {
                 dto.getScultura(),
                 dto.getIndiceVelocita(),
                 dto.getDot(),
-                dto.getUserCreated() 
+                dto.getIdContoRicavo(),
+                dto.getIdContoCosto(),
+                dto.getUserCreated()
             );
         } catch (DataAccessException e) {
              _log.error("Errore durante l'inserimento del prodotto {}", dto.getCodice(), e);
@@ -302,6 +304,8 @@ public class ProdottiDao extends BaseDao {
                 dto.getScultura(),
                 dto.getIndiceVelocita(),
                 dto.getDot(),
+                dto.getIdContoRicavo(),
+                dto.getIdContoCosto(),
                 dto.getUserLastUpdate(),
                 dto.getId()
             );

@@ -94,6 +94,9 @@ public class DatiAziendaDto extends BaseDto
 
     private String  valoreRegimeFiscale;
 
+    @Expose
+    private String  settoreMerceologico;
+
     public byte[] getByteLogo()
     {
         return byteLogo;
@@ -242,6 +245,16 @@ public class DatiAziendaDto extends BaseDto
     public String getValoreRegimeFiscale()
     {
         return valoreRegimeFiscale;
+    }
+
+    public String getSettoreMerceologico()
+    {
+        return settoreMerceologico;
+    }
+
+    public void setSettoreMerceologico(String settoreMerceologico)
+    {
+        this.settoreMerceologico = settoreMerceologico;
     }
 
     public boolean isServerProprietario()

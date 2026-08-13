@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="libro_giornale" language="groovy" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="9a8b7c6d-5e4f-4a3b-9c8d-1e2f3a4b5c6d">
+	<parameter name="datiazienda" class="it.tinna.smartdoc.shared.dto.datiazienda.DatiAziendaDto" isForPrompting="false"/>
+	<parameter name="filtro" class="java.lang.String" isForPrompting="false"/>
+	<field name="idRegistrazione" class="java.lang.Long"/>
+	<field name="dataRegistrazione" class="java.lang.String"/>
+	<field name="descrizioneRegistrazione" class="java.lang.String"/>
+	<field name="tipoDocumento" class="java.lang.String"/>
+	<field name="numeroDocumento" class="java.lang.String"/>
+	<field name="codiceConto" class="java.lang.String"/>
+	<field name="descrizioneConto" class="java.lang.String"/>
+	<field name="descrizioneRiga" class="java.lang.String"/>
+	<field name="importoDare" class="java.math.BigDecimal"/>
+	<field name="importoAvere" class="java.math.BigDecimal"/>
+	<group name="registrazione">
+		<groupExpression><![CDATA[$F{idRegistrazione}]]></groupExpression>
+		<groupHeader>
+			<band height="26" splitType="Stretch">
+				<rectangle>
+					<reportElement x="0" y="2" width="555" height="18" backcolor="#F0F0F0" uuid="9a8b7c6d-0001-4001-8001-100000000001"/>
+					<graphicElement>
+						<pen lineColor="#F0F0F0"/>
+					</graphicElement>
+				</rectangle>
+				<textField>
+					<reportElement x="4" y="2" width="70" height="18" uuid="9a8b7c6d-0002-4002-8002-100000000002"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Arial" size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{dataRegistrazione}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="74" y="2" width="300" height="18" uuid="9a8b7c6d-0003-4003-8003-100000000003"/>
+					<textElement verticalAlignment="Middle">
+						<font fontName="Arial" size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{descrizioneRegistrazione}]]></textFieldExpression>
+				</textField>
+				<textField isStretchWithOverflow="true">
+					<reportElement x="374" y="2" width="177" height="18" uuid="9a8b7c6d-0004-4004-8004-100000000004"/>
+					<textElement textAlignment="Right" verticalAlignment="Middle">
+						<font fontName="Arial" size="9" isBold="true"/>
+					</textElement>
+					<textFieldExpression><![CDATA[$F{tipoDocumento} + " n. " + $F{numeroDocumento}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="6" splitType="Stretch"/>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="86" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="0" y="0" width="300" height="16" uuid="9a8b7c6d-0005-4005-8005-100000000005"/>
+				<textElement>
+					<font fontName="Arial" size="12" isBold="true"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="17" width="300" height="12" uuid="9a8b7c6d-0006-4006-8006-100000000006"/>
+				<textElement>
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{datiazienda} == null || $P{datiazienda}.getPartitaIva() == null ? "" : "P.IVA " + $P{datiazienda}.getPartitaIva()]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="0" y="45" width="555" height="20" uuid="9a8b7c6d-0007-4007-8007-100000000007"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="14" isBold="true"/>
+				</textElement>
+				<text><![CDATA[LIBRO GIORNALE]]></text>
+			</staticText>
+			<textField>
+				<reportElement x="0" y="66" width="555" height="14" uuid="9a8b7c6d-0008-4008-8008-100000000008"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="9"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$P{filtro}]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<detail>
+		<band height="14" splitType="Stretch">
+			<textField isStretchWithOverflow="true">
+				<reportElement x="74" y="0" width="150" height="14" uuid="9a8b7c6d-0009-4009-8009-100000000009"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{codiceConto} + " - " + $F{descrizioneConto}]]></textFieldExpression>
+			</textField>
+			<textField isStretchWithOverflow="true">
+				<reportElement x="224" y="0" width="196" height="14" uuid="9a8b7c6d-0010-4010-8010-100000000010"/>
+				<textElement verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{descrizioneRiga}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="420" y="0" width="65" height="14" uuid="9a8b7c6d-0011-4011-8011-100000000011"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importoDare} == null || $F{importoDare}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{importoDare}]]></textFieldExpression>
+			</textField>
+			<textField pattern="#,##0.00">
+				<reportElement x="485" y="0" width="70" height="14" uuid="9a8b7c6d-0012-4012-8012-100000000012"/>
+				<textElement textAlignment="Right" verticalAlignment="Middle">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA[$F{importoAvere} == null || $F{importoAvere}.compareTo(java.math.BigDecimal.ZERO) == 0 ? "" : $F{importoAvere}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<pageFooter>
+		<band height="14" splitType="Stretch">
+			<textField>
+				<reportElement x="0" y="0" width="555" height="12" uuid="9a8b7c6d-0013-4013-8013-100000000013"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="8"/>
+				</textElement>
+				<textFieldExpression><![CDATA["Pagina " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>

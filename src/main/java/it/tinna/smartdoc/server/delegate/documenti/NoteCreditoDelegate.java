@@ -104,6 +104,9 @@ public class NoteCreditoDelegate extends BaseDelegate
     @Autowired
     private DatiAziendaDelegate        datiaziendaDelegate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.delegate.contabilita.RegistrazioneContabileDelegate registrazioneContabileDelegate;
+
     /**
      * Genera il pdf relativo all'elenco delle fatture (viene usato per esportare la lista in pdf oppure per la stampa diretta)
      * 
@@ -181,6 +184,7 @@ public class NoteCreditoDelegate extends BaseDelegate
         for ( NotaCreditoDto dto : lista )
         {
             dao.delete(dto);
+            registrazioneContabileDelegate.eliminaRegistrazione("NOTA_CREDITO", dto.getId());
         }
     }
 
@@ -957,6 +961,8 @@ public class NoteCreditoDelegate extends BaseDelegate
         double totale = noteCreditoDao.getTotale(idNotaCredito);
         double totalePagato = noteCreditoDao.getTotalePagato(idNotaCredito);
         noteCreditoDao.aggiornaTotaliNotaCredito(totale, totalePagato, idNotaCredito);
+        dto.setId(idNotaCredito);
+        registrazioneContabileDelegate.generaDaNotaCredito(dto);
         return idNotaCredito;
     }
 
@@ -1007,6 +1013,7 @@ public class NoteCreditoDelegate extends BaseDelegate
         double totale = noteCreditoDao.getTotale(dto.getId());
         double totalePagato = noteCreditoDao.getTotalePagato(dto.getId());
         noteCreditoDao.aggiornaTotaliNotaCredito(totale, totalePagato, dto.getId());
+        registrazioneContabileDelegate.generaDaNotaCredito(dto);
         return dto.getId();
     }
 
