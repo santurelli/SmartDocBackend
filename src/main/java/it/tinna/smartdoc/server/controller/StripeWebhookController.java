@@ -6,6 +6,7 @@ import com.stripe.model.EventDataObjectDeserializer;
 import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
+import it.tinna.smartdoc.server.database.DatabaseContextHolder;
 import it.tinna.smartdoc.service.mail.MailSenderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -230,34 +231,43 @@ public class StripeWebhookController {
             String initialTokenPassword = "TOKEN:" + activationToken;
 
             // 3. Inserisci utente admin in d_e_utenti (Shared DB)
-            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (Connection conn) -> {
-                try (Statement stmt = conn.createStatement()) {
-                    stmt.execute("SET app.current_tenant = '" + tenantId + "'");
-                }
-                try (PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted, new_version) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0, 1)")) {
-                    ps.setString(1, email);
-                    ps.setString(2, initialTokenPassword);
-                    ps.setString(3, email);
-                    ps.setString(4, label);
-                    ps.setLong(5, tenantId);
-                    ps.executeUpdate();
-                }
-                return null;
-            });
+            // Il tenant va impostato tramite DatabaseContextHolder (non con un "SET" manuale sulla
+            // connessione): TenantAwareDataSource applica un "SET LOCAL app.current_tenant", che è
+            // transaction-scoped e si annulla da solo al commit. Un "SET" senza LOCAL è invece
+            // session-scoped e, con il connection pooling, potrebbe restare attivo sulla connessione
+            // fisica anche dopo che è tornata al pool, "trapelando" su una richiesta successiva
+            // non correlata che non imposta esplicitamente un tenant.
+            DatabaseContextHolder.setClientDatabase(dbName);
+            try {
+                sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (Connection conn) -> {
+                    try (PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
+                        ps.setString(1, email);
+                        ps.setString(2, initialTokenPassword);
+                        ps.setString(3, email);
+                        ps.setString(4, label);
+                        ps.setLong(5, tenantId);
+                        ps.executeUpdate();
+                    }
+                    return null;
+                });
+            } finally {
+                DatabaseContextHolder.clearClientDatabase();
+            }
             log.info("Creato utente admin per nuovo cliente {} (tenant_id = {}) con token di attivazione", email, tenantId);
 
             // 4. Invia email di benvenuto con link attivazione (Opzione B)
-            sendActivationEmail(email, label, activationToken);
+            sendActivationEmail(email, label, activationToken, dbName);
 
         } catch (Exception e) {
             log.error("Errore durante l'onboarding automatico del nuovo tenant per email: " + email, e);
         }
     }
 
-    private void sendActivationEmail(String recipientEmail, String companyName, String activationToken) {
+    private void sendActivationEmail(String recipientEmail, String companyName, String activationToken, String dbName) {
         try {
-            String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken;
+            String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken
+                    + "&db=" + java.net.URLEncoder.encode(dbName, java.nio.charset.StandardCharsets.UTF_8);
             String subject = "Benvenuto in SmartDoc! Completa l'attivazione del tuo account";
             String bodyHtml = buildActivationHtmlEmail(companyName, activationUrl);
 

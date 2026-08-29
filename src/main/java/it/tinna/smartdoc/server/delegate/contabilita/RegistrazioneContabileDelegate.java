@@ -112,14 +112,16 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
 
     @Transactional(rollbackFor = Throwable.class)
     public void generaDaFatturaFornitore(FatturaFornitoreDto dto) {
+        BigDecimal importoRitenuta = (dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto() == 1 && dto.getImportoRitenutaAcconto() != null)
+                ? dto.getImportoRitenutaAcconto() : BigDecimal.ZERO;
         generaScritturaPassiva("FATTURA_FORNITORE", "Fattura Fornitore", dto.getId(), dto.getNumDocumento(), dto.getDataDocumento(),
-                dto.getIdFornitore(), dto.getProdotti(), dto.getUserCreated(), false);
+                dto.getIdFornitore(), dto.getProdotti(), dto.getUserCreated(), false, importoRitenuta);
     }
 
     @Transactional(rollbackFor = Throwable.class)
     public void generaDaNotaCreditoFornitore(NotaCreditoFornitoreDto dto) {
         generaScritturaPassiva("NOTA_CREDITO_FORNITORE", "Nota di Credito Fornitore", dto.getId(), dto.getNumDocumento(), dto.getDataDocumento(),
-                dto.getIdFornitore(), dto.getProdotti(), dto.getUserCreated(), true);
+                dto.getIdFornitore(), dto.getProdotti(), dto.getUserCreated(), true, BigDecimal.ZERO);
     }
 
     /**
@@ -199,7 +201,9 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
             List<MovimentoContabileRigaDto> righe = new ArrayList<>();
             int progr = 1;
 
-            String descrizioneDoc = descrizioneTipo + " " + numDocumento;
+            String denominazioneCliente = resolver.resolveDenominazioneCliente(idCliente);
+            String descrizioneDoc = descrizioneTipo + " n. " + numDocumento
+                    + (denominazioneCliente != null && !denominazioneCliente.isEmpty() ? " - " + denominazioneCliente : "");
             String descrizioneCliente = inverti ? "Storno credito v/cliente - " + descrizioneDoc : "Credito v/cliente - " + descrizioneDoc;
             String descrizioneRicavo = inverti ? "Storno ricavo vendita - " + descrizioneDoc : "Ricavo vendita - " + descrizioneDoc;
             String descrizioneIva = inverti ? "Storno IVA a debito - " + descrizioneDoc : "IVA a debito - " + descrizioneDoc;
@@ -259,7 +263,7 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
      */
     private void generaScritturaPassiva(String tipoDocumento, String descrizioneTipo, long idDocumento, Integer numDocumento,
                                         String dataDocumento, long idFornitore, List<ProdottoDocumentoDto> prodotti,
-                                        Long userCreated, boolean inverti) {
+                                        Long userCreated, boolean inverti, BigDecimal importoRitenuta) {
         try {
             if (chiusuraEsercizioDelegate.isEsercizioChiuso(dataDocumento)) {
                 _log.warn("Registrazione contabile non generata per {} {}: l'esercizio della data documento ({}) e' chiuso", descrizioneTipo, idDocumento, dataDocumento);
@@ -318,10 +322,34 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
             BigDecimal totaleCosti = costiPerConto.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
             BigDecimal totaleMovimento = totaleCosti.add(totaleImposta);
 
+            // Se il documento e' soggetto a ritenuta d'acconto, il debito verso il fornitore va
+            // registrato al netto della ritenuta, e la ritenuta stessa va girata su un conto di debito
+            // verso l'Erario (da versare in un momento successivo), invece di confluire tutta nel
+            // debito v/fornitore come se la ritenuta non esistesse.
+            BigDecimal ritenuta = importoRitenuta != null ? importoRitenuta.setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            Integer idContoRitenuta = null;
+            if (ritenuta.compareTo(BigDecimal.ZERO) > 0) {
+                if (ritenuta.compareTo(totaleMovimento) > 0) {
+                    _log.warn("Ritenuta d'acconto ({}) maggiore del totale documento ({}) per {} {}: ignorata nella registrazione contabile",
+                            ritenuta, totaleMovimento, descrizioneTipo, idDocumento);
+                    ritenuta = BigDecimal.ZERO;
+                } else {
+                    idContoRitenuta = resolver.resolveContoRuolo("ERARIO_RITENUTE");
+                    if (idContoRitenuta == null) {
+                        _log.warn("Ritenuta d'acconto non scorporata nella registrazione contabile per {} {}: nessun conto risolto per il ruolo "
+                                + "ERARIO_RITENUTE (impostarlo su un conto nel piano dei conti). L'intero importo confluisce nel debito v/fornitore.",
+                                descrizioneTipo, idDocumento);
+                        ritenuta = BigDecimal.ZERO;
+                    }
+                }
+            }
+
             List<MovimentoContabileRigaDto> righe = new ArrayList<>();
             int progr = 1;
 
-            String descrizioneDoc = descrizioneTipo + " " + numDocumento;
+            String denominazioneFornitore = resolver.resolveDenominazioneFornitore(idFornitore);
+            String descrizioneDoc = descrizioneTipo + " n. " + numDocumento
+                    + (denominazioneFornitore != null && !denominazioneFornitore.isEmpty() ? " - " + denominazioneFornitore : "");
             String descrizioneFornitore = inverti ? "Storno debito v/fornitore - " + descrizioneDoc : "Debito v/fornitore - " + descrizioneDoc;
             String descrizioneCosto = inverti ? "Storno costo acquisto - " + descrizioneDoc : "Costo acquisto - " + descrizioneDoc;
             String descrizioneIva = inverti ? "Storno IVA a credito - " + descrizioneDoc : "IVA a credito - " + descrizioneDoc;
@@ -346,13 +374,26 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
                 righe.add(rigaIva);
             }
 
+            BigDecimal debitoFornitoreNetto = totaleMovimento.subtract(ritenuta);
+
             MovimentoContabileRigaDto rigaFornitore = new MovimentoContabileRigaDto();
             rigaFornitore.setIdConto(idContoFornitore);
-            rigaFornitore.setImportoDare(inverti ? totaleMovimento : BigDecimal.ZERO);
-            rigaFornitore.setImportoAvere(inverti ? BigDecimal.ZERO : totaleMovimento);
+            rigaFornitore.setImportoDare(inverti ? debitoFornitoreNetto : BigDecimal.ZERO);
+            rigaFornitore.setImportoAvere(inverti ? BigDecimal.ZERO : debitoFornitoreNetto);
             rigaFornitore.setDescrizione(descrizioneFornitore);
             rigaFornitore.setnProgr(progr++);
             righe.add(rigaFornitore);
+
+            if (ritenuta.compareTo(BigDecimal.ZERO) > 0) {
+                String descrizioneRitenuta = inverti ? "Storno ritenuta d'acconto - " + descrizioneDoc : "Ritenuta d'acconto - " + descrizioneDoc;
+                MovimentoContabileRigaDto rigaRitenuta = new MovimentoContabileRigaDto();
+                rigaRitenuta.setIdConto(idContoRitenuta);
+                rigaRitenuta.setImportoDare(inverti ? ritenuta : BigDecimal.ZERO);
+                rigaRitenuta.setImportoAvere(inverti ? BigDecimal.ZERO : ritenuta);
+                rigaRitenuta.setDescrizione(descrizioneRitenuta);
+                rigaRitenuta.setnProgr(progr++);
+                righe.add(rigaRitenuta);
+            }
 
             RegistrazioneContabileDto registrazione = new RegistrazioneContabileDto();
             registrazione.setDataRegistrazione(convertiDataItalianaInIso(dataDocumento));
@@ -434,6 +475,26 @@ public class RegistrazioneContabileDelegate extends BaseDelegate {
         mastrino.setTotaleAvere(totaleAvere);
         mastrino.setSaldoFinale(saldo);
         return mastrino;
+    }
+
+    /**
+     * Mastrini di tutti i conti che hanno movimenti nel periodo (usato quando l'utente non seleziona
+     * un conto specifico). Restituisce solo i conti con almeno un movimento, ordinati per codice.
+     */
+    public List<MastrinoDto> getMastriniTutti(String dataDa, String dataA) throws SQLException {
+        List<PianoContoDto> conti = new PianoDeiContiDao(jdbcTemplate).getList("");
+        List<MastrinoDto> risultato = new ArrayList<>();
+        for (PianoContoDto conto : conti) {
+            if (conto.getIdPadre() == null) {
+                continue; // solo conti foglia, coerente col filtro gia' usato in frontend
+            }
+            MastrinoDto mastrino = getMastrino(conto.getId(), dataDa, dataA);
+            if (mastrino != null && mastrino.getRighe() != null && !mastrino.getRighe().isEmpty()) {
+                risultato.add(mastrino);
+            }
+        }
+        risultato.sort((a, b) -> a.getCodiceConto().compareTo(b.getCodiceConto()));
+        return risultato;
     }
 
     public List<RegistrazioneContabileDto> getList(String tipoDocumento, String search) throws SQLException {

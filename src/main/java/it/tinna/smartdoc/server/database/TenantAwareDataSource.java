@@ -82,6 +82,17 @@ public class TenantAwareDataSource extends DelegatingDataSource
         }
     }
 
+    /**
+     * Forza il valore in cache per un dbKey, sovrascrivendo un eventuale valore stantio (es. dopo
+     * la creazione di un nuovo tenant, o se la riga in d_e_enti e' stata ricreata con un nuovo id).
+     * Da chiamare subito dopo l'insert in d_e_enti, prima di qualunque query sul DB condiviso per
+     * quel dbKey, per evitare che una lookup precedente in cache (mai invalidata altrimenti)
+     * causi un mismatch con app.current_tenant e quindi una violazione della row-level security.
+     */
+    public void primeTenantId(String dbKey, long tenantId) {
+        tenantIdCache.put(dbKey, tenantId);
+    }
+
     private Long getTenantIdFromDbKey(String dbKey) {
         return tenantIdCache.computeIfAbsent(dbKey, key -> {
             String sql = "SELECT k_d_e_enti FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0";

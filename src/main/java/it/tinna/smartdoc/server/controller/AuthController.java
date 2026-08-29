@@ -151,9 +151,20 @@ public class AuthController {
     public ResponseEntity<?> completaRegistrazione(@RequestBody java.util.Map<String, String> request) {
         String token = request.get("token");
         String newPassword = request.get("password");
+        String db = request.get("db");
 
         if (org.apache.commons.lang3.StringUtils.isBlank(token) || org.apache.commons.lang3.StringUtils.isBlank(newPassword)) {
             return ResponseEntity.badRequest().body("Token e nuova password sono obbligatori");
+        }
+
+        // La ricerca dell'utente per token avviene PRIMA di sapere a quale utente (e quindi tenant)
+        // appartenga: sul DB condiviso questa tabella è protetta da Row Level Security basata su
+        // app.current_tenant, che normalmente viene impostato dal JwtAuthenticationFilter leggendo
+        // il token JWT. Qui non c'è ancora nessun JWT, quindi va impostato manualmente a partire
+        // dal parametro "db" incluso nel link di attivazione, altrimenti la SELECT non troverebbe
+        // mai alcuna riga (nessun tenant = RLS blocca tutto) e il token risulterebbe sempre "non valido".
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(db)) {
+            DatabaseContextHolder.setClientDatabase(db.trim());
         }
 
         try {
@@ -182,15 +193,13 @@ public class AuthController {
 
             java.util.Map<String, Object> userRow = users.get(0);
             Number userId = (Number) userRow.get("k_d_e_utenti");
-            Object tenantIdObj = userRow.get("tenant_id");
             String encodedPassword = passwordEncoder.encode(newPassword.trim());
 
+            // Nessun "SET" manuale qui: il tenant è già impostato via DatabaseContextHolder in cima
+            // al metodo (verificato implicitamente dal fatto che la SELECT sopra ha trovato la riga
+            // sotto RLS), quindi TenantAwareDataSource applica automaticamente il proprio
+            // "SET LOCAL app.current_tenant" anche su questa nuova connessione/transazione.
             sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
-                if (tenantIdObj != null) {
-                    try (java.sql.Statement stmt = conn.createStatement()) {
-                        stmt.execute("SET app.current_tenant = '" + tenantIdObj + "'");
-                    }
-                }
                 try (java.sql.PreparedStatement ps = conn.prepareStatement(
                         "UPDATE d_e_utenti SET password = ? WHERE k_d_e_utenti = ?")) {
                     ps.setString(1, encodedPassword);
@@ -204,12 +213,18 @@ public class AuthController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.internalServerError().body("Errore durante il completamento della registrazione: " + e.getMessage());
+        } finally {
+            DatabaseContextHolder.clearClientDatabase();
         }
     }
 
     @Autowired
     @org.springframework.beans.factory.annotation.Qualifier("mailSenderServiceGeneric")
     private it.tinna.smartdoc.service.mail.MailSenderService mailSenderServiceGeneric;
+
+    @Autowired
+    @org.springframework.beans.factory.annotation.Qualifier("tenantAwareDataSource")
+    private it.tinna.smartdoc.server.database.TenantAwareDataSource tenantAwareDataSource;
 
     @PostMapping("/registrazione-prova")
     public ResponseEntity<?> registrazioneProva(@RequestBody java.util.Map<String, Object> request) {
@@ -229,13 +244,21 @@ public class AuthController {
         String emailClean = email.trim();
 
         try {
-            Integer countExisting = serviceJdbcTemplate.queryForObject(
-                    "SELECT COUNT(*) FROM d_e_enti WHERE fl_deleted = 0 AND (partita_iva = ? OR lower(email_errori_sdi) = lower(?))",
-                    Integer.class, pivaClean, emailClean
+            Integer countPartitaIva = serviceJdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM d_e_enti WHERE fl_deleted = 0 AND partita_iva = ?",
+                    Integer.class, pivaClean
+            );
+            Integer countEmail = serviceJdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM d_e_enti WHERE fl_deleted = 0 AND lower(email_errori_sdi) = lower(?)",
+                    Integer.class, emailClean
             );
 
-            if (countExisting != null && countExisting > 0) {
-                return ResponseEntity.badRequest().body("Questa Partita IVA o Email risulta già registrata nel sistema.");
+            if (countPartitaIva != null && countPartitaIva > 0 && countEmail != null && countEmail > 0) {
+                return ResponseEntity.badRequest().body("Questa Partita IVA e questa Email risultano già registrate nel sistema.");
+            } else if (countPartitaIva != null && countPartitaIva > 0) {
+                return ResponseEntity.badRequest().body("Questa Partita IVA risulta già registrata nel sistema.");
+            } else if (countEmail != null && countEmail > 0) {
+                return ResponseEntity.badRequest().body("Questa Email risulta già associata a un altro account.");
             }
 
             String dbName = "sd_" + pivaClean.toLowerCase();
@@ -264,25 +287,38 @@ public class AuthController {
             }
             long tenantId = newTenantKey.longValue();
 
+            // Aggiorna subito la cache dbKey->tenantId di TenantAwareDataSource: quella cache non
+            // scade mai, quindi se questo dbName era gia' stato risolto in passato (es. un tentativo
+            // precedente fallito con la stessa Partita IVA, poi ripulito) l'ID vecchio resterebbe in
+            // cache per sempre, causando un mismatch con app.current_tenant e una violazione RLS
+            // sull'insert successivo in d_e_utenti.
+            tenantAwareDataSource.primeTenantId(dbName, tenantId);
+
             String activationToken = java.util.UUID.randomUUID().toString();
             String initialTokenPassword = "TOKEN:" + activationToken;
 
-            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
-                try (java.sql.Statement stmt = conn.createStatement()) {
-                    stmt.execute("SET app.current_tenant = '" + tenantId + "'");
-                }
-                try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                        "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
-                    ps.setString(1, emailClean);
-                    ps.setString(2, initialTokenPassword);
-                    ps.setString(3, emailClean);
-                    ps.setString(4, label);
-                    ps.setLong(5, tenantId);
-                    ps.executeUpdate();
-                }
-                return null;
-            });
-            String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken;
+            // Tenant impostato via DatabaseContextHolder (SET LOCAL automatico di TenantAwareDataSource,
+            // transaction-scoped) invece di un "SET" manuale non-LOCAL, che con il connection pooling
+            // potrebbe restare attivo sulla connessione fisica oltre questa richiesta.
+            DatabaseContextHolder.setClientDatabase(dbName);
+            try {
+                sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
+                    try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
+                        ps.setString(1, emailClean);
+                        ps.setString(2, initialTokenPassword);
+                        ps.setString(3, emailClean);
+                        ps.setString(4, label);
+                        ps.setLong(5, tenantId);
+                        ps.executeUpdate();
+                    }
+                    return null;
+                });
+            } finally {
+                DatabaseContextHolder.clearClientDatabase();
+            }
+            String activationUrl = "https://app.smart-doc.it/completa-registrazione?token=" + activationToken
+                    + "&db=" + java.net.URLEncoder.encode(dbName, java.nio.charset.StandardCharsets.UTF_8);
             boolean isStudio = (tipoAccount == 5);
             String subject = isStudio ? "Attiva il tuo Account Studio Contabile Partner su SmartDoc!" : "Attiva i tuoi 3 Mesi Gratis su SmartDoc!";
             String bodyHtml = buildActivationHtmlEmail(label, activationUrl, isStudio);

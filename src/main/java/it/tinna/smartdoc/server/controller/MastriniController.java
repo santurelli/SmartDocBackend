@@ -1,5 +1,7 @@
 package it.tinna.smartdoc.server.controller;
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -21,6 +23,19 @@ public class MastriniController {
 
     @Autowired
     private RegistrazioneContabileDelegate delegate;
+
+    @GetMapping("/tutti")
+    public GenericResponseDto getTutti(@RequestParam(required = false) String dataDa,
+                                       @RequestParam(required = false) String dataA) {
+        GenericResponseDto response = new GenericResponseDto();
+        try {
+            List<MastrinoDto> mastrini = delegate.getMastriniTutti(dataDa, dataA);
+            response.setPayload(mastrini);
+        } catch (Exception e) {
+            response.setErrorText(e.getMessage());
+        }
+        return response;
+    }
 
     @GetMapping("/{idConto}")
     public GenericResponseDto get(@PathVariable long idConto,

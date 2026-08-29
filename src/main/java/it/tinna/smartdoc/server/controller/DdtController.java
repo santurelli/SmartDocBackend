@@ -1,11 +1,13 @@
 package it.tinna.smartdoc.server.controller;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Map;
 
 import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.jxls.common.Context;
+import org.jxls.util.JxlsHelper;
+import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 
 import it.tinna.smartdoc.server.delegate.documenti.DdtDelegate;
 import it.tinna.smartdoc.shared.dto.documenti.DdtDto;
@@ -121,6 +127,43 @@ public class DdtController {
         long userId = user != null ? user.getId() : 0;
         ddtDelegate.delete(id, userId);
         return response;
+    }
+
+    @PostMapping("/export-excel")
+    public ResponseEntity<byte[]> exportExcel(@RequestBody Map<String, Object> p) {
+        try {
+            String dtFrom = p.get("dataDa") != null ? (String) p.get("dataDa") : (String) p.get("dataDA");
+            String dtTo = (String) p.get("dataA");
+            Object idClienteObj = p.get("idCliente");
+            Integer idCliente = (idClienteObj != null && !"".equals(idClienteObj.toString())) ? Integer.valueOf(idClienteObj.toString()) : null;
+            Object idAgenteObj = p.get("idAgente");
+            Integer idAgente = (idAgenteObj != null && !"".equals(idAgenteObj.toString())) ? Integer.valueOf(idAgenteObj.toString()) : null;
+            Object idDocumentoObj = p.get("numDocumento");
+            Integer idDocumento = (idDocumentoObj != null && !"".equals(idDocumentoObj.toString())) ? Integer.valueOf(idDocumentoObj.toString()) : null;
+            String orderColumn = (String) p.getOrDefault("orderColumn", "data_ddt");
+            String orderDir = (String) p.getOrDefault("orderDir", "asc");
+
+            List<MovimentiDocumentoDto> list = ddtDelegate.getList(idCliente, dtFrom, dtTo, idAgente, idDocumento, null, null, orderColumn, orderDir).getList();
+            list.forEach(dto -> dto.setStato(it.tinna.smartdoc.server.util.StringUtility.formatStato(dto.getStato())));
+
+            Context context = new Context();
+            context.putVar("preventivi", list);
+
+            ClassPathResource templateResource = new ClassPathResource("report/elenco_ddt.xls");
+            try (InputStream is = templateResource.getInputStream()) {
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                JxlsHelper.getInstance().processTemplate(is, os, context);
+                byte[] content = os.toByteArray();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.setContentType(MediaType.parseMediaType("application/vnd.ms-excel"));
+                headers.setContentDispositionFormData("attachment", "elenco_ddt.xls");
+                return ResponseEntity.ok().headers(headers).body(content);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @GetMapping("/print/{id}")

@@ -143,6 +143,7 @@ public class PreventiviController {
             String orderDir = (String) p.getOrDefault("orderDir", "asc");
 
             List<MovimentiDocumentoDto> list = preventiviDelegate.getList(idCliente, dtFrom, dtTo, idAgente, null, null, orderColumn, orderDir).getList();
+            list.forEach(dto -> dto.setStato(it.tinna.smartdoc.server.util.StringUtility.formatStato(dto.getStato())));
 
             Context context = new Context();
             context.putVar("preventivi", list);

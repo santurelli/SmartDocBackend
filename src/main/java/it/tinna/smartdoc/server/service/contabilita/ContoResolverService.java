@@ -34,8 +34,14 @@ public class ContoResolverService {
     private static final String SQL_CONTO_FORNITORE =
             "SELECT k_conto_default FROM d_e_fornitori WHERE k_d_e_fornitori = ?";
 
+    private static final String SQL_DENOMINAZIONE_CLIENTE =
+            "SELECT denominazione FROM d_e_clienti WHERE k_d_e_clienti = ?";
+
+    private static final String SQL_DENOMINAZIONE_FORNITORE =
+            "SELECT denominazione FROM d_e_fornitori WHERE k_d_e_fornitori = ?";
+
     private static final String SQL_CONTO_RUOLO =
-            "SELECT k_d_e_piano_conti FROM d_e_piano_conti WHERE ruolo_default = ? AND fl_deleted = 0 LIMIT 1";
+            "SELECT k_d_e_piano_conti FROM d_e_piano_conti WHERE ruolo_default = ? AND fl_deleted = 0 ORDER BY k_d_e_piano_conti LIMIT 1";
 
     private static final String SQL_PERCENTUALE_IVA =
             "SELECT imposta FROM d_e_aliquoteiva WHERE k_d_e_aliquoteiva = ?";
@@ -87,6 +93,25 @@ public class ContoResolverService {
     public Integer resolveContoFornitore(long idFornitore) throws SQLException {
         Integer specifico = queryForNullableInt(SQL_CONTO_FORNITORE, idFornitore);
         return specifico != null ? specifico : resolveContoRuolo("DEBITI_FORNITORI");
+    }
+
+    public String resolveDenominazioneCliente(Integer idCliente) throws SQLException {
+        if (idCliente == null) {
+            return null;
+        }
+        try {
+            return jdbcTemplate.queryForObject(SQL_DENOMINAZIONE_CLIENTE, String.class, idCliente);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
+    }
+
+    public String resolveDenominazioneFornitore(long idFornitore) throws SQLException {
+        try {
+            return jdbcTemplate.queryForObject(SQL_DENOMINAZIONE_FORNITORE, String.class, idFornitore);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        }
     }
 
     public java.math.BigDecimal resolvePercentualeIva(long idAliquotaIva) throws SQLException {

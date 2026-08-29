@@ -20,5 +20,26 @@ public class StringUtility {
 		return Arrays.asList(arr);
 	}
 
+	/**
+	 * Ripulisce il campo "stato" (formato interno "descrizione---id---codice", elementi multipli separati da virgola)
+	 * per la sola visualizzazione, allo stesso modo di formatStato() lato frontend (documentUtils.js).
+	 */
+	public static String formatStato(String statusStr) {
+		if (statusStr == null || statusStr.trim().isEmpty()) {
+			return "";
+		}
+		StringBuilder result = new StringBuilder();
+		for (String item : statusStr.split(",")) {
+			String desc = item.split("---")[0].replace("&&&", "").trim();
+			if (!desc.isEmpty()) {
+				if (result.length() > 0) {
+					result.append("\n");
+				}
+				result.append(desc);
+			}
+		}
+		return result.toString();
+	}
+
 }
 

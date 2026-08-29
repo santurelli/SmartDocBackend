@@ -112,7 +112,11 @@ public class DataSourceConfig {
     }
 
     @Bean(name = "sharedJdbcTemplate")
-    public JdbcTemplate sharedJdbcTemplate(@Qualifier("shareddbDataSource") DataSource dataSource) {
+    public JdbcTemplate sharedJdbcTemplate(@Qualifier("tenantAwareDataSource") DataSource dataSource) {
+        // Deve passare da TenantAwareDataSource (non dal DataSource grezzo) per ottenere il
+        // SET LOCAL app.current_tenant quando il chiamante imposta esplicitamente
+        // DatabaseContextHolder.setClientDatabase(...) — altrimenti ogni INSERT su una tabella
+        // RLS-protetta (es. d_e_utenti) viola la row-level security policy.
         return new JdbcTemplate(dataSource);
     }
 

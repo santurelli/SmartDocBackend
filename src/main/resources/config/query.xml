@@ -4638,12 +4638,12 @@
 				   percentuale_ritenuta_previdenziale AS percRitenutaPrevidenziale,
 				   contropartita_ritenuta_previdenziale AS idContropartitaRitenutaPrevidenziale,
 				   d_e_conti.descrizione AS descrContropartitaRitenutaPrevidenziale,
-				   importo_ritenuta_acconto AS importoRitenutaAcconto,
+				   d_e_fatturefornitore.importo_ritenuta_acconto AS importoRitenutaAcconto,
 				   tipo_documento_sdi AS tipoDocumentoSdi,
 				   stato_fattura_elettronica AS statoFatturaElettronica,
-				   fl_ritenuta_acconto AS flRitenutaAcconto,
-				   perc_ritenuta_acconto AS percRitenutaAcconto,
-				   tipo_ritenuta AS tipoRitenuta,
+				   d_e_fatturefornitore.fl_ritenuta_acconto AS flRitenutaAcconto,
+				   d_e_fatturefornitore.perc_ritenuta_acconto AS percRitenutaAcconto,
+				   d_e_fatturefornitore.tipo_ritenuta AS tipoRitenuta,
 				   causale_pagamento AS causalePagamento
 			  FROM d_e_fatturefornitore
 		 LEFT JOIN d_e_tipipagamento
@@ -5115,9 +5115,12 @@
 			    		k_d_e_avvisi,
 			    		k_d_e_notedocumenti,
 			    		k_conto_default,
+			    		fl_ritenuta_acconto,
+			    		tipo_ritenuta,
+			    		perc_ritenuta,
 				 	    user_created,
 				 	    dt_created)
-				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			RETURNING k_d_e_fornitori
 		</content>
 	</query>
@@ -5198,7 +5201,10 @@
     		  	   k_d_e_avvisi AS idAvviso,
     		  	   k_d_e_notedocumenti AS idNota,
 				   d_e_fornitori.k_conto_default AS idContoContabile,
-				   pc.codice || ' - ' || pc.descrizione AS descContoContabile
+				   pc.codice || ' - ' || pc.descrizione AS descContoContabile,
+				   d_e_fornitori.fl_ritenuta_acconto AS flRitenutaAcconto,
+				   d_e_fornitori.tipo_ritenuta AS tipoRitenuta,
+				   d_e_fornitori.perc_ritenuta AS percRitenutaAcconto
 			  FROM d_e_fornitori
 		 LEFT JOIN d_e_piano_conti pc
 		 		ON pc.k_d_e_piano_conti = d_e_fornitori.k_conto_default
@@ -5220,12 +5226,15 @@
 		    SELECT k_d_e_fornitori AS id,
 				   denominazione,
 			       COALESCE(codice_fiscale, '') AS codiceFiscale,
-			  	   COALESCE(partita_iva, '') AS partitaIva
+			  	   COALESCE(partita_iva, '') AS partitaIva,
+			  	   fl_ritenuta_acconto AS flRitenutaAcconto,
+			  	   tipo_ritenuta AS tipoRitenuta,
+			  	   perc_ritenuta AS percRitenutaAcconto
 			  FROM d_e_fornitori
 			 WHERE (   LOWER(denominazione) LIKE ?
 			    	OR LOWER(partita_iva) LIKE ?
 			    	OR LOWER(codice_fiscale) LIKE ?)
-			   AND fl_deleted = 0 
+			   AND fl_deleted = 0
 		  ORDER BY denominazione
 		  LIMIT 50
 		</content>
@@ -5312,6 +5321,70 @@
 			   AND fl_deleted = 0
 		</content>
 	</query>
+	<query name="FORNITORI_S11">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_fornitori AS id,
+			  	   codice,
+			  	   denominazione,
+			  	   referente,
+			       codice_fiscale AS codiceFiscale,
+			  	   partita_iva AS partitaIva,
+			  	   note,
+			  	   k_d_e_tipipagamento AS idTipoPagamento,
+    		  	   cod_sia AS codSia,
+    		  	   banca AS descrizioneBanca,
+    		  	   iban,
+    		  	   cin,
+    		  	   abi,
+    		  	   cab,
+    		  	   conto,
+    		  	   bic,
+    		  	   k_d_e_risorse AS idRisorsa,
+    		  	   k_d_e_aliquoteiva AS idAliquotaIva,
+    		  	   k_d_e_categoriespesa AS idCategoriaSpesa,
+    		  	   k_d_e_vettori AS idVettore,
+    		  	   k_d_e_tipiporto AS idTipoPorto,
+    		  	   documenti_mail AS documentiMail,
+    		  	   k_d_e_avvisi AS idAvviso,
+    		  	   k_d_e_notedocumenti AS idNota
+			  FROM d_e_fornitori
+			 WHERE regexp_replace(upper(COALESCE(partita_iva, '')), '[^0-9A-Z]', '', 'g') = ?
+			   AND fl_deleted = 0
+			 LIMIT 1
+		</content>
+	</query>
+	<query name="FORNITORI_S12">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_fornitori AS id,
+			  	   codice,
+			  	   denominazione,
+			  	   referente,
+			       codice_fiscale AS codiceFiscale,
+			  	   partita_iva AS partitaIva,
+			  	   note,
+			  	   k_d_e_tipipagamento AS idTipoPagamento,
+    		  	   cod_sia AS codSia,
+    		  	   banca AS descrizioneBanca,
+    		  	   iban,
+    		  	   cin,
+    		  	   abi,
+    		  	   cab,
+    		  	   conto,
+    		  	   bic,
+    		  	   k_d_e_risorse AS idRisorsa,
+    		  	   k_d_e_aliquoteiva AS idAliquotaIva,
+    		  	   k_d_e_categoriespesa AS idCategoriaSpesa,
+    		  	   k_d_e_vettori AS idVettore,
+    		  	   k_d_e_tipiporto AS idTipoPorto,
+    		  	   documenti_mail AS documentiMail,
+    		  	   k_d_e_avvisi AS idAvviso,
+    		  	   k_d_e_notedocumenti AS idNota
+			  FROM d_e_fornitori
+			 WHERE lower(trim(denominazione)) = lower(trim(?))
+			   AND fl_deleted = 0
+			 LIMIT 1
+		</content>
+	</query>
 	<query name="FORNITORI_U01">
 		<content delimiterParsingDisabled="true">
 			UPDATE d_e_fornitori 
@@ -5339,6 +5412,9 @@
 			       k_d_e_avvisi = ?,
 			       k_d_e_notedocumenti = ?,
 		       k_conto_default = ?,
+			       fl_ritenuta_acconto = ?,
+			       tipo_ritenuta = ?,
+			       perc_ritenuta = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_fornitori = ?
@@ -10909,14 +10985,13 @@
 	<query name="UTENTI_I01">
 		<content delimiterParsingDisabled="true">
 			INSERT INTO d_e_utenti
-				 	   (nome, 
-				 	    cognome, 
-				 	    username, 
-				 	    password, 
-				 	    email, 
-				 	    k_d_e_gruppi,
-				 	    new_version)
-				 VALUES(?,?,?,?,?,?,1)
+				 	   (nome,
+				 	    cognome,
+				 	    username,
+				 	    password,
+				 	    email,
+				 	    k_d_e_gruppi)
+				 VALUES(?,?,?,?,?,?)
 		</content>
 	</query>
 	<query name="UTENTI_U02">
@@ -12081,6 +12156,16 @@
 			SELECT COUNT(*)
 			  FROM d_e_piano_conti
 		     WHERE fl_deleted = 0
+		</content>
+	</query>
+	<query name="PIANODEICONTI_S05">
+		<content delimiterParsingDisabled="true">
+			SELECT codice, descrizione
+			  FROM d_e_piano_conti
+		     WHERE ruolo_default = ?
+			   AND k_d_e_piano_conti != ?
+			   AND fl_deleted = 0
+		     LIMIT 1
 		</content>
 	</query>
 	<query name="PIANODEICONTI_U01">

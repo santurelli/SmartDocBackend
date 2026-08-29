@@ -67,6 +67,7 @@ public class PianoDeiContiDelegate extends BaseDelegate {
             {"70.01", "Debiti verso fornitori", "PASSIVITA", "70", "DEBITI_FORNITORI"},
             {"70.02", "Debiti verso banche", "PASSIVITA", "70", null},
             {"70.03", "Debiti tributari", "PASSIVITA", "70", null},
+            {"70.03.01", "Erario c/ritenute da versare", "PASSIVITA", "70.03", "ERARIO_RITENUTE"},
             {"70.04", "Debiti verso istituti previdenziali", "PASSIVITA", "70", null},
             {"70.05", "Debiti verso dipendenti e collaboratori", "PASSIVITA", "70", null},
             {"70.06", "Debiti diversi", "PASSIVITA", "70", null},
@@ -186,6 +187,7 @@ public class PianoDeiContiDelegate extends BaseDelegate {
         if (dao.isExistentCodice(dto.getCodice(), 0)) {
             throw new SQLException("Esiste gia' un conto con codice " + dto.getCodice());
         }
+        verificaRuoloNonDuplicato(dao, dto, 0);
         return dao.insert(dto);
     }
 
@@ -200,7 +202,26 @@ public class PianoDeiContiDelegate extends BaseDelegate {
         if (dao.isExistentCodice(dto.getCodice(), dto.getId())) {
             throw new SQLException("Esiste gia' un conto con codice " + dto.getCodice());
         }
+        verificaRuoloNonDuplicato(dao, dto, dto.getId());
         dao.update(dto);
+    }
+
+    /**
+     * Impedisce di assegnare lo stesso ruolo contabile (es. DEBITI_FORNITORI) a due conti diversi:
+     * il motore di generazione automatica delle scritture ne userebbe solo uno (il primo per codice
+     * interno), con il rischio che le registrazioni finiscano sul conto sbagliato senza che l'utente
+     * se ne accorga.
+     */
+    private void verificaRuoloNonDuplicato(PianoDeiContiDao dao, PianoContoDto dto, long id) throws SQLException {
+        String ruolo = dto.getRuoloDefault();
+        if (ruolo == null || ruolo.isEmpty()) {
+            return;
+        }
+        PianoContoDto esistente = dao.getByRuoloDefault(ruolo, id);
+        if (esistente != null) {
+            throw new SQLException("Il ruolo contabile e' gia' assegnato al conto " + esistente.getCodice()
+                    + " - " + esistente.getDescrizione() + ". Rimuovilo da li' prima di assegnarlo qui.");
+        }
     }
 
     /**

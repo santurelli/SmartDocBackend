@@ -15,6 +15,36 @@ public class FornitoreDto extends BaseClienteDto {
 	private Integer idContoContabile;
 	@Expose
 	private String descContoContabile;
+	@Expose
+	private Integer flRitenutaAcconto;
+	@Expose
+	private String tipoRitenuta;
+	@Expose
+	private java.math.BigDecimal percRitenutaAcconto;
+
+	public Integer getFlRitenutaAcconto() {
+		return flRitenutaAcconto;
+	}
+
+	public void setFlRitenutaAcconto(Integer flRitenutaAcconto) {
+		this.flRitenutaAcconto = flRitenutaAcconto;
+	}
+
+	public String getTipoRitenuta() {
+		return tipoRitenuta;
+	}
+
+	public void setTipoRitenuta(String tipoRitenuta) {
+		this.tipoRitenuta = tipoRitenuta;
+	}
+
+	public java.math.BigDecimal getPercRitenutaAcconto() {
+		return percRitenutaAcconto;
+	}
+
+	public void setPercRitenutaAcconto(java.math.BigDecimal percRitenutaAcconto) {
+		this.percRitenutaAcconto = percRitenutaAcconto;
+	}
 
 	public Integer getIdCategoriaSpesa() {
 		return idCategoriaSpesa;

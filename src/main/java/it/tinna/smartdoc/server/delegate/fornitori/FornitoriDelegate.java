@@ -75,6 +75,16 @@ public class FornitoriDelegate extends BaseDelegate
         return dto;
     }
 
+    public FornitoreDto getByPartitaIvaNormalizzata(String partitaIvaNormalizzata) throws SQLException
+    {
+        return new FornitoriDao(jdbcTemplate).getByPartitaIvaNormalizzata(partitaIvaNormalizzata);
+    }
+
+    public FornitoreDto getByDenominazioneEsatta(String denominazione) throws SQLException
+    {
+        return new FornitoriDao(jdbcTemplate).getByDenominazioneEsatta(denominazione);
+    }
+
     public FornitoreDto getByPartitaIva(String partitaIva) throws SQLException
     {
         FornitoriDao fornitoriDao = new FornitoriDao(jdbcTemplate);

@@ -72,6 +72,22 @@ public class PianoDeiContiDao extends BaseDao {
         }
     }
 
+    /**
+     * Restituisce codice e descrizione del conto (diverso da id) che ha gia' il ruolo indicato, se esiste.
+     * Usato per impedire di assegnare lo stesso ruolo contabile a due conti diversi (il resolver
+     * userebbe solo il primo, con risultati ambigui/imprevedibili nelle scritture automatiche).
+     */
+    public PianoContoDto getByRuoloDefault(String ruolo, long id) throws SQLException {
+        try {
+            BeanPropertyRowMapper<PianoContoDto> rowMapper = new BeanPropertyRowMapper<>(PianoContoDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("PIANODEICONTI_S05"), rowMapper, ruolo, id);
+        } catch (EmptyResultDataAccessException e) {
+            return null;
+        } catch (DataAccessException e) {
+            throw new SQLException(e);
+        }
+    }
+
     public long count() throws SQLException {
         try {
             Long l = jdbcTemplate.queryForObject(FileQueryReader.getQuery("PIANODEICONTI_S04"), Long.class);

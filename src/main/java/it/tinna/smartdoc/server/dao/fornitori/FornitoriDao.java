@@ -113,6 +113,54 @@ public class FornitoriDao extends BaseDao
         }
     }
 
+    /**
+     * Come getByPartitaIva ma tollerante a differenze di formattazione (spazi, prefisso IT,
+     * maiuscole/minuscole): confronta solo cifre/lettere. Usato dall'importazione AI, dove la
+     * Partita IVA estratta da un documento potrebbe non essere formattata esattamente come quella
+     * salvata in anagrafica.
+     */
+    public FornitoreDto getByPartitaIvaNormalizzata(String partitaIvaNormalizzata) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<FornitoreDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(FornitoreDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FORNITORI_S11"), rowMapper, partitaIvaNormalizzata);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del fornitore con partita iva normalizzata {}", partitaIvaNormalizzata, e);
+            throw new SQLException(e);
+        }
+    }
+
+    /**
+     * Fallback per l'importazione AI quando la Partita IVA non e' leggibile/estratta dal documento:
+     * prova a trovare il fornitore per denominazione esatta (case/spazi insensitive).
+     */
+    public FornitoreDto getByDenominazioneEsatta(String denominazione) throws SQLException
+    {
+        try
+        {
+            BeanPropertyRowMapper<FornitoreDto> rowMapper = new BeanPropertyRowMapper<>();
+            rowMapper.setMappedClass(FornitoreDto.class);
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FORNITORI_S12"), rowMapper, denominazione);
+        }
+        catch ( EmptyResultDataAccessException e )
+        {
+            return null;
+        }
+        catch ( DataAccessException e )
+        {
+            _log.error("Errore nel recupero del fornitore per denominazione {}", denominazione, e);
+            throw new SQLException(e);
+        }
+    }
+
     public List<FornitoreDto> getList(String strToSearch,
                                       Integer length,
                                       Integer start,
@@ -231,7 +279,7 @@ public class FornitoriDao extends BaseDao
     {
         try
         {
-            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FORNITORI_I01"), Long.class, StringUtils.defaultIfEmpty(dto.getCodice(), null), StringUtils.defaultIfEmpty(dto.getDenominazione(), null), StringUtils.defaultIfEmpty(dto.getReferente(), null), StringUtils.defaultIfEmpty(dto.getCodiceFiscale(), null), StringUtils.defaultIfEmpty(dto.getPartitaIva(), null), StringUtils.defaultIfEmpty(dto.getNote(), null), dto.getIdTipoPagamento(), StringUtils.defaultIfEmpty(dto.getCodSia(), null), StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null), StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null), StringUtils.defaultIfEmpty(dto.getAbi(), null), StringUtils.defaultIfEmpty(dto.getCab(), null), StringUtils.defaultIfEmpty(dto.getConto(), null), StringUtils.defaultIfEmpty(dto.getBic(), null), dto.getIdRisorsa(), dto.getIdAliquotaIva(), dto.getIdCategoriaSpesa(), dto.getIdVettore(), dto.getIdTipoPorto(), dto.getDocumentiMail(), dto.getIdAvviso(), dto.getIdNota(), dto.getIdContoContabile(), dto.getUserCreated());
+            return jdbcTemplate.queryForObject(FileQueryReader.getQuery("FORNITORI_I01"), Long.class, StringUtils.defaultIfEmpty(dto.getCodice(), null), StringUtils.defaultIfEmpty(dto.getDenominazione(), null), StringUtils.defaultIfEmpty(dto.getReferente(), null), StringUtils.defaultIfEmpty(dto.getCodiceFiscale(), null), StringUtils.defaultIfEmpty(dto.getPartitaIva(), null), StringUtils.defaultIfEmpty(dto.getNote(), null), dto.getIdTipoPagamento(), StringUtils.defaultIfEmpty(dto.getCodSia(), null), StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null), StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null), StringUtils.defaultIfEmpty(dto.getAbi(), null), StringUtils.defaultIfEmpty(dto.getCab(), null), StringUtils.defaultIfEmpty(dto.getConto(), null), StringUtils.defaultIfEmpty(dto.getBic(), null), dto.getIdRisorsa(), dto.getIdAliquotaIva(), dto.getIdCategoriaSpesa(), dto.getIdVettore(), dto.getIdTipoPorto(), dto.getDocumentiMail(), dto.getIdAvviso(), dto.getIdNota(), dto.getIdContoContabile(), dto.getFlRitenutaAcconto() != null ? dto.getFlRitenutaAcconto() : 0, StringUtils.defaultIfEmpty(dto.getTipoRitenuta(), "PERSONE_FISICHE"), dto.getPercRitenutaAcconto() != null ? dto.getPercRitenutaAcconto() : java.math.BigDecimal.valueOf(20.00), dto.getUserCreated());
         }
         catch ( DataAccessException e )
         {
@@ -274,7 +322,7 @@ public class FornitoriDao extends BaseDao
     {
         try
         {
-            jdbcTemplate.update(FileQueryReader.getQuery("FORNITORI_U01"), StringUtils.defaultIfEmpty(dto.getCodice(), null), StringUtils.defaultIfEmpty(dto.getDenominazione(), null), StringUtils.defaultIfEmpty(dto.getReferente(), null), StringUtils.defaultIfEmpty(dto.getCodiceFiscale(), null), StringUtils.defaultIfEmpty(dto.getPartitaIva(), null), StringUtils.defaultIfEmpty(dto.getNote(), null), dto.getIdTipoPagamento(), StringUtils.defaultIfEmpty(dto.getCodSia(), null), StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null), StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null), StringUtils.defaultIfEmpty(dto.getAbi(), null), StringUtils.defaultIfEmpty(dto.getCab(), null), StringUtils.defaultIfEmpty(dto.getConto(), null), StringUtils.defaultIfEmpty(dto.getBic(), null), dto.getIdRisorsa(), dto.getIdAliquotaIva(), dto.getIdCategoriaSpesa(), dto.getIdVettore(), dto.getIdTipoPorto(), dto.getDocumentiMail(), dto.getIdAvviso(), dto.getIdNota(), dto.getIdContoContabile(), dto.getUserLastUpdate(), dto.getId());
+            jdbcTemplate.update(FileQueryReader.getQuery("FORNITORI_U01"), StringUtils.defaultIfEmpty(dto.getCodice(), null), StringUtils.defaultIfEmpty(dto.getDenominazione(), null), StringUtils.defaultIfEmpty(dto.getReferente(), null), StringUtils.defaultIfEmpty(dto.getCodiceFiscale(), null), StringUtils.defaultIfEmpty(dto.getPartitaIva(), null), StringUtils.defaultIfEmpty(dto.getNote(), null), dto.getIdTipoPagamento(), StringUtils.defaultIfEmpty(dto.getCodSia(), null), StringUtils.defaultIfEmpty(dto.getDescrizioneBanca(), null), StringUtils.defaultIfEmpty(dto.getIban(), null), StringUtils.defaultIfEmpty(dto.getCin(), null), StringUtils.defaultIfEmpty(dto.getAbi(), null), StringUtils.defaultIfEmpty(dto.getCab(), null), StringUtils.defaultIfEmpty(dto.getConto(), null), StringUtils.defaultIfEmpty(dto.getBic(), null), dto.getIdRisorsa(), dto.getIdAliquotaIva(), dto.getIdCategoriaSpesa(), dto.getIdVettore(), dto.getIdTipoPorto(), dto.getDocumentiMail(), dto.getIdAvviso(), dto.getIdNota(), dto.getIdContoContabile(), dto.getFlRitenutaAcconto() != null ? dto.getFlRitenutaAcconto() : 0, StringUtils.defaultIfEmpty(dto.getTipoRitenuta(), "PERSONE_FISICHE"), dto.getPercRitenutaAcconto() != null ? dto.getPercRitenutaAcconto() : java.math.BigDecimal.valueOf(20.00), dto.getUserLastUpdate(), dto.getId());
         }
         catch ( DataAccessException e )
         {
