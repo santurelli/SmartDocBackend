@@ -14,8 +14,10 @@ import it.tinna.smartdoc.shared.dto.prodotti.MovimentoMagazzinoDto;
 import it.tinna.smartdoc.shared.dto.prodotti.MovimentiSearchCriteriaDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 import java.util.List;
+import lombok.extern.slf4j.Slf4j;
 
 
+@Slf4j
 @Transactional(readOnly = true)
 @Service
 public class MovimentiMagazzinoDelegate extends BaseDelegate {
@@ -42,19 +44,15 @@ public class MovimentiMagazzinoDelegate extends BaseDelegate {
         // Fetch current stock SPECIFICALLY for the target warehouse
         Double giacenzaAttuale = 0.0;
         try {
-            // Keeping it simple: The UI List View uses Warehouse 1 (Hardcoded in PRODOTTI_S01).
+            // The UI List View (PRODOTTI_S01) uses the tenant's magazzino predefinito, not a fixed id.
             // We must use the exact same baseline to calculate the Delta correctly.
-            // Using parameterized ? for the second arg mysteriously returned Global Stock (-283.6) in previous attempts.
-            // Hardcoding 1 ensures we get the Warehouse 1 Stock.
             // CAST(? AS INTEGER) is required because idProdotto is Long (BigInt) and function requires Integer.
-            String sql = "SELECT get_totale_disponibile(CAST(? AS INTEGER), 1)";
-            giacenzaAttuale = jdbcTemplate.queryForObject(sql, Double.class, dto.getIdProdotto());
+            Integer idMagazzino = it.tinna.smartdoc.server.util.MagazzinoUtility.getMagazzinoPredefinito(jdbcTemplate);
+            String sql = "SELECT get_totale_disponibile(CAST(? AS INTEGER), ?)";
+            giacenzaAttuale = jdbcTemplate.queryForObject(sql, Double.class, dto.getIdProdotto(), idMagazzino);
             if (giacenzaAttuale == null) giacenzaAttuale = 0.0;
-            
-            System.out.println("CURRENT STOCK (Warehouse 1): " + giacenzaAttuale);
         } catch (Exception e) {
-            System.out.println("ERROR FETCHING SPECIFIC STOCK: " + e.getMessage());
-            e.printStackTrace();
+            log.error("Errore nel recupero della giacenza attuale per la rettifica", e);
         }
         
         double delta = dto.getQuantita() - giacenzaAttuale;

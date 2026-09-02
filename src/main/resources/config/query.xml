@@ -3895,7 +3895,7 @@
 				   d_e_unitamisura.descrizione AS descUnitaMisura,
 				   d_e_prodotti_fatture.prezzo,
 				   d_e_prodotti_fatture.sconto,
-				   COALESCE(d_e_prodotti_fatture.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantità
+				   COALESCE(d_e_prodotti_fatture.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantit�
 				   d_e_prodotti_fatture.quantita,
 				   d_e_prodotti_fatture.provvigione,
 				   COALESCE(d_e_prodotti.tipologia, '') AS tipologia,
@@ -5642,7 +5642,7 @@
 					   tot_pagato AS importoPagato,
 					   COALESCE(fl_esigibilitadifferita,0) AS esigibilitaDifferita,
 					   CASE WHEN tipo_documento IN ('F', 'NCC')
-					   	THEN CASE WHEN fl_esigibilitadifferita =0 THEN 'Vendite' ELSE 'Vendite con iva ad esigibilità differita' END  
+					   	THEN CASE WHEN fl_esigibilitadifferita =0 THEN 'Vendite' ELSE 'Vendite con iva ad esigibilit� differita' END  
 					   	ELSE 'Acquisti'
 					   END AS gruppoDocumento,
 					   CASE WHEN COALESCE(fl_esigibilitadifferita,0) = 1 THEN ROUND((tot_pagato/totale) * 100,3) ELSE 0 END AS percPagamento
@@ -6632,7 +6632,7 @@
 				   d_e_unitamisura.descrizione AS descUnitaMisura,
 				   d_e_prodotti_notecredito.prezzo,
 				   d_e_prodotti_notecredito.sconto,
-				   COALESCE(d_e_prodotti_notecredito.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantità
+				   COALESCE(d_e_prodotti_notecredito.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantit�
 				   d_e_prodotti_notecredito.quantita,
 				   d_e_prodotti_notecredito.nota,
 				   get_prezzoscontato_prodottonotacredito(d_e_prodotti_notecredito.k_d_e_prodotti_notecredito) AS totale,
@@ -8444,7 +8444,7 @@
 				   CASE x.tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
-				   ELSE get_totale_disponibile(x.id, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) END AS quantitaEsistente,
+				   ELSE get_totale_disponibile(x.id, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END AS quantitaEsistente,
 				   CASE x.tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
@@ -8575,7 +8575,7 @@
 				   CASE tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
-				   ELSE get_totale_disponibile(k_d_e_prodotti, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) END AS quantitaEsistente,
+				   ELSE get_totale_disponibile(k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END AS quantitaEsistente,
 				   CASE tipologia
 				   WHEN 'S' THEN 0
 				   WHEN 'A' THEN 0
@@ -9835,7 +9835,7 @@
 		    	d_e_scadenzepagamentifatturefornitore.data as dataScadenza,
 		    	'Fattura fornitore n. ' || d_e_fatturefornitore.num_fattura || COALESCE('/' || d_e_fatturefornitore.particella, '') || ' del ' || to_char(d_e_fatturefornitore.data_fattura, 'DD/MM/YYYY')
 		    	|| ' - Scadenza del ' || to_char(d_e_scadenzepagamentifatturefornitore.data, 'DD/MM/YYYY') 
-		    	|| ' - Importo ï¿½ ' || to_char(COALESCE(d_e_scadenzepagamentifatturefornitore.importo, 0.00),'FM999999999990D00') as descrizione,
+		    	|| ' - Importo � ' || to_char(COALESCE(d_e_scadenzepagamentifatturefornitore.importo, 0.00),'FM999999999990D00') as descrizione,
 		    	'FF' as tipo
 		 	from d_e_scadenzepagamentifatturefornitore
 		    join d_e_fatturefornitore

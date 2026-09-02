@@ -1013,7 +1013,7 @@ public class FattureFornitoreDelegate extends BaseDelegate
             movimentoDto.setIdTono(prodottoDto.getIdTono());
             movimentoDto.setIdTaglia(prodottoDto.getIdTaglia());
             movimentoDto.setIdColore(prodottoDto.getIdColore());
-            movimentoDto.setIdMagazzino(dto.getIdMagazzino() != null ? dto.getIdMagazzino() : Integer.valueOf(1));
+            movimentoDto.setIdMagazzino(dto.getIdMagazzino() != null ? dto.getIdMagazzino() : it.tinna.smartdoc.server.util.MagazzinoUtility.getMagazzinoPredefinito(jdbcTemplate));
             movimentoDto.setIdFornitore(dto.getIdFornitore());
             movimentoDto.setDescrCausale("Carico da Fattura Fornitore n. " + dto.getNumDocumento());
             movimentoDto.setUserCreated(dto.getUserCreated());

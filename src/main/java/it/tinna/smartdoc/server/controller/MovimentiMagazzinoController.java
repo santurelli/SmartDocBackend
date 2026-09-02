@@ -16,6 +16,8 @@ import it.tinna.smartdoc.shared.dto.prodotti.MovimentiSearchCriteriaDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 import java.util.List;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
+import it.tinna.smartdoc.server.util.MagazzinoUtility;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @RestController
 @RequestMapping("/api/movimenti")
@@ -24,6 +26,9 @@ public class MovimentiMagazzinoController {
 
     @Autowired
     private MovimentiMagazzinoDelegate delegate;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @PostMapping("/carico")
     public GenericResponseDto insertCarico(@RequestBody MovimentoMagazzinoDto dto, HttpServletRequest request) {
@@ -38,8 +43,9 @@ public class MovimentiMagazzinoController {
             dto.setUserCreated(userDetails.getId().longValue());
             dto.setTipoMovimento("I"); // Assicura che sia Ingresso
             if (dto.getIdMagazzino() == null) {
-                log.info("Magazzino IS NULL. Defaulting to 1.");
-                dto.setIdMagazzino(1); // Default Magazzino Sede
+                Integer magazzinoPredefinito = MagazzinoUtility.getMagazzinoPredefinito(jdbcTemplate);
+                log.info("Magazzino IS NULL. Defaulting to magazzino predefinito {}.", magazzinoPredefinito);
+                dto.setIdMagazzino(magazzinoPredefinito);
             } else {
                 log.info("Magazzino is {}", dto.getIdMagazzino());
             }
@@ -60,7 +66,7 @@ public class MovimentiMagazzinoController {
             dto.setUserCreated(userDetails.getId().longValue());
             dto.setTipoMovimento("U"); // Uscita
             if (dto.getIdMagazzino() == null) {
-                dto.setIdMagazzino(1); // Default Magazzino Sede
+                dto.setIdMagazzino(MagazzinoUtility.getMagazzinoPredefinito(jdbcTemplate));
             }
             delegate.insertScarico(dto);
         } catch (Exception e) {
@@ -78,7 +84,7 @@ public class MovimentiMagazzinoController {
             dto.setUserCreated(userDetails.getId().longValue());
             // TipoMovimento will be decided by business logic
             if (dto.getIdMagazzino() == null) {
-                dto.setIdMagazzino(1); // Default Magazzino Sede
+                dto.setIdMagazzino(MagazzinoUtility.getMagazzinoPredefinito(jdbcTemplate));
             }
             delegate.insertRettifica(dto);
         } catch (Exception e) {

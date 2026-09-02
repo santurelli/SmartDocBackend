@@ -66,7 +66,7 @@ public class ProdottiDao extends BaseDao {
                         op = operatoreGiacenza;
                     }
                 }
-                sb.append(" AND get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) ").append(op).append(" ? ");
+                sb.append(" AND get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) ").append(op).append(" ? ");
                 args.add(giacenza);
             }
             
@@ -121,13 +121,13 @@ public class ProdottiDao extends BaseDao {
 
             if (orderColumn == 4) {
                  // Esistenza
-                 innerOrderBy = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1))";
-                 outerOrderBy = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) END";
+                 innerOrderBy = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
+                 outerOrderBy = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END";
             } else if (orderColumn == 5) {
                  // Disponibile (Esistenza - Impegnato)
                  
                  // Inner Logic (uses d_e_prodotti table)
-                 String innerEsistenza = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1))";
+                 String innerEsistenza = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
                  String innerImpegnato = "COALESCE((SELECT SUM(quantita) " +
                                        "FROM d_e_prodotti_confordine " +
                                        "JOIN d_e_confordine ON d_e_prodotti_confordine.k_d_e_confordine = d_e_confordine.k_d_e_confordine " +
@@ -139,7 +139,7 @@ public class ProdottiDao extends BaseDao {
 
                  // Outer Logic (uses x alias from subquery)
                  // We must replicate the full expression because calculating on aliases (alias1 - alias2) is often not supported in ORDER BY
-                 String outerEsistenza = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, (SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1)) END";
+                 String outerEsistenza = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END";
                  
                  // Repoint subquery reference to x.id
                  String outerImpegnato = innerImpegnato.replace("d_e_prodotti.k_d_e_prodotti", "x.id");
