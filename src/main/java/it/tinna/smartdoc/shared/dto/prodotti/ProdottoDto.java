@@ -112,6 +112,9 @@ public class ProdottoDto extends BaseDto
     private String                  descCategoria;
 
     @Expose
+    private String                  descMarca;
+
+    @Expose
     private Integer                 idContoRicavo;
 
     @Expose
@@ -159,6 +162,9 @@ public class ProdottoDto extends BaseDto
 
     @Expose
     private Integer                 idCategoria;
+
+    @Expose
+    private Integer                 idMarca;
 
     @Expose
     private long                    idConto;
@@ -281,16 +287,22 @@ public class ProdottoDto extends BaseDto
     private String                  descrTono;
 
     // info per prodotto di gommista
+    @Expose
     private Integer                 sezione;
 
+    @Expose
     private Integer                 serie;
 
+    @Expose
     private Integer                 diametro;
 
+    @Expose
     private String                  scultura;
 
+    @Expose
     private String                  indiceVelocita;
 
+    @Expose
     private String                  dot;
 
     public String getDescFornitore() {
@@ -306,7 +318,7 @@ public class ProdottoDto extends BaseDto
     public void setDescrizioneDocumento(String tipoStore)
     {
         StringBuilder strB = new StringBuilder(getDescrizione());
-        if ( "CERAMICA".equals(tipoStore) )
+        if ( "CERAMICA".equalsIgnoreCase(tipoStore) )
         {
             if ( StringUtils.isNotBlank(getDescrFormato()) || StringUtils.isNotBlank(getDescrScelta()) || StringUtils.isNotBlank(getDescrTono()) || StringUtils.isNotBlank(getDescrCalibro()) )
             {
@@ -326,6 +338,32 @@ public class ProdottoDto extends BaseDto
                 if ( StringUtils.isNotBlank(getDescrCalibro()) )
                 {
                     strB.append(" Calibro: ").append(getDescrCalibro());
+                }
+            }
+        }
+        else if ( "PNEUMATICI".equalsIgnoreCase(tipoStore) || "GOMMISTA".equalsIgnoreCase(tipoStore) )
+        {
+            if ( getSezione() != null || getDiametro() != null || StringUtils.isNotBlank(getDot()) )
+            {
+                strB.append("\n");
+                if ( getSezione() != null )
+                {
+                    strB.append(" Misura: ").append(getSezione());
+                    if ( getSerie() != null ) {
+                        strB.append("/").append(getSerie());
+                    }
+                }
+                if ( getDiametro() != null )
+                {
+                    strB.append(" R").append(getDiametro());
+                }
+                if ( StringUtils.isNotBlank(getIndiceVelocita()) )
+                {
+                    strB.append(" ").append(getIndiceVelocita());
+                }
+                if ( StringUtils.isNotBlank(getDot()) )
+                {
+                    strB.append(" DOT:").append(getDot());
                 }
             }
         }

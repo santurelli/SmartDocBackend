@@ -84,9 +84,17 @@ public class PricingDelegate extends BaseDelegate {
             ProdottoDto prodotto = prodottiDao.getById(idProdotto);
             if (prodotto != null) {
                 if ("ULTIMO_ACQUISTO".equals(source)) {
-                    sourceValue = prodotto.getUltimoPrezzoAcquisto() != null ? BigDecimal.valueOf(prodotto.getUltimoPrezzoAcquisto()) : BigDecimal.ZERO;
+                    Double val = prodotto.getUltimoPrezzoAcquisto();
+                    if (val == null || val == 0.0) {
+                        val = prodotto.getPrezzoFornitore();
+                    }
+                    sourceValue = val != null ? BigDecimal.valueOf(val) : BigDecimal.ZERO;
                 } else {
-                    sourceValue = prodotto.getPrezzoMedioAcquisto() != null ? BigDecimal.valueOf(prodotto.getPrezzoMedioAcquisto()) : BigDecimal.ZERO;
+                    Double val = prodotto.getPrezzoMedioAcquisto();
+                    if (val == null || val == 0.0) {
+                        val = prodotto.getPrezzoFornitore();
+                    }
+                    sourceValue = val != null ? BigDecimal.valueOf(val) : BigDecimal.ZERO;
                 }
             }
         }

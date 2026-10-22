@@ -35,6 +35,14 @@ public class ISharedConstants
 
     public static String  CONFIG_KEY_TIPOSTORE                                                           = "TIPO_STORE";
 
+    public static String  CONFIG_KEY_GOMMISTA                                                            = "GOMMISTA";
+
+    public static String  CONFIG_KEY_UBICAZIONI                                                          = "UBICAZIONI";
+
+    public static String  CONFIG_KEY_STAMPANTE_PRELIEVO_IP                                               = "STAMPANTE_PRELIEVO_IP";
+
+    public static String  CONFIG_KEY_PRINTER_BRIDGE_URL                                                  = "PRINTER_BRIDGE_URL";
+
     public static String  COMBOSMAP_KEY_AGENTI                                                           = "AGENTI";
 
     public static String  COMBOSMAP_KEY_PROGETTI                                                         = "PROGETTI";

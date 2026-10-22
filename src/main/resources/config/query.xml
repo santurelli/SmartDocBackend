@@ -3895,7 +3895,7 @@
 				   d_e_unitamisura.descrizione AS descUnitaMisura,
 				   d_e_prodotti_fatture.prezzo,
 				   d_e_prodotti_fatture.sconto,
-				   COALESCE(d_e_prodotti_fatture.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantit�
+				   COALESCE(d_e_prodotti_fatture.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantità
 				   d_e_prodotti_fatture.quantita,
 				   d_e_prodotti_fatture.provvigione,
 				   COALESCE(d_e_prodotti.tipologia, '') AS tipologia,
@@ -5642,7 +5642,7 @@
 					   tot_pagato AS importoPagato,
 					   COALESCE(fl_esigibilitadifferita,0) AS esigibilitaDifferita,
 					   CASE WHEN tipo_documento IN ('F', 'NCC')
-					   	THEN CASE WHEN fl_esigibilitadifferita =0 THEN 'Vendite' ELSE 'Vendite con iva ad esigibilit� differita' END  
+					   	THEN CASE WHEN fl_esigibilitadifferita =0 THEN 'Vendite' ELSE 'Vendite con iva ad esigibilità differita' END  
 					   	ELSE 'Acquisti'
 					   END AS gruppoDocumento,
 					   CASE WHEN COALESCE(fl_esigibilitadifferita,0) = 1 THEN ROUND((tot_pagato/totale) * 100,3) ELSE 0 END AS percPagamento
@@ -6632,7 +6632,7 @@
 				   d_e_unitamisura.descrizione AS descUnitaMisura,
 				   d_e_prodotti_notecredito.prezzo,
 				   d_e_prodotti_notecredito.sconto,
-				   COALESCE(d_e_prodotti_notecredito.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantit�
+				   COALESCE(d_e_prodotti_notecredito.prezzo_scontato,0) AS prezzoImponibile, --indica il prezzo scontato moltiplicato per la quantità
 				   d_e_prodotti_notecredito.quantita,
 				   d_e_prodotti_notecredito.nota,
 				   get_prezzoscontato_prodottonotacredito(d_e_prodotti_notecredito.k_d_e_prodotti_notecredito) AS totale,
@@ -8423,9 +8423,10 @@
 				 	   	dot,
 				 	   	k_conto_ricavo,
 				 	   	k_conto_costo,
+				 	   	k_d_e_marche,
 				 	    user_created,
 				 	    dt_created)
-				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+				 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,NULLIF(?,0),NULLIF(?,0),?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
 			  RETURNING k_d_e_prodotti
 		</content>
 	</query>
@@ -8464,7 +8465,7 @@
 				   COALESCE(d_e_calibriarticolo.descrizione, '') AS descrCalibro
 			 FROM (
 				   SELECT k_d_e_prodotti AS id,
-						  codice,
+						  d_e_prodotti.codice,
 						  d_e_prodotti.descrizione,
 						  tipologia,
 						  COALESCE(d_e_categorie.descrizione, '') AS descCategoria,
@@ -8476,6 +8477,14 @@
 					      k_d_e_calibriarticolo,
 					      k_d_e_unitamisura1 AS idUnitaMisura1,
 					      prezzo_fornitore AS prezzoFornitore,
+					      sezione,
+					      serie,
+					      diametro,
+					      scultura,
+					      indice_velocita AS indiceVelocita,
+					      dot,
+					      d_e_prodotti.k_d_e_marche AS idMarca,
+					      COALESCE(d_e_marche.descrizione, '') AS descMarca,
 					      k_d_e_aliquoteiva AS idAliquotaIva,
 					      k_d_e_fornitori AS idFornitore,
 					      COUNT(*) OVER() AS total
@@ -8484,13 +8493,21 @@
 					   ON d_e_prodotti.k_d_e_categorie = d_e_categorie.k_d_e_categorie
 				LEFT JOIN d_e_sottocategorie
 					   ON d_e_prodotti.k_d_e_sottocategorie = d_e_sottocategorie.k_d_e_sottocategorie
+				LEFT JOIN d_e_marche
+					   ON d_e_prodotti.k_d_e_marche = d_e_marche.k_d_e_marche
 				LEFT JOIN d_e_unitamisura
 			   		   ON d_e_prodotti.k_d_e_unitamisura1 = d_e_unitamisura.k_d_e_unitamisura
 					WHERE d_e_prodotti.fl_deleted = 0
 					  AND COALESCE(d_e_prodotti.k_d_e_categorie, 0) = COALESCE(?, d_e_prodotti.k_d_e_categorie, 0)
- 					  AND (   LOWER(codice) LIKE COALESCE(LOWER(?), LOWER(codice))
+ 					  AND (   LOWER(d_e_prodotti.codice) LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.codice))
 					       OR LOWER(d_e_prodotti.descrizione) LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.descrizione))
-					       OR COALESCE(LOWER(d_e_categorie.descrizione), '') LIKE COALESCE(LOWER(?), LOWER(d_e_categorie.descrizione), ''))
+					       OR COALESCE(LOWER(d_e_categorie.descrizione), '') LIKE COALESCE(LOWER(?), LOWER(d_e_categorie.descrizione), '')
+					       OR COALESCE(LOWER(d_e_marche.descrizione), '') LIKE COALESCE(LOWER(?), LOWER(d_e_marche.descrizione), '')
+					       OR COALESCE(LOWER(d_e_prodotti.scultura), '') LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.scultura), '')
+					       OR COALESCE(LOWER(d_e_prodotti.dot), '') LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.dot), '')
+					       OR COALESCE(LOWER(d_e_prodotti.indice_velocita), '') LIKE COALESCE(LOWER(?), LOWER(d_e_prodotti.indice_velocita), '')
+					       OR COALESCE(CAST(d_e_prodotti.sezione AS text), '') LIKE COALESCE(?, CAST(d_e_prodotti.sezione AS text), '')
+					       OR COALESCE(CAST(d_e_prodotti.diametro AS text), '') LIKE COALESCE(?, CAST(d_e_prodotti.diametro AS text), ''))
 				 ${EXTRA_FILTERS}
 				 ORDER BY ${ORDER_BY}
 				 ${LIMIT}
@@ -8528,6 +8545,8 @@
 				   pcc.codice || ' - ' || pcc.descrizione AS descContoCosto,
 				   COALESCE(d_e_prodotti.k_d_e_categorie, 0) AS idCategoria,
 				   COALESCE(d_e_prodotti.k_d_e_sottocategorie, 0) AS idSottoCategoria,
+				   COALESCE(d_e_prodotti.k_d_e_marche, 0) AS idMarca,
+				   COALESCE(d_e_marche.descrizione, '') AS descMarca,
 				   COALESCE(d_e_formatiarticolo.k_d_e_formatiarticolo, 0) AS idFormato,
 				   COALESCE(d_e_sceltearticolo.k_d_e_sceltearticolo, 0) AS idScelta,
 				   COALESCE(d_e_toniarticolo.k_d_e_toniarticolo, 0) AS idTono,
@@ -8686,6 +8705,8 @@
 		 		ON d_e_prodotti.k_d_e_categorie = d_e_categorie.k_d_e_categorie
 		 LEFT JOIN d_e_sottocategorie
 		 		ON d_e_prodotti.k_d_e_sottocategorie = d_e_sottocategorie.k_d_e_sottocategorie
+		 LEFT JOIN d_e_marche
+		 		ON d_e_prodotti.k_d_e_marche = d_e_marche.k_d_e_marche
 		 LEFT JOIN d_e_unitamisura unitamisura1
 		 		ON d_e_prodotti.k_d_e_unitamisura1 = unitamisura1.k_d_e_unitamisura
 		 LEFT JOIN d_e_unitamisura unitamisura2
@@ -9332,6 +9353,7 @@
 	 	   		   dot = ?,
 	 	   		   k_conto_ricavo = ?,
 	 	   		   k_conto_costo = ?,
+	 	   		   k_d_e_marche = ?,
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_prodotti = ?
@@ -9835,7 +9857,7 @@
 		    	d_e_scadenzepagamentifatturefornitore.data as dataScadenza,
 		    	'Fattura fornitore n. ' || d_e_fatturefornitore.num_fattura || COALESCE('/' || d_e_fatturefornitore.particella, '') || ' del ' || to_char(d_e_fatturefornitore.data_fattura, 'DD/MM/YYYY')
 		    	|| ' - Scadenza del ' || to_char(d_e_scadenzepagamentifatturefornitore.data, 'DD/MM/YYYY') 
-		    	|| ' - Importo � ' || to_char(COALESCE(d_e_scadenzepagamentifatturefornitore.importo, 0.00),'FM999999999990D00') as descrizione,
+		    	|| ' - Importo ï¿½ ' || to_char(COALESCE(d_e_scadenzepagamentifatturefornitore.importo, 0.00),'FM999999999990D00') as descrizione,
 		    	'FF' as tipo
 		 	from d_e_scadenzepagamentifatturefornitore
 		    join d_e_fatturefornitore
@@ -12180,6 +12202,238 @@
 				   user_last_update = ?,
 				   dt_last_update = CURRENT_TIMESTAMP
 			 WHERE k_d_e_piano_conti = ?
+		</content>
+	</query>
+	<query name="UBICAZIONI_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_ubicazioni AS id,
+				   cod_ubicazione AS codUbicazione,
+				   descrizione,
+				   corsia,
+				   ripiano,
+				   livello,
+				   note,
+				   COALESCE((SELECT SUM(quantita) FROM d_r_ubicazioni_prodotti WHERE d_r_ubicazioni_prodotti.k_d_e_ubicazioni = d_e_ubicazioni.k_d_e_ubicazioni AND d_r_ubicazioni_prodotti.fl_deleted = 0), 0) AS totalePneumatici,
+				   COUNT(*) OVER() AS total
+			  FROM d_e_ubicazioni
+			 WHERE fl_deleted = 0
+			   AND (LOWER(cod_ubicazione) LIKE COALESCE(LOWER(?), LOWER(cod_ubicazione))
+			    OR LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione))
+			    OR LOWER(corsia) LIKE COALESCE(LOWER(?), LOWER(corsia)))
+			 ORDER BY cod_ubicazione ASC
+			 ${LIMIT}
+		</content>
+	</query>
+	<query name="UBICAZIONI_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_ubicazioni AS id,
+				   cod_ubicazione AS codUbicazione,
+				   descrizione,
+				   corsia,
+				   ripiano,
+				   livello,
+				   note
+			  FROM d_e_ubicazioni
+			 WHERE k_d_e_ubicazioni = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="UBICAZIONI_S03">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_ubicazioni AS id,
+				   cod_ubicazione AS codUbicazione,
+				   descrizione
+			  FROM d_e_ubicazioni
+			 WHERE cod_ubicazione = ?
+			   AND fl_deleted = 0
+			 LIMIT 1
+		</content>
+	</query>
+	<query name="UBICAZIONI_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_ubicazioni
+				   (cod_ubicazione,
+				   	descrizione,
+				   	corsia,
+				   	ripiano,
+				   	livello,
+				   	note,
+				   	user_created,
+				   	dt_created)
+			VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			RETURNING k_d_e_ubicazioni
+		</content>
+	</query>
+	<query name="UBICAZIONI_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_ubicazioni
+			   SET cod_ubicazione = ?,
+				   descrizione = ?,
+				   corsia = ?,
+				   ripiano = ?,
+				   livello = ?,
+				   note = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_ubicazioni = ?
+		</content>
+	</query>
+	<query name="UBICAZIONI_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_ubicazioni
+			   SET fl_deleted = 1,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_ubicazioni = ?
+		</content>
+	</query>
+	<query name="UBICAZIONI_PRODOTTI_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT up.k_d_r_ubicazioni_prodotti AS id,
+				   up.k_d_e_prodotti AS idProdotto,
+				   up.k_d_e_ubicazioni AS idUbicazione,
+				   u.cod_ubicazione AS codUbicazione,
+				   u.descrizione AS descUbicazione,
+				   u.corsia,
+				   u.ripiano,
+				   u.livello,
+				   up.dot,
+				   up.quantita,
+				   up.note
+			  FROM d_r_ubicazioni_prodotti up
+			  JOIN d_e_ubicazioni u ON up.k_d_e_ubicazioni = u.k_d_e_ubicazioni
+			 WHERE up.k_d_e_prodotti = ?
+			   AND up.fl_deleted = 0
+			   AND u.fl_deleted = 0
+			 ORDER BY u.cod_ubicazione ASC, up.dot ASC
+		</content>
+	</query>
+	<query name="UBICAZIONI_PRODOTTI_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT up.k_d_r_ubicazioni_prodotti AS id,
+				   up.k_d_e_prodotti AS idProdotto,
+				   up.k_d_e_ubicazioni AS idUbicazione,
+				   p.codice AS codProdotto,
+				   p.descrizione AS descProdotto,
+				   m.descrizione AS marca,
+				   p.sezione,
+				   p.serie,
+				   p.diametro,
+				   p.scultura,
+				   p.indice_velocita AS indiceVelocita,
+				   up.dot,
+				   up.quantita,
+				   up.note
+			  FROM d_r_ubicazioni_prodotti up
+			  JOIN d_e_prodotti p ON up.k_d_e_prodotti = p.k_d_e_prodotti
+			  LEFT JOIN d_e_marche m ON p.k_d_e_marche = m.k_d_e_marche
+			 WHERE up.k_d_e_ubicazioni = ?
+			   AND up.fl_deleted = 0
+			   AND p.fl_deleted = 0
+			 ORDER BY p.codice ASC, up.dot ASC
+		</content>
+	</query>
+	<query name="UBICAZIONI_PRODOTTI_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_r_ubicazioni_prodotti
+				   (k_d_e_prodotti,
+				   	k_d_e_ubicazioni,
+				   	dot,
+				   	quantita,
+				   	note,
+				   	user_created,
+				   	dt_created)
+			VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			RETURNING k_d_r_ubicazioni_prodotti
+		</content>
+	</query>
+	<query name="UBICAZIONI_PRODOTTI_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_r_ubicazioni_prodotti
+			   SET k_d_e_ubicazioni = ?,
+				   dot = ?,
+				   quantita = ?,
+				   note = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_r_ubicazioni_prodotti = ?
+		</content>
+	</query>
+	<query name="UBICAZIONI_PRODOTTI_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_r_ubicazioni_prodotti
+			   SET fl_deleted = 1,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_r_ubicazioni_prodotti = ?
+		</content>
+	</query>
+	<query name="MARCHE_S01">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_marche AS id,
+				   codice,
+				   descrizione,
+				   note,
+				   COUNT(*) OVER() AS total
+			  FROM d_e_marche
+			 WHERE fl_deleted = 0
+			   AND (   LOWER(COALESCE(codice, '')) LIKE COALESCE(LOWER(?), LOWER(COALESCE(codice, '')))
+			        OR LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione)))
+			 ORDER BY ${ORDER_BY}
+			 ${LIMIT}
+		</content>
+	</query>
+	<query name="MARCHE_S02">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_marche AS id,
+				   codice,
+				   descrizione,
+				   note
+			  FROM d_e_marche
+			 WHERE k_d_e_marche = ?
+			   AND fl_deleted = 0
+		</content>
+	</query>
+	<query name="MARCHE_COMBO">
+		<content delimiterParsingDisabled="true">
+			SELECT k_d_e_marche AS id,
+				   codice,
+				   descrizione
+			  FROM d_e_marche
+			 WHERE fl_deleted = 0
+			 ORDER BY descrizione ASC
+		</content>
+	</query>
+	<query name="MARCHE_I01">
+		<content delimiterParsingDisabled="true">
+			INSERT INTO d_e_marche
+				   (codice,
+				    descrizione,
+				    note,
+				    user_created,
+				    dt_created)
+			VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+			RETURNING k_d_e_marche
+		</content>
+	</query>
+	<query name="MARCHE_U01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_marche
+			   SET codice = ?,
+				   descrizione = ?,
+				   note = ?,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_marche = ?
+		</content>
+	</query>
+	<query name="MARCHE_D01">
+		<content delimiterParsingDisabled="true">
+			UPDATE d_e_marche
+			   SET fl_deleted = 1,
+				   user_last_update = ?,
+				   dt_last_update = CURRENT_TIMESTAMP
+			 WHERE k_d_e_marche = ?
 		</content>
 	</query>
 </root>

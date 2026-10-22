@@ -29,6 +29,20 @@ public class NazioniDao extends BaseDao {
         }
     }
 
+    /**
+     * Restituisce il nome della nazione a partire dal codice ISO (es. "AF" -> "Afghanistan"),
+     * oppure null se il codice non e' presente in tabella.
+     */
+    public String getNomeByCodiceIso(String codiceIso) {
+        if (codiceIso == null || codiceIso.trim().isEmpty()) return null;
+        try {
+            return jdbcTemplate.queryForObject("SELECT nome FROM d_e_nazioni WHERE UPPER(codice_iso) = UPPER(?) LIMIT 1", String.class, codiceIso.trim());
+        } catch (Exception e) {
+            log.warn("Codice ISO '{}' non trovato in tabella d_e_nazioni", codiceIso);
+            return null;
+        }
+    }
+
     public String getCodiceIsoByNome(String nome) {
         if (nome == null || nome.trim().isEmpty()) return "IT";
         

@@ -71,7 +71,28 @@ public class ArticoliController {
             Object idSceltaObj = params.get("idScelta");
             Integer idScelta = (idSceltaObj != null && !"".equals(idSceltaObj.toString())) ? Integer.parseInt(idSceltaObj.toString()) : null;
 
-            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta);
+            // Filtri Pneumatici
+            Object sezioneObj = params.get("sezione");
+            Integer sezione = (sezioneObj != null && !"".equals(sezioneObj.toString())) ? Integer.parseInt(sezioneObj.toString()) : null;
+
+            Object serieObj = params.get("serie");
+            Integer serie = (serieObj != null && !"".equals(serieObj.toString())) ? Integer.parseInt(serieObj.toString()) : null;
+
+            Object diametroObj = params.get("diametro");
+            Integer diametro = (diametroObj != null && !"".equals(diametroObj.toString())) ? Integer.parseInt(diametroObj.toString()) : null;
+
+            String scultura = (String) params.get("scultura");
+            String indiceVelocita = (String) params.get("indiceVelocita");
+            String dot = (String) params.get("dot");
+
+            Object idMarcaObj = params.get("idMarca");
+            if (idMarcaObj == null) {
+                idMarcaObj = params.get("marca");
+            }
+            Integer idMarca = (idMarcaObj != null && !"".equals(idMarcaObj.toString())) ? Integer.parseInt(idMarcaObj.toString()) : null;
+
+            List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
+                    sezione, serie, diametro, scultura, indiceVelocita, dot, idMarca);
             long total = list.isEmpty() ? 0 : list.get(0).getTotal();
 
             DatatablesResponseDto<ProdottoDto> response = new DatatablesResponseDto<>();

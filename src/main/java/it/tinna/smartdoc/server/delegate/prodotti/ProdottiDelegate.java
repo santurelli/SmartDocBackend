@@ -39,6 +39,20 @@ public class ProdottiDelegate extends BaseDelegate {
         return prodottiDao.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta);
     }
 
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir,
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
+            Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot) throws SQLException {
+        return getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
+                sezione, serie, diametro, scultura, indiceVelocita, dot, null);
+    }
+
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir,
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
+            Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot, Integer idMarca) throws SQLException {
+        return prodottiDao.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
+                sezione, serie, diametro, scultura, indiceVelocita, dot, idMarca);
+    }
+
     public ProdottoDto getById(long id) throws SQLException {
         return prodottiDao.getById(id);
     }

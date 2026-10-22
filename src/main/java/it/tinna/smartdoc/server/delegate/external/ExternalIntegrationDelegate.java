@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 import it.tinna.smartdoc.server.dao.documenti.FattureDao;
+import it.tinna.smartdoc.server.dao.nazioni.NazioniDao;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
     private final FatturaElettronicaDelegate fatturaElettronicaDelegate;
     private final ClientiDelegate clientiDelegate;
     private final AliquoteIvaDelegate aliquoteIvaDelegate;
+    private final NazioniDao nazioniDao;
 
     @Transactional(rollbackFor = Throwable.class)
     public ExternalResponseDto processaFatturaFastOrder(String nomeStore, it.tinna.smartdoc.shared.dto.external.fastorder.FatturaDto externalFattura) throws Exception {
@@ -240,7 +242,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             internal.setCodiceFiscale(extCliente.getCodiceFiscale());
             internal.setCitta(extCliente.getCitta());
             internal.setPecPrincipale(extCliente.getPec());
-            internal.setNazione(extCliente.getNazione());
+            internal.setNazione(nomeNazione(extCliente.getNazione()));
             internal.setTipologia(TipologiaClienteFornitore.PRIVATO);
             internal.setCodice(clientiDelegate.generaCodice());
             
@@ -251,12 +253,26 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
             legale.setCitta(extCliente.getCitta());
             legale.setCap(extCliente.getCap());
             legale.setProvincia(extCliente.getProvincia());
-            legale.setNazione(extCliente.getNazione());
+            legale.setNazione(nomeNazione(extCliente.getNazione()));
             
             Integer id = clientiDelegate.insert(internal, Collections.singletonList(legale), Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
             internal.setId(id.longValue());
         }
         return internal;
+    }
+
+    /**
+     * JustDesign invia la nazione come codice ISO (es. "AF"), mentre SmartDoc la gestisce per nome ("Afghanistan").
+     * Se il valore e' un codice noto lo converte, altrimenti lo lascia invariato (default "Italia").
+     */
+    private String nomeNazione(String valore) {
+        if (StringUtils.isBlank(valore)) return "Italia";
+        String v = valore.trim();
+        if (v.length() == 2) {
+            String nome = nazioniDao.getNomeByCodiceIso(v);
+            if (nome != null) return nome;
+        }
+        return v;
     }
 
     private FatturaDto mapToInternalFattura(it.tinna.smartdoc.shared.dto.external.fastorder.FatturaDto extFattura, ClienteDto internalCliente, String nomeStore) {
@@ -273,7 +289,7 @@ public class ExternalIntegrationDelegate extends BaseDelegate {
         feDto.setCittaIntestazione(StringUtils.defaultIfBlank(extCli.getCitta(), "NON SPECIFICATO"));
         feDto.setCapIntestazione(StringUtils.defaultIfBlank(extCli.getCap(), "00000"));
         feDto.setProvinciaIntestazione(StringUtils.defaultIfBlank(extCli.getProvincia(), "EE"));
-        feDto.setNazioneIntestazione(StringUtils.defaultIfBlank(extCli.getNazione(), "Italia"));
+        feDto.setNazioneIntestazione(nomeNazione(extCli.getNazione()));
         
         feDto.setCodiceUfficioDestinazione(extCli.getCodiceDestinatario());
         feDto.setPec(extCli.getPec());

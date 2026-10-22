@@ -421,5 +421,221 @@ public class AuthController {
              + "</body>"
              + "</html>";
     }
-}
 
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@RequestBody java.util.Map<String, String> request, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        String usernameOrEmail = request.get("usernameOrEmail");
+        String ente = request.get("ente");
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(usernameOrEmail)) {
+            return ResponseEntity.badRequest().body("Username o Email sono obbligatori.");
+        }
+        if (org.apache.commons.lang3.StringUtils.isBlank(ente)) {
+            return ResponseEntity.badRequest().body("È necessario selezionare l'azienda.");
+        }
+
+        String enteClean = ente.trim();
+        DatabaseContextHolder.setClientDatabase(enteClean);
+        try {
+            java.util.List<java.util.Map<String, Object>> users = sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<java.util.List<java.util.Map<String, Object>>>) (java.sql.Connection conn) -> {
+                String sql = "SELECT k_d_e_utenti, username, email, nome, cognome FROM d_e_utenti " +
+                             "WHERE (LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)) AND fl_deleted = 0";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, usernameOrEmail.trim());
+                    ps.setString(2, usernameOrEmail.trim());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+                        if (rs.next()) {
+                            java.util.Map<String, Object> map = new java.util.HashMap<>();
+                            map.put("k_d_e_utenti", rs.getLong("k_d_e_utenti"));
+                            map.put("username", rs.getString("username"));
+                            map.put("email", rs.getString("email"));
+                            map.put("nome", rs.getString("nome"));
+                            map.put("cognome", rs.getString("cognome"));
+                            list.add(map);
+                        }
+                        return list;
+                    }
+                }
+            });
+
+            if (users == null || users.isEmpty()) {
+                return ResponseEntity.status(404).body("Nessun utente trovato con questo Username/Email per l'azienda selezionata.");
+            }
+
+            java.util.Map<String, Object> user = users.get(0);
+            Number userId = (Number) user.get("k_d_e_utenti");
+            String userEmail = (String) user.get("email");
+            String username = (String) user.get("username");
+            String nome = (String) user.get("nome");
+
+            String targetEmail = userEmail;
+            if (org.apache.commons.lang3.StringUtils.isBlank(targetEmail) && username != null && username.contains("@")) {
+                targetEmail = username;
+            }
+
+            if (org.apache.commons.lang3.StringUtils.isBlank(targetEmail)) {
+                return ResponseEntity.badRequest().body("Nessun indirizzo email configurato per questo account. Contatta l'amministratore aziendale.");
+            }
+
+            String resetToken = java.util.UUID.randomUUID().toString();
+            java.sql.Timestamp expiry = new java.sql.Timestamp(System.currentTimeMillis() + (2 * 60 * 60 * 1000)); // 2 ore
+
+            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE d_e_utenti SET reset_password_token = ?, reset_password_expiry = ? WHERE k_d_e_utenti = ?")) {
+                    ps.setString(1, resetToken);
+                    ps.setTimestamp(2, expiry);
+                    ps.setLong(3, userId.longValue());
+                    ps.executeUpdate();
+                }
+                return null;
+            });
+
+            String baseUrl = httpRequest.getHeader("Origin");
+            if (org.apache.commons.lang3.StringUtils.isBlank(baseUrl)) {
+                baseUrl = "https://app.smart-doc.it";
+            }
+            String resetUrl = baseUrl + "/reset-password?token=" + resetToken + "&db=" + java.net.URLEncoder.encode(enteClean, java.nio.charset.StandardCharsets.UTF_8);
+
+            String displayName = org.apache.commons.lang3.StringUtils.defaultIfBlank(nome, username);
+            String emailBody = buildResetPasswordHtmlEmail(displayName, resetUrl);
+
+            mailSenderServiceGeneric.send("Recupero Password - SmartDoc", emailBody, null, null, new String[]{targetEmail.trim()});
+
+            return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Errore durante la richiesta di recupero password: " + e.getMessage());
+        } finally {
+            DatabaseContextHolder.clearClientDatabase();
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody java.util.Map<String, String> request) {
+        String token = request.get("token");
+        String newPassword = request.get("password");
+        String db = request.get("db");
+
+        if (org.apache.commons.lang3.StringUtils.isBlank(token) || org.apache.commons.lang3.StringUtils.isBlank(newPassword)) {
+            return ResponseEntity.badRequest().body("Token e nuova password sono obbligatori.");
+        }
+
+        if (org.apache.commons.lang3.StringUtils.isNotBlank(db)) {
+            DatabaseContextHolder.setClientDatabase(db.trim());
+        }
+
+        try {
+            java.util.List<java.util.Map<String, Object>> users = sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<java.util.List<java.util.Map<String, Object>>>) (java.sql.Connection conn) -> {
+                String sql = "SELECT k_d_e_utenti, username FROM d_e_utenti " +
+                             "WHERE reset_password_token = ? AND reset_password_expiry > CURRENT_TIMESTAMP AND fl_deleted = 0";
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, token.trim());
+                    try (java.sql.ResultSet rs = ps.executeQuery()) {
+                        java.util.List<java.util.Map<String, Object>> list = new java.util.ArrayList<>();
+                        if (rs.next()) {
+                            java.util.Map<String, Object> map = new java.util.HashMap<>();
+                            map.put("k_d_e_utenti", rs.getLong("k_d_e_utenti"));
+                            map.put("username", rs.getString("username"));
+                            list.add(map);
+                        }
+                        return list;
+                    }
+                }
+            });
+
+            if (users == null || users.isEmpty()) {
+                return ResponseEntity.badRequest().body("Il link di recupero password non è valido o è scaduto. Richiedine uno nuovo.");
+            }
+
+            java.util.Map<String, Object> userRow = users.get(0);
+            Number userId = (Number) userRow.get("k_d_e_utenti");
+            String encodedPassword = passwordEncoder.encode(newPassword.trim());
+
+            sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
+                try (java.sql.PreparedStatement ps = conn.prepareStatement(
+                        "UPDATE d_e_utenti SET password = ?, reset_password_token = NULL, reset_password_expiry = NULL WHERE k_d_e_utenti = ?")) {
+                    ps.setString(1, encodedPassword);
+                    ps.setLong(2, userId.longValue());
+                    ps.executeUpdate();
+                }
+                return null;
+            });
+
+            return ResponseEntity.ok(java.util.Collections.singletonMap("success", true));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().body("Errore durante il reset della password: " + e.getMessage());
+        } finally {
+            DatabaseContextHolder.clearClientDatabase();
+        }
+    }
+
+    private String buildResetPasswordHtmlEmail(String userName, String resetUrl) {
+        return "<!DOCTYPE html>"
+             + "<html>"
+             + "<head>"
+             + "  <meta charset=\"UTF-8\">"
+             + "  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+             + "  <title>Recupero Password SmartDoc</title>"
+             + "</head>"
+             + "<body style=\"margin:0; padding:0; background-color:#f1f5f9; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-font-smoothing:antialiased;\">"
+             + "  <center>"
+             + "    <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\" style=\"background-color:#f1f5f9; padding:40px 16px;\">"
+             + "      <tr>"
+             + "        <td align=\"center\">"
+             + "          <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"600\" style=\"max-width:600px; background-color:#ffffff; border-radius:16px; overflow:hidden; box-shadow:0 10px 30px rgba(15,23,42,0.08); border:1px solid #e2e8f0;\">"
+             + "            <tr>"
+             + "              <td style=\"background-color:#0f172a; padding:32px 36px; text-align:left;\">"
+             + "                <table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">"
+             + "                  <tr>"
+             + "                    <td>"
+             + "                      <span style=\"font-size:26px; font-weight:900; color:#ffffff; letter-spacing:-0.5px;\">Smart<span style=\"color:#3b82f6;\">Doc</span></span>"
+             + "                    </td>"
+             + "                    <td align=\"right\">"
+             + "                      <span style=\"background-color:#3b82f6; color:#ffffff; font-size:11px; font-weight:800; text-transform:uppercase; padding:6px 14px; border-radius:20px; letter-spacing:0.5px;\">SICUREZZA</span>"
+             + "                    </td>"
+             + "                  </tr>"
+             + "                </table>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"padding:36px; text-align:left;\">"
+             + "                <h2 style=\"margin:0 0 12px 0; font-size:22px; font-weight:800; color:#0f172a;\">Recupero Password 🔐</h2>"
+             + "                <p style=\"margin:0 0 20px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  Gentile <strong>" + userName + "</strong>,<br><br>"
+             + "                  Abbiamo ricevuto una richiesta di reimpostazione della password per il tuo account SmartDoc."
+             + "                </p>"
+             + "                <p style=\"margin:0 0 28px 0; font-size:15px; line-height:1.6; color:#475569;\">"
+             + "                  Per scegliere una nuova password, clicca sul pulsante qui sotto:"
+             + "                </p>"
+             + "                <div style=\"text-align:center; margin:32px 0;\">"
+             + "                  <a href=\"" + resetUrl + "\" target=\"_blank\" style=\"display:inline-block; background:linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color:#ffffff; font-size:16px; font-weight:800; text-decoration:none; padding:16px 36px; border-radius:12px; box-shadow:0 6px 20px rgba(37,99,235,0.35);\">"
+             + "                    Reimposta Password →"
+             + "                  </a>"
+             + "                </div>"
+             + "                <p style=\"margin:20px 0 0 0; font-size:13px; color:#64748b; line-height:1.5;\">"
+             + "                  Questo link rimarrà valido per <strong>2 ore</strong>. Se non sei stato tu a richiedere il ripristino, puoi ignorare questo messaggio: la tua password rimarrà invariata."
+             + "                </p>"
+             + "                <p style=\"margin:20px 0 0 0; font-size:12px; color:#94a3b8; line-height:1.5;\">"
+             + "                  Se il pulsante non funziona, copia ed incolla questo link nel tuo browser:<br>"
+             + "                  <a href=\"" + resetUrl + "\" style=\"color:#2563eb; text-decoration:underline; word-break:break-all;\">" + resetUrl + "</a>"
+             + "                </p>"
+             + "              </td>"
+             + "            </tr>"
+             + "            <tr>"
+             + "              <td style=\"background-color:#f8fafc; padding:24px 36px; border-top:1px solid #e2e8f0; text-align:center; font-size:12px; color:#64748b;\">"
+             + "                SmartDoc &middot; Gestionale di Fatturazione Elettronica Cloud<br>"
+             + "                <a href=\"https://www.smart-doc.it\" style=\"color:#2563eb; text-decoration:none; font-weight:600;\">www.smart-doc.it</a> &middot; Supporto: <a href=\"mailto:info@smart-doc.it\" style=\"color:#2563eb; text-decoration:none;\">info@smart-doc.it</a>"
+             + "              </td>"
+             + "            </tr>"
+             + "          </table>"
+             + "        </td>"
+             + "      </tr>"
+             + "    </table>"
+             + "  </center>"
+             + "</body>"
+             + "</html>";
+    }
+}

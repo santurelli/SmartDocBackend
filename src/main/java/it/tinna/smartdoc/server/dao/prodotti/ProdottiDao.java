@@ -28,6 +28,19 @@ public class ProdottiDao extends BaseDao {
 
     public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
             Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta) throws SQLException {
+        return getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta, null, null, null, null, null, null, null);
+    }
+
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
+            Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot) throws SQLException {
+        return getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
+                sezione, serie, diametro, scultura, indiceVelocita, dot, null);
+    }
+
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
+            Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot, Integer idMarca) throws SQLException {
         BeanPropertyRowMapper<ProdottoDto> rowMapper = new BeanPropertyRowMapper<>(ProdottoDto.class);
         try {
             String query = FileQueryReader.getQuery("PRODOTTI_S01");
@@ -44,12 +57,15 @@ public class ProdottiDao extends BaseDao {
             }
             args.add(idCategoria);
             
-            // 2, 3, 4. Search (String) - Used 3 times in query
-            // Matches:
-            // LOWER(codice) LIKE COALESCE(LOWER(?), LOWER(codice))
-            // LOWER(descrizione) LIKE COALESCE(LOWER(?), LOWER(descrizione))
-            // COALESCE(LOWER(desc_cat), '') LIKE COALESCE(LOWER(?), ...)
+            // 2..10. Search (String) - Used in query for:
+            // codice, descrizione, categoria, marca, scultura, dot, indice_velocita, sezione, diametro
             String searchLike = StringUtility.formatForLikeHelper(search);
+            args.add(searchLike);
+            args.add(searchLike);
+            args.add(searchLike);
+            args.add(searchLike);
+            args.add(searchLike);
+            args.add(searchLike);
             args.add(searchLike);
             args.add(searchLike);
             args.add(searchLike);
@@ -65,6 +81,9 @@ public class ProdottiDao extends BaseDao {
                     if ("=".equals(operatoreGiacenza) || ">=".equals(operatoreGiacenza) || "<=".equals(operatoreGiacenza) || ">".equals(operatoreGiacenza) || "<".equals(operatoreGiacenza)) {
                         op = operatoreGiacenza;
                     }
+                }
+                if (">".equals(op) || (">=".equals(op) && giacenza > 0)) {
+                    sb.append(" AND d_e_prodotti.tipologia IN ('AM', 'AMSC') ");
                 }
                 sb.append(" AND get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) ").append(op).append(" ? ");
                 args.add(giacenza);
@@ -99,61 +118,81 @@ public class ProdottiDao extends BaseDao {
                 sb.append(" AND k_d_e_sceltearticolo = ? ");
                 args.add(idScelta);
             }
+
+            // Filtri Pneumatici (Gommista)
+            if (sezione != null) {
+                sb.append(" AND CAST(d_e_prodotti.sezione AS text) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(sezione.toString()));
+            }
+            if (serie != null) {
+                sb.append(" AND CAST(d_e_prodotti.serie AS text) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(serie.toString()));
+            }
+            if (diametro != null) {
+                sb.append(" AND CAST(d_e_prodotti.diametro AS text) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(diametro.toString()));
+            }
+            if (StringUtils.hasText(scultura)) {
+                sb.append(" AND LOWER(d_e_prodotti.scultura) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(scultura));
+            }
+            if (StringUtils.hasText(indiceVelocita)) {
+                sb.append(" AND LOWER(d_e_prodotti.indice_velocita) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(indiceVelocita));
+            }
+            if (StringUtils.hasText(dot)) {
+                sb.append(" AND LOWER(d_e_prodotti.dot) LIKE ? ");
+                args.add(StringUtility.formatForLikeHelper(dot));
+            }
+            if (idMarca != null && idMarca > 0) {
+                sb.append(" AND d_e_prodotti.k_d_e_marche = ? ");
+                args.add(idMarca);
+            }
             
             query = query.replace("${EXTRA_FILTERS}", sb.toString());
             
             // Dynamic Ordering
-            String orderBy = "descrizione"; // Default
+            String innerOrderBy = "d_e_prodotti.descrizione";
+            String outerOrderBy = "descrizione";
             switch (orderColumn) {
-                case 0: orderBy = "codice"; break;
-                case 1: orderBy = "descrizione"; break;
-                case 2: orderBy = "descCategoria"; break;
-                case 4: orderBy = "quantitaEsistente"; break;
-                case 5: orderBy = "(quantitaEsistente - quantitaImpegnata)"; break;
-            }
-            
-            // Note: Postgres is case insensitive for unquoted identifiers.
-            if (orderColumn == 2) orderBy = "descCategoria";
-            if (orderColumn == 3) orderBy = "descSottoCategoria";
-
-            String innerOrderBy = orderBy;
-            String outerOrderBy = orderBy;
-
-            if (orderColumn == 4) {
-                 // Esistenza
-                 innerOrderBy = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
-                 outerOrderBy = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END";
-            } else if (orderColumn == 5) {
-                 // Disponibile (Esistenza - Impegnato)
-                 
-                 // Inner Logic (uses d_e_prodotti table)
-                 String innerEsistenza = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
-                 String innerImpegnato = "COALESCE((SELECT SUM(quantita) " +
-                                       "FROM d_e_prodotti_confordine " +
-                                       "JOIN d_e_confordine ON d_e_prodotti_confordine.k_d_e_confordine = d_e_confordine.k_d_e_confordine " +
-                                       "WHERE d_e_confordine.fl_deleted = 0 " +
-                                       "AND d_e_prodotti_confordine.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti " +
-                                       "AND NOT (d_e_confordine.k_d_e_confordine IN (SELECT d_r_doccollegati.id_docpadre FROM d_r_doccollegati WHERE CAST(d_r_doccollegati.tipo_docpadre AS text) = 'CONF_ORDINE'))), 0)";
-                 
-                 innerOrderBy = "(" + innerEsistenza + " - " + innerImpegnato + ")";
-
-                 // Outer Logic (uses x alias from subquery)
-                 // We must replicate the full expression because calculating on aliases (alias1 - alias2) is often not supported in ORDER BY
-                 String outerEsistenza = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE get_totale_disponibile(x.id, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0))) END";
-                 
-                 // Repoint subquery reference to x.id
-                 String outerImpegnato = innerImpegnato.replace("d_e_prodotti.k_d_e_prodotti", "x.id");
-                 // Wrap in CASE for consistency with SELECT list
-                 outerImpegnato = "CASE x.tipologia WHEN 'S' THEN 0 WHEN 'A' THEN 0 ELSE " + outerImpegnato + " END";
-
-                 outerOrderBy = "(" + outerEsistenza + " - " + outerImpegnato + ")";
+                case 0:
+                    innerOrderBy = "d_e_prodotti.codice";
+                    outerOrderBy = "codice";
+                    break;
+                case 1:
+                    innerOrderBy = "d_e_prodotti.descrizione";
+                    outerOrderBy = "descrizione";
+                    break;
+                case 2:
+                    innerOrderBy = "descCategoria";
+                    outerOrderBy = "descCategoria";
+                    break;
+                case 3:
+                    innerOrderBy = "descSottoCategoria";
+                    outerOrderBy = "descSottoCategoria";
+                    break;
+                case 4:
+                    // Esistenza
+                    innerOrderBy = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
+                    outerOrderBy = "quantitaEsistente";
+                    break;
+                case 5:
+                    // Disponibile (Esistenza - Impegnato)
+                    String innerEsistenza = "get_totale_disponibile(d_e_prodotti.k_d_e_prodotti, COALESCE((SELECT k_d_e_magazzini FROM d_e_magazzini WHERE fl_predefinito=1 AND fl_deleted=0 LIMIT 1), (SELECT MIN(k_d_e_magazzini) FROM d_e_magazzini WHERE fl_deleted=0)))";
+                    String innerImpegnato = "COALESCE((SELECT SUM(quantita) " +
+                                          "FROM d_e_prodotti_confordine " +
+                                          "JOIN d_e_confordine ON d_e_prodotti_confordine.k_d_e_confordine = d_e_confordine.k_d_e_confordine " +
+                                          "WHERE d_e_confordine.fl_deleted = 0 " +
+                                          "AND d_e_prodotti_confordine.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti " +
+                                          "AND NOT (d_e_confordine.k_d_e_confordine IN (SELECT d_r_doccollegati.id_docpadre FROM d_r_doccollegati WHERE CAST(d_r_doccollegati.tipo_docpadre AS text) = 'CONF_ORDINE'))), 0)";
+                    
+                    innerOrderBy = "(" + innerEsistenza + " - " + innerImpegnato + ")";
+                    outerOrderBy = "(quantitaEsistente - quantitaImpegnata)";
+                    break;
             }
 
             query = query.replace("${ORDER_BY}", innerOrderBy + " " + orderDir);
-            query = query.replace("${ORDER_BY_2}", outerOrderBy + " " + orderDir); // Replace outer order too
-
-            query = query.replace("${ORDER_BY}", innerOrderBy + " " + orderDir);
-            query = query.replace("${ORDER_BY_2}", outerOrderBy + " " + orderDir); // Replace outer order too
+            query = query.replace("${ORDER_BY_2}", outerOrderBy + " " + orderDir);
             query = query.replace("${LIMIT}", "OFFSET " + start + " LIMIT " + length);
 
             return jdbcTemplate.query(query, rowMapper, args.toArray());
@@ -244,6 +283,7 @@ public class ProdottiDao extends BaseDao {
                 dto.getDot(),
                 dto.getIdContoRicavo(),
                 dto.getIdContoCosto(),
+                dto.getIdMarca() != null && dto.getIdMarca() != 0 ? dto.getIdMarca() : null,
                 dto.getUserCreated()
             );
         } catch (DataAccessException e) {
@@ -306,6 +346,7 @@ public class ProdottiDao extends BaseDao {
                 dto.getDot(),
                 dto.getIdContoRicavo(),
                 dto.getIdContoCosto(),
+                dto.getIdMarca() != null && dto.getIdMarca() != 0 ? dto.getIdMarca() : null,
                 dto.getUserLastUpdate(),
                 dto.getId()
             );
