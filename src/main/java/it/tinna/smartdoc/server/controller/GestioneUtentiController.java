@@ -87,13 +87,16 @@ public class GestioneUtentiController {
 
                 String subject = "Benvenuto in SmartDoc - Credenziali di accesso";
                 String body = buildWelcomeEmail(dto.getNome(), dto.getUsername(), randomPassword, companyName, loginUrl);
-                try {
-                    mailSenderService.send(subject, body, null, new String[]{dto.getEmail()});
-                } catch (Exception ex) {
-                    log.error("Errore invio mail a {}. Eseguo rollback dell'utente.", dto.getEmail(), ex);
-                    utentiDelegate.deleteUtente(id);
-                    return ResponseEntity.badRequest().body("Impossibile inviare l'email. L'utente non è stato creato.");
-                }
+                String recipientEmail = dto.getEmail();
+
+                java.util.concurrent.CompletableFuture.runAsync(() -> {
+                    try {
+                        mailSenderService.send(subject, body, null, new String[]{recipientEmail});
+                        log.info("Email di benvenuto inviata con successo a {}", recipientEmail);
+                    } catch (Exception ex) {
+                        log.error("Errore invio mail di benvenuto a {}", recipientEmail, ex);
+                    }
+                });
             }
 
             return ResponseEntity.ok(dto);
