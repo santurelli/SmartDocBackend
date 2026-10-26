@@ -89,5 +89,21 @@ public class MovimentoMagazzinoDto extends BaseDto
     private Double quantitaCarico;
     private Double quantitaScarico;
     private String numeroDocumento;
+    @Expose
+    private String codiceProdotto;
+    @Expose
+    private Integer sezione;
+    @Expose
+    private Integer serie;
+    @Expose
+    private Integer diametro;
+    @Expose
+    private String scultura;
+    @Expose
+    private String indiceVelocita;
+    @Expose
+    private String dot;
+    @Expose
+    private String descMarca;
 }
 

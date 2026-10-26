@@ -237,6 +237,7 @@ public class ProdottoDto extends BaseDto
 
     private Double                  prezzoListinoRiferimentoVendita;
 
+    @Expose
     private Double                  prezzoListinoVendita;
 
     private Double                  prezzoMedioAcquisto;

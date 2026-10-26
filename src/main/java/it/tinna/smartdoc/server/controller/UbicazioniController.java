@@ -198,6 +198,33 @@ public class UbicazioniController {
         }
     }
 
+    @PostMapping("/prelievo")
+    public ResponseEntity<?> prelievo(@RequestBody Map<String, Object> req) {
+        try {
+            long idProdotto = Long.parseLong(req.get("idProdotto").toString());
+            ProdottoDto prodotto = prodottiDelegate.getById(idProdotto);
+            if (prodotto == null) {
+                return ResponseEntity.badRequest().body("Prodotto non trovato");
+            }
+
+            List<Map<String, Object>> itemsList = new ArrayList<>();
+            if (req.containsKey("items") && req.get("items") instanceof List) {
+                itemsList = (List<Map<String, Object>>) req.get("items");
+            }
+
+            Long currentUid = getCurrentUserId();
+            ubicazioniDelegate.scaricaUbicazioniEGiacenza(idProdotto, itemsList, prodotto, currentUid);
+
+            Map<String, Object> result = new HashMap<>();
+            result.put("success", true);
+            result.put("message", "Prelievo effettuato con successo. Giacenza generale e ubicazioni aggiornate.");
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            log.error("Errore nel prelievo ubicazioni per prodotto", e);
+            return ResponseEntity.internalServerError().body("Errore nel prelievo: " + e.getMessage());
+        }
+    }
+
     @PostMapping("/stampa-prelievo")
     public ResponseEntity<?> stampaPrelievo(@RequestBody Map<String, Object> req) {
         try {
@@ -218,6 +245,21 @@ public class UbicazioniController {
                 if (req.containsKey("quantita")) singleItem.put("quantita", req.get("quantita"));
                 if (req.containsKey("dot")) singleItem.put("dot", req.get("dot"));
                 itemsList.add(singleItem);
+            }
+
+            // Se richiesto, decrementa la giacenza dalle ubicazioni coinvolte e scala la giacenza generale
+            boolean scaricaGiacenza = req.containsKey("scaricaGiacenza") && Boolean.parseBoolean(req.get("scaricaGiacenza").toString());
+            if (scaricaGiacenza) {
+                Long currentUid = getCurrentUserId();
+                ubicazioniDelegate.scaricaUbicazioniEGiacenza(idProdotto, itemsList, prodotto, currentUid);
+            }
+
+            boolean doPrint = !req.containsKey("stampa") || Boolean.parseBoolean(req.get("stampa").toString());
+            if (!doPrint) {
+                Map<String, Object> result = new HashMap<>();
+                result.put("sentByServer", false);
+                result.put("message", "Prelievo effettuato con successo. Giacenza generale e ubicazioni aggiornate.");
+                return ResponseEntity.ok(result);
             }
 
             // Lettura configurazione stampante
@@ -292,33 +334,6 @@ public class UbicazioniController {
             lines.add("Operatore: " + getCurrentUsername());
             lines.add("Firma: _________________________");
             lines.add("================================");
-
-            // Se richiesto, decrementa la giacenza dalle ubicazioni coinvolte
-            boolean scaricaGiacenza = req.containsKey("scaricaGiacenza") && Boolean.parseBoolean(req.get("scaricaGiacenza").toString());
-            if (scaricaGiacenza) {
-                Long currentUid = getCurrentUserId();
-                for (Map<String, Object> item : itemsList) {
-                    long idUbi = item.containsKey("idUbicazione") && item.get("idUbicazione") != null ? Long.parseLong(item.get("idUbicazione").toString()) : 0;
-                    double qta = item.containsKey("quantita") && item.get("quantita") != null ? Double.parseDouble(item.get("quantita").toString()) : 0.0;
-                    if (qta <= 0) continue;
-                    String dot = item.containsKey("dot") && item.get("dot") != null ? item.get("dot").toString().trim() : "";
-
-                    List<UbicazioneProdottoDto> prods = ubicazioniDelegate.getUbicazioniByProdotto(idProdotto);
-                    for (UbicazioneProdottoDto up : prods) {
-                        if (up.getIdUbicazione() == idUbi && (up.getDot() != null ? up.getDot().trim() : "").equalsIgnoreCase(dot)) {
-                            double newQta = Math.max(0.0, up.getQuantita() - qta);
-                            if (newQta <= 0) {
-                                ubicazioniDelegate.deleteProdottoUbicazione(up.getId(), currentUid);
-                            } else {
-                                up.setQuantita(newQta);
-                                up.setUserLastUpdate(currentUid);
-                                ubicazioniDelegate.saveProdottoUbicazione(up);
-                            }
-                            break;
-                        }
-                    }
-                }
-            }
 
             String protocol = "ESCPOS";
             if (globalConfig != null && globalConfig.containsKey("STAMPANTE_PRELIEVO_PROTOCOLLO") && globalConfig.get("STAMPANTE_PRELIEVO_PROTOCOLLO").getValore() != null) {
