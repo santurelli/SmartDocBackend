@@ -77,4 +77,6 @@
 		<property name="comandoFirma" value="#{configurazioneDelegate.getByKey(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_INVIO_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_FIRMA)}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property>
 	</bean>
+	<bean id="cleanupOldWorkDirsTasklet" class="it.tinna.smartdoc.batch.tasklet.CleanupOldWorkDirsTasklet" scope="step">
+	</bean>
 </beans>

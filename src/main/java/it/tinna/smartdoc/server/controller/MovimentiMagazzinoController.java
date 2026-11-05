@@ -4,6 +4,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -139,6 +142,36 @@ public class MovimentiMagazzinoController {
             return org.springframework.http.ResponseEntity.internalServerError().build();
         }
     }
+
+    @PutMapping("/{id}")
+    public GenericResponseDto updateMovimento(@PathVariable("id") Integer id, @RequestBody MovimentoMagazzinoDto dto, HttpServletRequest request) {
+        GenericResponseDto response = new GenericResponseDto();
+        try {
+            UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            Long userId = userDetails.getId() != null ? userDetails.getId().longValue() : 1L;
+            dto.setId(id);
+            dto.setUserLastUpdate(userId);
+            delegate.updateMovimento(dto);
+            log.info("Movimento magazzino {} aggiornato con successo da utente {}", id, userId);
+        } catch (Exception e) {
+            log.error("Errore aggiornamento movimento magazzino {}", id, e);
+            response.setErrorText(e.getMessage());
+        }
+        return response;
+    }
+
+    @DeleteMapping("/{id}")
+    public GenericResponseDto deleteMovimento(@PathVariable("id") Integer id, HttpServletRequest request) {
+        GenericResponseDto response = new GenericResponseDto();
+        try {
+            UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            Long userId = userDetails.getId() != null ? userDetails.getId().longValue() : 1L;
+            delegate.deleteMovimento(id, userId);
+            log.info("Movimento magazzino {} eliminato/stornato con successo da utente {}", id, userId);
+        } catch (Exception e) {
+            log.error("Errore cancellazione movimento magazzino {}", id, e);
+            response.setErrorText(e.getMessage());
+        }
+        return response;
+        }
 }
-
-

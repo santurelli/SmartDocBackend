@@ -33,4 +33,6 @@
 		<property name="stepExecution" value="#{stepExecution}"></property>
 		<property name="comandoVerificaFirma" value="#{configurazioneDelegate.getByKeyFromServiceDb(T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_DOMAIN_BATCH_ESITI_SDI, T(it.tinna.smartdoc.batch.constants.BatchConstants).CONFIG_KEY_COMANDO_VERIFICA_FIRMA)}"></property>
 	</bean>
+	<bean id="cleanupOldWorkDirsTasklet" class="it.tinna.smartdoc.batch.tasklet.CleanupOldWorkDirsTasklet" scope="step">
+	</bean>
 </beans>

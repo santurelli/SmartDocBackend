@@ -75,4 +75,6 @@
 	</bean>
 <!-- 	<bean id="invioFattureFastOrderWriter" class="it.tinna.smartdoc.batch.writers.DummyWriter" scope="step"> -->
 <!-- 	</bean> -->
+	<bean id="cleanupOldWorkDirsTasklet" class="it.tinna.smartdoc.batch.tasklet.CleanupOldWorkDirsTasklet" scope="step">
+	</bean>
 </beans>

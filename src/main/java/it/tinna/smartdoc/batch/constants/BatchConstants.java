@@ -48,6 +48,8 @@ public class BatchConstants
 
     public static final String CONFIG_KEY_WORKDIR                          = "WORK_DIR";
 
+    public static final String CONFIG_KEY_WORKDIR_RETENTION_DAYS           = "WORK_DIR_RETENTION_DAYS";
+
     public static final String CONFIG_KEY_COMANDO_CIFRATURA                = "COMANDO_CIFRATURA";
 
     public static final String CONFIG_KEY_COMANDO_FIRMA                    = "COMANDO_FIRMA";

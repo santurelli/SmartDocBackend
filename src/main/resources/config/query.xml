@@ -6302,6 +6302,7 @@
 					   TO_CHAR(data_movimento, 'DD/MM/YYYY') AS dataMovimento,
 					   causale AS causale,
 					   id_documento AS idDocumento,
+					   id_documento AS id,
 					   quantita_movimento AS quantita,
 					   id_um_movimento AS idUnitaMisura,
 					   prezzo AS prezzoUnitario,
@@ -8501,6 +8502,23 @@
 					        WHERE l.fl_default = 1 
 					          AND l.fl_deleted = 0 
 					        LIMIT 1) AS prezzoListinoVendita,
+					      COALESCE((
+					        SELECT json_agg(json_build_object(
+					            'codUbicazione', u.cod_ubicazione,
+					            'descrizione', COALESCE(u.descrizione, ''),
+					            'quantita', up.quantita,
+					            'dot', COALESCE(NULLIF(up.dot, ''), d_e_prodotti.dot, ''),
+					            'corsia', COALESCE(u.corsia, ''),
+					            'ripiano', COALESCE(u.ripiano, ''),
+					            'livello', COALESCE(u.livello, '')
+					        ))
+					          FROM d_r_ubicazioni_prodotti up
+					          JOIN d_e_ubicazioni u ON u.k_d_e_ubicazioni = up.k_d_e_ubicazioni
+					         WHERE up.k_d_e_prodotti = d_e_prodotti.k_d_e_prodotti
+					           AND up.fl_deleted = 0
+					           AND u.fl_deleted = 0
+					           AND up.quantita > 0
+					      )::text, '[]') AS ubicazioniJson,
 					      sezione,
 					      serie,
 					      diametro,
@@ -12321,11 +12339,12 @@
 				   u.corsia,
 				   u.ripiano,
 				   u.livello,
-				   up.dot,
+				   COALESCE(NULLIF(up.dot, ''), p.dot, '') AS dot,
 				   up.quantita,
 				   up.note
 			  FROM d_r_ubicazioni_prodotti up
 			  JOIN d_e_ubicazioni u ON up.k_d_e_ubicazioni = u.k_d_e_ubicazioni
+			  JOIN d_e_prodotti p ON up.k_d_e_prodotti = p.k_d_e_prodotti
 			 WHERE up.k_d_e_prodotti = ?
 			   AND up.fl_deleted = 0
 			   AND u.fl_deleted = 0

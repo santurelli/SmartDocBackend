@@ -78,5 +78,16 @@ public class MovimentiMagazzinoDelegate extends BaseDelegate {
         MovimentiMagazzinoDao dao = new MovimentiMagazzinoDao(jdbcTemplate);
         return dao.list(criteria);
     }
-}
 
+    @Transactional(rollbackFor = Exception.class)
+    public void updateMovimento(MovimentoMagazzinoDto dto) throws SQLException {
+        MovimentiMagazzinoDao dao = new MovimentiMagazzinoDao(jdbcTemplate);
+        dao.updateMovimento(dto);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteMovimento(Integer id, Long userId) throws SQLException {
+        MovimentiMagazzinoDao dao = new MovimentiMagazzinoDao(jdbcTemplate);
+        dao.deleteMovimento(id, userId);
+    }
+}

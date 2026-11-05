@@ -110,4 +110,6 @@
 		<property name="dbKey" value="#{jobParameters[T(it.tinna.smartdoc.batch.constants.BatchConstants).JOBPARAM_DB_KEY]}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property>
 	</bean>
+	<bean id="cleanupOldWorkDirsTasklet" class="it.tinna.smartdoc.batch.tasklet.CleanupOldWorkDirsTasklet" scope="step">
+	</bean>
 </beans>

@@ -77,6 +77,7 @@ public class UbicazioniDelegateTest {
         prodotto.setId(idProdotto);
         prodotto.setCodice("TYRE01");
         prodotto.setPrezzo(85.0);
+        prodotto.setIdAliquotaIva(0);
 
         // Prelievo di 2 pezzi
         List<Map<String, Object>> itemsList = new ArrayList<>();
@@ -102,6 +103,7 @@ public class UbicazioniDelegateTest {
         assertEquals("U", mov.getTipoMovimento());
         assertEquals(2.0, mov.getQuantita(), 0.001);
         assertEquals(85.0, mov.getPrezzoUnitario(), 0.001);
+        assertEquals(null, mov.getIdAliquotaIva());
     }
 
     @Test

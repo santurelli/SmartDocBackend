@@ -240,6 +240,9 @@ public class ProdottoDto extends BaseDto
     @Expose
     private Double                  prezzoListinoVendita;
 
+    @Expose
+    private String                  ubicazioniJson;
+
     private Double                  prezzoMedioAcquisto;
 
     private Double                  prezzoMedioVendita;

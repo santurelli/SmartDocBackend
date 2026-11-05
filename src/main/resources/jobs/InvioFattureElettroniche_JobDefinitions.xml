@@ -39,8 +39,11 @@
 		<batch:step id="invioSupporti" next="aggiornaAutofatture">
 			<batch:tasklet ref="invioSupportiTasklet" />
 		</batch:step>
-		<batch:step id="aggiornaAutofatture">
+		<batch:step id="aggiornaAutofatture" next="cleanupOldWorkDirs">
 			<batch:tasklet ref="aggiornaAutofattureInviateTasklet" />
+		</batch:step>
+		<batch:step id="cleanupOldWorkDirs">
+			<batch:tasklet ref="cleanupOldWorkDirsTasklet" />
 		</batch:step>
 <!-- 		<batch:step id="aggiornaFatture"> -->
 <!-- 			<batch:tasklet ref="aggiornaFattureInviateTasklet" /> -->

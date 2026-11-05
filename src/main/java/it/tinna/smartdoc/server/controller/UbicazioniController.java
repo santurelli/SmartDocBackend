@@ -26,10 +26,12 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import it.tinna.smartdoc.server.delegate.configurazione.ConfigurazioneDelegate;
+import it.tinna.smartdoc.server.delegate.marche.MarcheDelegate;
 import it.tinna.smartdoc.server.delegate.prodotti.ProdottiDelegate;
 import it.tinna.smartdoc.server.delegate.ubicazioni.UbicazioniDelegate;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import it.tinna.smartdoc.shared.dto.configurazione.ConfigurazioneDto;
+import it.tinna.smartdoc.shared.dto.marche.MarcaDto;
 import it.tinna.smartdoc.shared.dto.prodotti.ProdottoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
@@ -50,6 +52,9 @@ public class UbicazioniController {
 
     @Autowired
     private ConfigurazioneDelegate configurazioneDelegate;
+
+    @Autowired
+    private MarcheDelegate marcheDelegate;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -248,10 +253,11 @@ public class UbicazioniController {
             }
 
             // Se richiesto, decrementa la giacenza dalle ubicazioni coinvolte e scala la giacenza generale
+            List<Map<String, Object>> createdMovements = new ArrayList<>();
             boolean scaricaGiacenza = req.containsKey("scaricaGiacenza") && Boolean.parseBoolean(req.get("scaricaGiacenza").toString());
             if (scaricaGiacenza) {
                 Long currentUid = getCurrentUserId();
-                ubicazioniDelegate.scaricaUbicazioniEGiacenza(idProdotto, itemsList, prodotto, currentUid);
+                createdMovements = ubicazioniDelegate.scaricaUbicazioniEGiacenza(idProdotto, itemsList, prodotto, currentUid);
             }
 
             boolean doPrint = !req.containsKey("stampa") || Boolean.parseBoolean(req.get("stampa").toString());
@@ -259,6 +265,7 @@ public class UbicazioniController {
                 Map<String, Object> result = new HashMap<>();
                 result.put("sentByServer", false);
                 result.put("message", "Prelievo effettuato con successo. Giacenza generale e ubicazioni aggiornate.");
+                result.put("createdMovements", createdMovements);
                 return ResponseEntity.ok(result);
             }
 
@@ -283,13 +290,77 @@ public class UbicazioniController {
             lines.add("      SCHEDA DI PRELIEVO        ");
             lines.add("================================");
             lines.add("Data: " + now);
-            lines.add("Articolo: " + (prodotto.getCodice() != null ? prodotto.getCodice() : ""));
-            lines.add("Desc: " + (prodotto.getDescrizione() != null ? prodotto.getDescrizione() : ""));
-            
+
+            // Verifica abilitazione gestione Marche in configurazione
+            boolean hasMarche = false;
+            if (globalConfig != null) {
+                String mVal = globalConfig.containsKey("MARCHE") && globalConfig.get("MARCHE") != null ? globalConfig.get("MARCHE").getValore() : null;
+                String gVal = globalConfig.containsKey("GOMMISTA") && globalConfig.get("GOMMISTA") != null ? globalConfig.get("GOMMISTA").getValore() : null;
+                String tsVal = globalConfig.containsKey("TIPO_STORE") && globalConfig.get("TIPO_STORE") != null ? globalConfig.get("TIPO_STORE").getValore() : 
+                               (globalConfig.containsKey("TIPOSTORE") && globalConfig.get("TIPOSTORE") != null ? globalConfig.get("TIPOSTORE").getValore() : null);
+
+                if ("1".equals(mVal) || "1".equals(gVal) || "PNEUMATICI".equalsIgnoreCase(tsVal) || "GOMMISTA".equalsIgnoreCase(tsVal)) {
+                    hasMarche = true;
+                }
+            }
+            if (req.containsKey("hasMarche") && req.get("hasMarche") != null) {
+                hasMarche = Boolean.parseBoolean(req.get("hasMarche").toString());
+            }
+
+            if (hasMarche) {
+                String marca = prodotto.getDescMarca();
+                if ((marca == null || marca.trim().isEmpty()) && prodotto.getIdMarca() != null && prodotto.getIdMarca() > 0) {
+                    try {
+                        MarcaDto m = marcheDelegate.getById(prodotto.getIdMarca());
+                        if (m != null && m.getDescrizione() != null) {
+                            marca = m.getDescrizione();
+                        }
+                    } catch (Exception ignored) { }
+                }
+                if ((marca == null || marca.trim().isEmpty()) && req.containsKey("marca") && req.get("marca") != null) {
+                    marca = req.get("marca").toString();
+                }
+                if ((marca == null || marca.trim().isEmpty()) && req.containsKey("descMarca") && req.get("descMarca") != null) {
+                    marca = req.get("descMarca").toString();
+                }
+                if (marca != null && !marca.trim().isEmpty()) {
+                    lines.add("Marca: " + marca.trim());
+                }
+            }
+
+            // Modello / Scultura
+            String scultura = prodotto.getScultura();
+            if ((scultura == null || scultura.trim().isEmpty()) && req.containsKey("scultura") && req.get("scultura") != null) {
+                scultura = req.get("scultura").toString();
+            }
+            if (scultura != null && !scultura.trim().isEmpty()) {
+                lines.add(scultura.trim());
+            }
+
+            String tyreSpec = "";
             if (prodotto.getSezione() != null && prodotto.getSerie() != null && prodotto.getDiametro() != null) {
-                String tyreSpec = prodotto.getSezione() + "/" + (prodotto.getSerie() != null ? prodotto.getSerie() : "") + " R" + prodotto.getDiametro() 
+                tyreSpec = prodotto.getSezione() + "/" + (prodotto.getSerie() != null ? prodotto.getSerie() : "") + " R" + prodotto.getDiametro() 
                     + (prodotto.getIndiceVelocita() != null ? " " + prodotto.getIndiceVelocita() : "");
+            }
+
+            if (!tyreSpec.isEmpty()) {
                 lines.add("Misura: " + tyreSpec);
+            } else if (prodotto.getDescrizione() != null && !prodotto.getDescrizione().trim().isEmpty()) {
+                lines.add("Desc: " + prodotto.getDescrizione().trim());
+            }
+
+            // DOT generale articolo o ricavato dagli elementi selezionati (utilizzato per le righe delle ubicazioni sottostanti)
+            String prodDot = prodotto.getDot();
+            if ((prodDot == null || prodDot.trim().isEmpty()) && req.containsKey("dot") && req.get("dot") != null) {
+                prodDot = req.get("dot").toString();
+            }
+            if (prodDot == null || prodDot.trim().isEmpty()) {
+                for (Map<String, Object> item : itemsList) {
+                    if (item.containsKey("dot") && item.get("dot") != null && !item.get("dot").toString().trim().isEmpty()) {
+                        prodDot = item.get("dot").toString().trim();
+                        break;
+                    }
+                }
             }
             lines.add("--------------------------------");
             lines.add("UBICAZIONE / DOT           Q.TA'");
@@ -302,14 +373,21 @@ public class UbicazioniController {
                 if (qta <= 0) continue;
                 totQta += qta;
 
-                String dot = item.containsKey("dot") && item.get("dot") != null ? item.get("dot").toString() : "";
+                String dot = item.containsKey("dot") && item.get("dot") != null ? item.get("dot").toString().trim() : "";
+                if (dot.isEmpty() && prodDot != null && !prodDot.trim().isEmpty()) {
+                    dot = prodDot.trim();
+                }
                 UbicazioneDto ubicazione = idUbi > 0 ? ubicazioniDelegate.getById(idUbi) : null;
                 String codUbi = ubicazione != null ? ubicazione.getCodUbicazione() : (item.containsKey("codUbicazione") && item.get("codUbicazione") != null ? item.get("codUbicazione").toString() : "N.D.");
+                String descUbi = (ubicazione != null && ubicazione.getDescrizione() != null && !ubicazione.getDescrizione().trim().isEmpty())
+                    ? ubicazione.getDescrizione().trim()
+                    : (item.containsKey("descrizione") && item.get("descrizione") != null ? item.get("descrizione").toString().trim() : "");
+                String nomeUbi = !descUbi.isEmpty() ? descUbi : codUbi;
                 String corsia = ubicazione != null && ubicazione.getCorsia() != null ? ubicazione.getCorsia() : (item.containsKey("corsia") && item.get("corsia") != null ? item.get("corsia").toString() : "");
                 String ripiano = ubicazione != null && ubicazione.getRipiano() != null ? ubicazione.getRipiano() : (item.containsKey("ripiano") && item.get("ripiano") != null ? item.get("ripiano").toString() : "");
                 String livello = ubicazione != null && ubicazione.getLivello() != null ? ubicazione.getLivello() : (item.containsKey("livello") && item.get("livello") != null ? item.get("livello").toString() : "");
 
-                String ubiStr = codUbi + (!dot.isEmpty() ? " (DOT " + dot + ")" : "");
+                String ubiStr = nomeUbi + (!dot.isEmpty() ? " (DOT " + dot + ")" : "");
                 String qtaStr = ((int) qta) + " pz";
                 int pad = 32 - ubiStr.length() - qtaStr.length();
                 if (pad > 0) {
@@ -379,11 +457,43 @@ public class UbicazioniController {
             result.put("printerIp", printerIp);
             result.put("bridgeUrl", bridgeUrl);
             result.put("bridgePayload", payload);
+            result.put("createdMovements", createdMovements);
 
             return ResponseEntity.ok(result);
         } catch (Exception e) {
             log.error("Errore nella generazione della scheda di prelievo", e);
             return ResponseEntity.internalServerError().body("Errore: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/prelievi-recenti/{idProdotto}")
+    public ResponseEntity<?> getPrelieviRecenti(@PathVariable long idProdotto) {
+        try {
+            List<Map<String, Object>> list = ubicazioniDelegate.getPrelieviRecentiByProdotto(idProdotto);
+            return ResponseEntity.ok(list);
+        } catch (Exception e) {
+            log.error("Errore recupero prelievi recenti per prodotto {}", idProdotto, e);
+            return ResponseEntity.internalServerError().body("Errore nel recupero prelievi recenti: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/annulla-prelievo")
+    public ResponseEntity<?> annullaPrelievo(@RequestBody Map<String, Object> req) {
+        try {
+            if (!req.containsKey("idMovimento")) {
+                return ResponseEntity.badRequest().body("idMovimento obbligatorio");
+            }
+            long idMovimento = Long.parseLong(req.get("idMovimento").toString());
+            Long currentUid = getCurrentUserId();
+            ubicazioniDelegate.annullaPrelievo(idMovimento, currentUid);
+
+            Map<String, Object> res = new HashMap<>();
+            res.put("success", true);
+            res.put("message", "Prelievo annullato con successo. Giacenza generale e ubicazione ripristinate.");
+            return ResponseEntity.ok(res);
+        } catch (Exception e) {
+            log.error("Errore durante l'annullamento del prelievo", e);
+            return ResponseEntity.internalServerError().body("Errore annullamento prelievo: " + e.getMessage());
         }
     }
 }

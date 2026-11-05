@@ -64,4 +64,6 @@
 		<property name="deleteTempFiles" value="#{jobParameters[T(it.tinna.smartbackup.batch.constants.IConstants).JOBPARAM_DELETE_TMP_FILES]}"></property>
 		<property name="stepExecution" value="#{stepExecution}"></property> -->
 	</bean>
+	<bean id="cleanupOldWorkDirsTasklet" class="it.tinna.smartdoc.batch.tasklet.CleanupOldWorkDirsTasklet" scope="step">
+	</bean>
 </beans>
