@@ -298,19 +298,12 @@ public class PreventiviDelegate extends BaseDelegate {
             params.put("totalenetto", it.tinna.smartdoc.server.util.NumberUtils.formatAsCurrency(nettoAPagare));
             
             String coordinate = "";
-            // Simplified coordinate logic or assuming generic bank data is enough if detailed logic is complex
-            // For now, implementing basic:
-            if (!StringUtils.isEmpty(dto.getModalitaPagamento())) {
-                 // Enum check omitted to avoid dependency, using string check if possible or simplified
-                 // Assuming standard types or just defaulting to bank details if present
-                 if (StringUtils.containsIgnoreCase(dto.getModalitaPagamento(), "BONIFICO")) {
-                      if (!StringUtils.isEmpty(dto.getDescrizioneNsBanca())) {
-                        coordinate = dto.getDescrizioneNsBanca() + " - ";
-                    }
-                    if (!StringUtils.isEmpty(dto.getIbanNsBanca())) {
-                        coordinate = coordinate + "IBAN " + dto.getIbanNsBanca();
-                    }
-                 }
+            // Se e' stata scelta una banca la mostro sempre, a prescindere dal tipo di pagamento
+            if (!StringUtils.isEmpty(dto.getDescrizioneNsBanca())) {
+                coordinate = dto.getDescrizioneNsBanca();
+            }
+            if (!StringUtils.isEmpty(dto.getIbanNsBanca())) {
+                coordinate = coordinate + (coordinate.isEmpty() ? "" : " - ") + "IBAN " + dto.getIbanNsBanca();
             }
             params.put("coordinate", coordinate);
 

@@ -41,9 +41,19 @@ public class ProdottiDao extends BaseDao {
     public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
             Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
             Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot, Integer idMarca) throws SQLException {
+        return getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
+                sezione, serie, diametro, scultura, indiceVelocita, dot, idMarca, false);
+    }
+
+    public List<ProdottoDto> getList(String categoria, String search, int length, int start, int orderColumn, String orderDir, 
+            Double giacenza, String operatoreGiacenza, Integer idFornitore, Integer idTono, Integer idCalibro, Integer idFormato, Integer idScelta,
+            Integer sezione, Integer serie, Integer diametro, String scultura, String indiceVelocita, String dot, Integer idMarca, Boolean includeDeleted) throws SQLException {
         BeanPropertyRowMapper<ProdottoDto> rowMapper = new BeanPropertyRowMapper<>(ProdottoDto.class);
         try {
             String query = FileQueryReader.getQuery("PRODOTTI_S01");
+            if (Boolean.TRUE.equals(includeDeleted)) {
+                query = query.replace("d_e_prodotti.fl_deleted = 0", "1=1");
+            }
             
             // Handle filters
             List<Object> args = new ArrayList<>();

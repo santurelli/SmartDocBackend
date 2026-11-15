@@ -15,5 +15,6 @@ public class MovimentiSearchCriteriaDto extends BaseDto {
     private Integer idProdotto;
     private int start;
     private int length;
+    private String orderDir;
+    private String orderColumn;
 }
-

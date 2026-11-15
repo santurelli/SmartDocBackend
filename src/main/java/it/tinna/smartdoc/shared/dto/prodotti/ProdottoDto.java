@@ -178,6 +178,9 @@ public class ProdottoDto extends BaseDto
     @Expose
     private Integer                 idFornitore;
 
+    @Expose
+    private Integer                 flDeleted;
+
     private Integer                 idGruppoTaglia;                 // usato in fase di salvataggio
 
     private Integer                 idGruppoTono;                   // usato in fase di salvataggio

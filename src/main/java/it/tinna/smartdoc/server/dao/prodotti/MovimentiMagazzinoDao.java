@@ -73,7 +73,9 @@ public class MovimentiMagazzinoDao extends BaseDao {
 
     public List<MovimentoMagazzinoDto> list(MovimentiSearchCriteriaDto criteria) throws SQLException {
         try {
-            return jdbcTemplate.query(FileQueryReader.getQuery("MOVIMENTIMAGAZZINO_S01"),
+            String orderDir = "asc".equalsIgnoreCase(criteria.getOrderDir()) ? "ASC" : "DESC";
+            String query = FileQueryReader.getQuery("MOVIMENTIMAGAZZINO_S01").replace("${ORDER_DIR}", orderDir);
+            return jdbcTemplate.query(query,
                     new BeanPropertyRowMapper<>(MovimentoMagazzinoDto.class),
                     criteria.getDtFrom(),
                     criteria.getDtTo(),

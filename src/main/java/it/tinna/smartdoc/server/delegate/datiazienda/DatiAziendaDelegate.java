@@ -44,7 +44,7 @@ public class DatiAziendaDelegate extends BaseDelegate
             String dbKey = DatabaseContextHolder.getClientDatabase();
             if (org.apache.commons.lang3.StringUtils.isNotEmpty(dbKey)) {
                 java.util.Map<String, Object> entiRow = serviceJdbcTemplate.queryForMap(
-                    "SELECT tipo_account, dt_attivazione, fl_prova, COALESCE(tipo_rinnovo, 'ANNUAL') AS tipo_rinnovo FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0 LIMIT 1",
+                    "SELECT tipo_account, dt_attivazione, fl_prova, COALESCE(fl_fattura_elettronica, 0) AS fl_fattura_elettronica, COALESCE(tipo_rinnovo, 'ANNUAL') AS tipo_rinnovo FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0 LIMIT 1",
                     dbKey
                 );
 
@@ -71,6 +71,8 @@ public class DatiAziendaDelegate extends BaseDelegate
                     }
                 }
 
+                Number flFattElNum = (Number) entiRow.get("fl_fattura_elettronica");
+                map.put("flFatturaElettronica", flFattElNum != null ? flFattElNum.intValue() : 0);
                 map.put("tipoAccount", tipoAccount);
                 map.put("flProva", flProva);
                 map.put("tipoRinnovo", tipoRinnovo != null ? tipoRinnovo : "ANNUAL");
@@ -84,6 +86,27 @@ public class DatiAziendaDelegate extends BaseDelegate
         }
 
         return map;
+    }
+
+    /**
+     * Indica se l'ente corrente ha la fatturazione elettronica attiva (d_e_enti.fl_fattura_elettronica = 1).
+     * In tal caso il regime fiscale nei Dati azienda e' obbligatorio.
+     */
+    public boolean isFatturaElettronicaAttiva()
+    {
+        try {
+            String dbKey = DatabaseContextHolder.getClientDatabase();
+            if (org.apache.commons.lang3.StringUtils.isEmpty(dbKey)) {
+                return false;
+            }
+            Integer fl = serviceJdbcTemplate.queryForObject(
+                "SELECT COALESCE(fl_fattura_elettronica, 0) FROM d_e_enti WHERE nome_db = ? AND fl_deleted = 0 LIMIT 1",
+                Integer.class, dbKey);
+            return fl != null && fl == 1;
+        } catch (Exception e) {
+            _log.warn("Impossibile leggere fl_fattura_elettronica da d_e_enti: {}", e.getMessage());
+            return false;
+        }
     }
 
     public DatiAziendaDto getDatiAzienda() throws SQLException

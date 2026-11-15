@@ -40,7 +40,7 @@ public class DatiAziendaController {
     public ResponseEntity<Void> save(
             @RequestParam(required = false) Boolean deleteLogo,
             @RequestParam String denominazione,
-            @RequestParam Integer idRegimeFiscale,
+            @RequestParam(required = false) Integer idRegimeFiscale,
             @RequestParam String codiceFiscale,
             @RequestParam String partitaIva,
             @RequestParam String indirizzo,
@@ -53,6 +53,11 @@ public class DatiAziendaController {
             @RequestParam String email,
             @RequestParam String sitoWeb,
             @RequestParam(required = false) MultipartFile file) {
+
+        if (idRegimeFiscale == null && datiAziendaDelegate.isFatturaElettronicaAttiva()) {
+            // Regime fiscale obbligatorio solo con fatturazione elettronica attiva
+            return ResponseEntity.badRequest().build();
+        }
 
         try {
             DatiAziendaDto dto = new DatiAziendaDto();

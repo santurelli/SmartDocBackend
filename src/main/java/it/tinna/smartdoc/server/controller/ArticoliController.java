@@ -91,8 +91,10 @@ public class ArticoliController {
             }
             Integer idMarca = (idMarcaObj != null && !"".equals(idMarcaObj.toString())) ? Integer.parseInt(idMarcaObj.toString()) : null;
 
+            Boolean includeDeleted = params.get("includeDeleted") != null && Boolean.parseBoolean(params.get("includeDeleted").toString());
+
             List<ProdottoDto> list = prodottiDelegate.getList(categoria, search, length, start, orderColumn, orderDir, giacenza, operatoreGiacenza, idFornitore, idTono, idCalibro, idFormato, idScelta,
-                    sezione, serie, diametro, scultura, indiceVelocita, dot, idMarca);
+                    sezione, serie, diametro, scultura, indiceVelocita, dot, idMarca, includeDeleted);
             long total = list.isEmpty() ? 0 : list.get(0).getTotal();
 
             DatatablesResponseDto<ProdottoDto> response = new DatatablesResponseDto<>();

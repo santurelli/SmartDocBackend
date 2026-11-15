@@ -6288,10 +6288,12 @@
 				   p.scultura,
 				   p.indice_velocita AS indiceVelocita,
 				   p.dot,
+				   p.fl_deleted AS flDeleted,
 				   COALESCE(m.descrizione, '') AS descMarca
 			  FROM (
 				SELECT numero_documento AS numeroDocumento,
-					   id_prodotto AS idProdotto,
+					   data_movimento AS dataMovimentoRaw,
+					   COALESCE(id_prodotto, 0) AS idProdotto,
 					   descrizione_prodotto AS descrizioneProdotto,
 					   descrizione_prodotto AS descrizioneProdottoExcel,
 					   tipo_movimento AS tipoMovimento,
@@ -6301,8 +6303,8 @@
 					   quantita_um_base AS quantitaBase,
 					   TO_CHAR(data_movimento, 'DD/MM/YYYY') AS dataMovimento,
 					   causale AS causale,
-					   id_documento AS idDocumento,
-					   id_documento AS id,
+					   COALESCE(id_documento, 0) AS idDocumento,
+					   COALESCE(id_documento, 0) AS id,
 					   quantita_movimento AS quantita,
 					   id_um_movimento AS idUnitaMisura,
 					   prezzo AS prezzoUnitario,
@@ -6312,7 +6314,7 @@
 				 WHERE DATE_TRUNC('day', data_movimento) &gt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
 				   AND DATE_TRUNC('day', data_movimento) &lt;= COALESCE(TO_DATE(CAST(? AS TEXT), 'DD/MM/YYYY'), DATE_TRUNC('day', data_movimento))
 				   AND (id_prodotto = ? OR CAST(? AS INTEGER) IS NULL)
-			  ORDER BY data_movimento DESC
+			  ORDER BY data_movimento ${ORDER_DIR}
 			  LIMIT CAST(? AS INTEGER) OFFSET CAST(? AS INTEGER)
 			  ) x
 			  JOIN d_e_prodotti p ON p.k_d_e_prodotti = x.idProdotto
@@ -6321,6 +6323,7 @@
 			  LEFT JOIN d_e_sceltearticolo s ON s.k_d_e_sceltearticolo = p.k_d_e_sceltearticolo
 			  LEFT JOIN d_e_toniarticolo t ON t.k_d_e_toniarticolo = p.k_d_e_toniarticolo
 			  LEFT JOIN d_e_calibriarticolo c ON c.k_d_e_calibriarticolo = p.k_d_e_calibriarticolo
+			  ORDER BY x.dataMovimentoRaw ${ORDER_DIR}
 		</content>
 	</query>
 	<query name="MOVIMENTIMAGAZZINO_S02">
@@ -8529,6 +8532,7 @@
 					      COALESCE(d_e_marche.descrizione, '') AS descMarca,
 					      k_d_e_aliquoteiva AS idAliquotaIva,
 					      k_d_e_fornitori AS idFornitore,
+					      d_e_prodotti.fl_deleted AS flDeleted,
 					      COUNT(*) OVER() AS total
 					 FROM d_e_prodotti
 				LEFT JOIN d_e_categorie

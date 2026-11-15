@@ -54,6 +54,10 @@ public class BaseDto implements Serializable {
         this.id = id;
     }
 
+    public void setId(Long id) {
+        this.id = (id != null ? id : 0L);
+    }
+
     public String getErrorText() {
         return errorText;
     }

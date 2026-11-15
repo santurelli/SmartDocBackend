@@ -65,13 +65,18 @@ public class MovimentoMagazzinoDto extends BaseDto
 
     private Integer idMagazzino;
 
-    private long    idProdotto;
+    private Long    idProdotto;
+
+    private Long    idDocumento;
 
     private Integer idScelta;
 
     private Integer idTaglia;
 
     private Integer idTono;
+
+    @Expose
+    private Integer flDeleted;
 
     private Integer idUnitaMisura;
 
@@ -105,5 +110,21 @@ public class MovimentoMagazzinoDto extends BaseDto
     private String dot;
     @Expose
     private String descMarca;
+
+    public void setId(Long id) {
+        super.setId(id != null ? id : 0L);
+    }
+
+    public void setIdProdotto(Long idProdotto) {
+        this.idProdotto = idProdotto;
+    }
+
+    public void setIdProdotto(long idProdotto) {
+        this.idProdotto = idProdotto;
+    }
+
+    public void setIdProdotto(Integer idProdotto) {
+        this.idProdotto = idProdotto != null ? idProdotto.longValue() : null;
+    }
 }
 

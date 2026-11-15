@@ -307,6 +307,10 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                 anagrafica.setDenominazione(new StringBuilder(anagrafica.getDenominazione()).append(" - Negozio ").append(nomeStore).toString());
             }
             // AlboProfessionale, ProvinciaAlbo, NumeroIscrizioneAlbo, DataIscrizioneAlbo non sono valorizzati
+            if ( StringUtils.isBlank(datiAziendaDto.getValoreRegimeFiscale()) )
+            {
+                throw new IllegalStateException("Regime fiscale non impostato nei Dati azienda: necessario per generare la fattura elettronica");
+            }
             datiAnagrafici.setRegimeFiscale(RegimeFiscaleEnum.valueOf(datiAziendaDto.getValoreRegimeFiscale()));
             // Sede
             IndirizzoType sede = new IndirizzoType();

@@ -352,28 +352,28 @@
 				<textFieldExpression><![CDATA[$P{datiazienda}.getDenominazione() == null ? "" : $P{datiazienda}.getDenominazione()]]></textFieldExpression>
 			</textField>
 			<textField isStretchWithOverflow="true">
-				<reportElement x="0" y="72" width="276" height="11" uuid="8652ce8c-e800-43d2-aead-7e8d8e63e702"/>
+				<reportElement x="0" y="72" width="276" height="22" uuid="8652ce8c-e800-43d2-aead-7e8d8e63e702"/>
 				<textElement>
 					<font fontName="Arial" size="9" isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[$P{datiazienda}.getIndirizzo() == null ? "" : $P{datiazienda}.getIndirizzo() + ($P{datiazienda}.getCap() == null || $P{datiazienda}.getCap().equals("") ? "" : " " + $P{datiazienda}.getCap() + " - ") + ($P{datiazienda}.getCitta() == null || $P{datiazienda}.getCitta().equals("") ? "" : $P{datiazienda}.getCitta() + " ") + ($P{datiazienda}.getProvincia() == null || $P{datiazienda}.getProvincia().equals("") ? "" : "(" + $P{datiazienda}.getProvincia() + ")") + " - ITALY"]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement positionType="Float" x="0" y="82" width="276" height="11" uuid="c4b290b9-93ca-4ce9-b11e-d0a2a72d2abf"/>
+				<reportElement positionType="Float" x="0" y="94" width="276" height="11" uuid="c4b290b9-93ca-4ce9-b11e-d0a2a72d2abf"/>
 				<textElement>
 					<font fontName="Arial" size="9" isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[($P{datiazienda}.getTelefono() == null || $P{datiazienda}.getTelefono().equals("") ? "" : "Tel. " + $P{datiazienda}.getTelefono() + " ") + ($P{datiazienda}.getFax() == null || $P{datiazienda}.getFax().equals("") ? "" : "Fax " + $P{datiazienda}.getFax())]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement positionType="Float" x="0" y="92" width="276" height="11" uuid="0b26c521-25b8-4d73-b93e-49f20a04e551"/>
+				<reportElement positionType="Float" x="0" y="104" width="276" height="11" uuid="0b26c521-25b8-4d73-b93e-49f20a04e551"/>
 				<textElement>
 					<font fontName="Arial" size="9" isBold="false"/>
 				</textElement>
 				<textFieldExpression><![CDATA[($P{datiazienda}.getCodiceFiscale() == null || $P{datiazienda}.getCodiceFiscale().equals("") ? "" : "Codice Fiscale " + $P{datiazienda}.getCodiceFiscale() + " ") + ($P{datiazienda}.getPartitaIva() == null || $P{datiazienda}.getPartitaIva().equals("") ? "" : "Partita IVA " + $P{datiazienda}.getPartitaIva())]]></textFieldExpression>
 			</textField>
 			<textField>
-				<reportElement positionType="Float" x="0" y="102" width="276" height="11" uuid="35851c82-bcb7-4a2b-94ca-e91321581461"/>
+				<reportElement positionType="Float" x="0" y="114" width="276" height="11" uuid="35851c82-bcb7-4a2b-94ca-e91321581461"/>
 				<textElement>
 					<font fontName="Arial" size="9" isBold="false"/>
 				</textElement>
