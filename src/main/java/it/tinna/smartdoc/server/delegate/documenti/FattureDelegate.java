@@ -8,6 +8,7 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.SQLException;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.server.delegate.aliquoteiva.AliquoteIvaDelegate;
 import java.text.DateFormat;
 import java.text.ParseException;
@@ -320,7 +321,7 @@ public class FattureDelegate extends BaseDelegate
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
                     riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva() == null ? 0 : pdDto.getIdAliquotaIva());
-                    AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = pdDto.getIdAliquotaIva() != null ? aiDao.getById(pdDto.getIdAliquotaIva()) : null;
                     if ( aiDto == null )
                     {
                         aiDto = new AliquotaIvaDto();
@@ -418,12 +419,14 @@ public class FattureDelegate extends BaseDelegate
                         if ( !trovata )
                         {
                             SpeseIncassoDao siDao = new SpeseIncassoDao(jdbcTemplate);
-                            SpesaIncassoDto siDto = siDao.getById(tpDto.getIdSpeseIncasso());
-                            AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                            SpesaIncassoDto siDto = (tpDto.getIdSpeseIncasso() != null && tpDto.getIdSpeseIncasso() > 0)
+                                    ? siDao.getById(tpDto.getIdSpeseIncasso()) : null;
+                            AliquotaIvaDto aiDto = (siDto != null && siDto.getIdAliquotaIva() != null && siDto.getIdAliquotaIva() > 0)
+                                    ? aiDao.getById(siDto.getIdAliquotaIva()) : null;
                             spesaDto.setImporto(importoSpesaIncassoScadenze);
                             spesaDto.setImportoFormattato(NumberUtils.formatAsCurrency(spesaDto.getImporto()));
-                            spesaDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
-                            spesaDto.setDescrizione(siDto.getDescrizione());
+                            spesaDto.setIdAliquotaIva(siDto != null ? siDto.getIdAliquotaIva() : null);
+                            spesaDto.setDescrizione(siDto != null ? siDto.getDescrizione() : "Spese incasso");
                             spesaDto.setPercIva(aiDto == null ? 0 : aiDto.getImposta());
                             if ( aiDto == null )
                             {
@@ -1077,7 +1080,7 @@ public class FattureDelegate extends BaseDelegate
             gestisciBolloAutomatico(dto);
             if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
             {
-                throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+                throw new DocumentoGiaEsistenteException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
             }
             FattureDao fattureDao = new FattureDao(jdbcTemplate);
             FatturaDto existentDto = fattureDao.getById(dto.getId());
@@ -1165,7 +1168,9 @@ public class FattureDelegate extends BaseDelegate
             gestisciBolloAutomatico(dto);
             if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura(), dto.getId()) )
             {
-                throw new SQLException("Il numero di documento " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+                Integer nextNum = getNextNumFattura(dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getTipoFattura());
+                _log.warn("Numero documento {} già presente per l'anno di riferimento, riassegnato automaticamente al nuovo numero {}", dto.getNumDocumento(), nextNum);
+                dto.setNumDocumento(nextNum);
             }
             FattureDao fattureDao = new FattureDao(jdbcTemplate);
             if ( (dto.getTipoFattura() == TipoFattura.FATTURA_PROFORMA || dto.getTipoFattura() == TipoFattura.FATTURA_ACCOMPAGNATORIA) && dto.getFlFatturaElettronica() == 1 )

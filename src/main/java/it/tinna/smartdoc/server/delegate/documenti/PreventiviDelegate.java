@@ -25,6 +25,7 @@ import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import org.apache.commons.lang3.StringUtils;
 
 @Service
@@ -418,12 +419,10 @@ public class PreventiviDelegate extends BaseDelegate {
     @Transactional(rollbackFor = Exception.class)
     public Integer insert(PreventivoDto dto) throws SQLException {
         gestisciAnnotazioniRivalsa(dto);
-        // Se il numero proposto è già occupato (race condition o numerazione desincronizzata),
-        // ricalcola automaticamente il prossimo numero disponibile invece di bloccare l'utente
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) (long) dto.getId()) )
         {
             String nextNum = preventiviDao.generaCodice(dto.getDataDocumento());
-            _log.warn("Numero preventivo {} già presente, ricalcolato automaticamente in {}", dto.getNumDocumento(), nextNum);
+            _log.warn("Numero preventivo {} già presente per l'anno di riferimento, riassegnato automaticamente al nuovo numero {}", dto.getNumDocumento(), nextNum);
             dto.setNumDocumento(Integer.parseInt(nextNum));
         }
         Integer id = preventiviDao.insert(dto);
@@ -447,7 +446,7 @@ public class PreventiviDelegate extends BaseDelegate {
         gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) (long) dto.getId()) )
         {
-            throw new SQLException("Il numero di preventivo " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            throw new DocumentoGiaEsistenteException("Il numero di preventivo " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
         }
         preventiviDao.update(dto);
         

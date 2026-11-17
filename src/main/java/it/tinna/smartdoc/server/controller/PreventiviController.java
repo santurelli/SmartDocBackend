@@ -33,6 +33,7 @@ import it.tinna.smartdoc.shared.dto.documenti.PreventivoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.response.DocumentoSaveResultDto;
 import org.springframework.security.core.context.SecurityContextHolder;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
@@ -98,25 +99,29 @@ public class PreventiviController {
     }
 
     @PostMapping
-    public GenericResponseDto<Integer> insert(@RequestBody PreventivoDto dto) throws SQLException {
-        GenericResponseDto<Integer> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> insert(@RequestBody PreventivoDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserCreated(user.getId());
         }
-        response.setPayload(preventiviDelegate.insert(dto));
+        Integer originalNum = dto.getNumDocumento();
+        int id = preventiviDelegate.insert(dto);
+        boolean riassegnato = originalNum != null && !originalNum.equals(dto.getNumDocumento());
+        response.setPayload(new DocumentoSaveResultDto((long) id, dto.getNumDocumento(), riassegnato, originalNum));
         return response;
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody PreventivoDto dto) throws SQLException {
-        GenericResponseDto<Void> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> update(@PathVariable long id, @RequestBody PreventivoDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserLastUpdate(user.getId());
         }
         dto.setId(id);
         preventiviDelegate.update(dto);
+        response.setPayload(new DocumentoSaveResultDto(id, dto.getNumDocumento(), false, dto.getNumDocumento()));
         return response;
     }
 

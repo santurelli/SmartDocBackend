@@ -6,10 +6,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import it.tinna.smartdoc.server.delegate.documenti.BollaCaricoDelegate;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.server.security.UserContextHolder;
 import it.tinna.smartdoc.shared.dto.documenti.BollaCaricoDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
@@ -89,8 +91,17 @@ public class BollaCaricoController
             Integer id = bollaCaricoDelegate.insert(dto);
             return ResponseEntity.ok(id);
         }
+        catch ( DocumentoGiaEsistenteException e )
+        {
+            log.warn("Numero bolla di carico già presente: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
         catch ( Exception e )
         {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero bolla di carico già presente: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
             log.error("Errore nel salvataggio della bolla di carico", e);
             return ResponseEntity.internalServerError().body("Errore nel salvataggio della bolla di carico.");
         }
@@ -110,8 +121,17 @@ public class BollaCaricoController
             bollaCaricoDelegate.update(dto);
             return ResponseEntity.ok(id);
         }
+        catch ( DocumentoGiaEsistenteException e )
+        {
+            log.warn("Numero bolla di carico già presente: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
         catch ( Exception e )
         {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero bolla di carico già presente: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
             log.error("Errore nell'aggiornamento della bolla di carico {}", id, e);
             return ResponseEntity.internalServerError().body("Errore nell'aggiornamento della bolla di carico.");
         }

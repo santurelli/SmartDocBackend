@@ -265,8 +265,15 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                 if ( pdDto.isProdotto() || pdDto.isFuoriMagazzino() )
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
-                    AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
+                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva() == null ? 0 : pdDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = pdDto.getIdAliquotaIva() != null ? aiDao.getById(pdDto.getIdAliquotaIva()) : null;
+                    if ( aiDto == null )
+                    {
+                        aiDto = new AliquotaIvaDto();
+                        aiDto.setImposta(0.0);
+                        aiDto.setCodice("N.D.");
+                        aiDto.setDescrizione("Aliquota non definita");
+                    }
                     if ( riepilogoIva.contains(riDto) )
                     {
                         riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileMerce(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileMerce() + pdDto.getTotaleSenzaIva());
@@ -351,12 +358,14 @@ public class NoteCreditoFornitoreDelegate extends BaseDelegate
                         if ( !trovata )
                         {
                             SpeseIncassoDao siDao = new SpeseIncassoDao(jdbcTemplate);
-                            SpesaIncassoDto siDto = siDao.getById(tpDto.getIdSpeseIncasso());
-                            AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                            SpesaIncassoDto siDto = (tpDto.getIdSpeseIncasso() != null && tpDto.getIdSpeseIncasso() > 0)
+                                    ? siDao.getById(tpDto.getIdSpeseIncasso()) : null;
+                            AliquotaIvaDto aiDto = (siDto != null && siDto.getIdAliquotaIva() != null && siDto.getIdAliquotaIva() > 0)
+                                    ? aiDao.getById(siDto.getIdAliquotaIva()) : null;
                             spesaDto.setImporto(importoSpesaIncassoScadenze);
                             spesaDto.setImportoFormattato(NumberUtils.formatAsCurrency(spesaDto.getImporto()));
-                            spesaDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
-                            spesaDto.setDescrizione(siDto.getDescrizione());
+                            spesaDto.setIdAliquotaIva(siDto != null ? siDto.getIdAliquotaIva() : null);
+                            spesaDto.setDescrizione(siDto != null ? siDto.getDescrizione() : "Spese incasso");
                             spesaDto.setPercIva(aiDto == null ? 0 : aiDto.getImposta());
                             if ( aiDto == null )
                             {

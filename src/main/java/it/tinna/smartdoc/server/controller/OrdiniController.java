@@ -6,10 +6,12 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import it.tinna.smartdoc.server.delegate.documenti.OrdiniDelegate;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.server.security.UserContextHolder;
 import it.tinna.smartdoc.shared.dto.documenti.OrdineDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
@@ -107,8 +109,17 @@ public class OrdiniController
             Integer id = ordiniDelegate.insert(dto);
             return ResponseEntity.ok(id);
         }
-        catch ( SQLException e )
+        catch ( DocumentoGiaEsistenteException e )
         {
+            log.warn("Numero ordine già presente: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+        catch ( Exception e )
+        {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero ordine già presente: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
             log.error("Errore nel salvataggio dell'ordine", e);
             return ResponseEntity.internalServerError().body("Errore nel salvataggio dell'ordine.");
         }
@@ -128,8 +139,17 @@ public class OrdiniController
             ordiniDelegate.update(dto);
             return ResponseEntity.ok(id);
         }
-        catch ( SQLException e )
+        catch ( DocumentoGiaEsistenteException e )
         {
+            log.warn("Numero ordine già presente: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+        catch ( Exception e )
+        {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero ordine già presente: {}", e.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+            }
             log.error("Errore nell'aggiornamento dell'ordine {}", id, e);
             return ResponseEntity.internalServerError().body("Errore nell'aggiornamento dell'ordine.");
         }

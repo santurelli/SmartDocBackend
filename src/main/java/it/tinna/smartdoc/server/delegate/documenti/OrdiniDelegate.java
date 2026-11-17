@@ -5,10 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 
 import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.dao.aspettobeni.AspettoBeniDao;
@@ -89,6 +92,10 @@ public class OrdiniDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public Integer insert(OrdineDto dto) throws SQLException
     {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) dto.getId()) )
+        {
+            throw new DocumentoGiaEsistenteException("Il numero di ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         OrdiniDao dao = new OrdiniDao(jdbcTemplate);
         Integer id = dao.insert(dto);
         salvaRigheCollegate(dao, dto, id);
@@ -98,6 +105,10 @@ public class OrdiniDelegate extends BaseDelegate
     @Transactional(rollbackFor = SQLException.class)
     public void update(OrdineDto dto) throws SQLException
     {
+        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), (int) dto.getId()) )
+        {
+            throw new DocumentoGiaEsistenteException("Il numero di ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+        }
         OrdiniDao dao = new OrdiniDao(jdbcTemplate);
         dao.update(dto);
         dao.deleteProdottiById(dto.getId());

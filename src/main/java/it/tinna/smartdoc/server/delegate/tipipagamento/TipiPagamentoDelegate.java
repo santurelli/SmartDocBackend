@@ -121,12 +121,14 @@ public class TipiPagamentoDelegate extends BaseDelegate
         {
             double spesaIncasso = 0;
             double ivaSpesaIncasso = 0;
-            SpesaIncassoDto siDto = siDao.getById(tpDto.getIdSpeseIncasso());
+            SpesaIncassoDto siDto = (tpDto.getIdSpeseIncasso() != null && tpDto.getIdSpeseIncasso() > 0)
+                    ? siDao.getById(tpDto.getIdSpeseIncasso()) : null;
             if ( siDto != null )
             {
                 spesaIncasso = siDto.getImporto();
                 AliquoteIvaDao aiDao = new AliquoteIvaDao(jdbcTemplate);
-                AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                AliquotaIvaDto aiDto = (siDto.getIdAliquotaIva() != null && siDto.getIdAliquotaIva() > 0)
+                        ? aiDao.getById(siDto.getIdAliquotaIva()) : null;
                 if ( aiDto != null )
                 {
                     ivaSpesaIncasso = spesaIncasso * aiDto.getImposta() / 100;

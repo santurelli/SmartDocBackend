@@ -13,8 +13,10 @@ import it.tinna.smartdoc.shared.dto.documenti.FatturaDto;
 import it.tinna.smartdoc.shared.dto.documenti.FatturaElettronicaWrapperDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.response.DocumentoSaveResultDto;
 import it.tinna.smartdoc.shared.dto.statistiche.DatiGlobaliDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -104,7 +106,7 @@ public class FattureController {
     }
 
     @PostMapping
-    public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody FatturaDto dto) throws SQLException {
+    public ResponseEntity<GenericResponseDto<DocumentoSaveResultDto>> save(@RequestBody FatturaDto dto) throws SQLException {
         try {
             if (dto.getId() > 0) {
                 UtenteDto user = getCurrentUser();
@@ -112,16 +114,25 @@ public class FattureController {
                     dto.setUserLastUpdate(user.getId());
                 }
                 fattureDelegate.update(user, dto);
-                return ResponseEntity.ok(new GenericResponseDto<>(dto.getId(), null));
+                return ResponseEntity.ok(new GenericResponseDto<>(new DocumentoSaveResultDto(dto.getId(), dto.getNumDocumento(), false, dto.getNumDocumento()), null));
             } else {
                 UtenteDto user = getCurrentUser();
                 if (user != null) {
                     dto.setUserCreated(user.getId());
                 }
+                Integer originalNum = dto.getNumDocumento();
                 long id = fattureDelegate.insert(dto);
-                return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+                boolean riassegnato = originalNum != null && !originalNum.equals(dto.getNumDocumento());
+                return ResponseEntity.ok(new GenericResponseDto<>(new DocumentoSaveResultDto(id, dto.getNumDocumento(), riassegnato, originalNum), null));
             }
+        } catch (DocumentoGiaEsistenteException e) {
+            log.warn("Numero documento già presente durante il salvataggio della fattura: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero documento già presente durante il salvataggio della fattura: {}", e.getMessage());
+                throw e;
+            }
             log.error("Errore durante il salvataggio della fattura: {}", new Gson().toJson(dto), e);
             throw e;
         }

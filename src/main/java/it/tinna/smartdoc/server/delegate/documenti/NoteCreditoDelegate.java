@@ -37,6 +37,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import it.tinna.smartdoc.server.constants.ModalitaPagamentoEnum;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.server.dao.agenti.AgentiDao;
 import it.tinna.smartdoc.server.dao.aliquoteiva.AliquoteIvaDao;
 import it.tinna.smartdoc.server.dao.causaliesigibilitadifferita.CausaliEsigibilitaDifferitaDao;
@@ -260,8 +261,15 @@ public class NoteCreditoDelegate extends BaseDelegate
                 if ( pdDto.isProdotto() || pdDto.isFuoriMagazzino() )
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva());
-                    AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
+                    riDto.setIdAliquotaIva(pdDto.getIdAliquotaIva() == null ? 0 : pdDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = pdDto.getIdAliquotaIva() != null ? aiDao.getById(pdDto.getIdAliquotaIva()) : null;
+                    if ( aiDto == null )
+                    {
+                        aiDto = new AliquotaIvaDto();
+                        aiDto.setImposta(0.0);
+                        aiDto.setCodice("N.D.");
+                        aiDto.setDescrizione("Aliquota non definita");
+                    }
                     if ( riepilogoIva.contains(riDto) )
                     {
                         riepilogoIva.get(riepilogoIva.indexOf(riDto)).setImponibileMerce(riepilogoIva.get(riepilogoIva.indexOf(riDto)).getImponibileMerce() + pdDto.getTotaleSenzaIva());
@@ -346,12 +354,14 @@ public class NoteCreditoDelegate extends BaseDelegate
                         if ( !trovata )
                         {
                             SpeseIncassoDao siDao = new SpeseIncassoDao(jdbcTemplate);
-                            SpesaIncassoDto siDto = siDao.getById(tpDto.getIdSpeseIncasso());
-                            AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                            SpesaIncassoDto siDto = (tpDto.getIdSpeseIncasso() != null && tpDto.getIdSpeseIncasso() > 0)
+                                    ? siDao.getById(tpDto.getIdSpeseIncasso()) : null;
+                            AliquotaIvaDto aiDto = (siDto != null && siDto.getIdAliquotaIva() != null && siDto.getIdAliquotaIva() > 0)
+                                    ? aiDao.getById(siDto.getIdAliquotaIva()) : null;
                             spesaDto.setImporto(importoSpesaIncassoScadenze);
                             spesaDto.setImportoFormattato(NumberUtils.formatAsCurrency(spesaDto.getImporto()));
-                            spesaDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
-                            spesaDto.setDescrizione(siDto.getDescrizione());
+                            spesaDto.setIdAliquotaIva(siDto != null ? siDto.getIdAliquotaIva() : null);
+                            spesaDto.setDescrizione(siDto != null ? siDto.getDescrizione() : "Spese incasso");
                             spesaDto.setPercIva(aiDto == null ? 0 : aiDto.getImposta());
                             if ( aiDto == null )
                             {
@@ -933,7 +943,9 @@ public class NoteCreditoDelegate extends BaseDelegate
         gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getId()) )
         {
-            throw new SQLException("Il numero di nota credito " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            Integer nextNum = getNextNumNotaCredito(dto.getDataDocumento(), dto.getFlFatturaElettronica());
+            _log.warn("Numero nota credito {} già presente per l'anno di riferimento, riassegnato automaticamente al nuovo numero {}", dto.getNumDocumento(), nextNum);
+            dto.setNumDocumento(nextNum);
         }
         NoteCreditoDao noteCreditoDao = new NoteCreditoDao(jdbcTemplate);
         long idNotaCredito = noteCreditoDao.insert(dto);
@@ -982,7 +994,7 @@ public class NoteCreditoDelegate extends BaseDelegate
         gestisciAnnotazioniRivalsa(dto);
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getFlFatturaElettronica(), dto.getId()) )
         {
-            throw new SQLException("Il numero di nota credito " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            throw new DocumentoGiaEsistenteException("Il numero di nota credito " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
         }
         NoteCreditoDao noteCreditoDao = new NoteCreditoDao(jdbcTemplate);
         noteCreditoDao.update(dto);

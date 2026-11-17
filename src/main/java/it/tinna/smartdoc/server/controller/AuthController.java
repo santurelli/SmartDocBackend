@@ -147,6 +147,9 @@ public class AuthController {
     @org.springframework.beans.factory.annotation.Qualifier("sharedJdbcTemplate")
     private org.springframework.jdbc.core.JdbcTemplate sharedJdbcTemplate;
 
+    @Autowired
+    private it.tinna.smartdoc.server.service.TenantProvisioningService tenantProvisioningService;
+
     @PostMapping("/completa-registrazione")
     public ResponseEntity<?> completaRegistrazione(@RequestBody java.util.Map<String, String> request) {
         String token = request.get("token");
@@ -302,14 +305,17 @@ public class AuthController {
             // potrebbe restare attivo sulla connessione fisica oltre questa richiesta.
             DatabaseContextHolder.setClientDatabase(dbName);
             try {
+                // Gruppi e regimi fiscali del nuovo tenant; l'admin viene associato al suo gruppo ADMIN
+                final long adminGroupId = tenantProvisioningService.initTenantData(tenantId);
                 sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (java.sql.Connection conn) -> {
                     try (java.sql.PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
+                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', ?, ?, 0)")) {
                         ps.setString(1, emailClean);
                         ps.setString(2, initialTokenPassword);
                         ps.setString(3, emailClean);
                         ps.setString(4, label);
-                        ps.setLong(5, tenantId);
+                        ps.setLong(5, adminGroupId);
+                        ps.setLong(6, tenantId);
                         ps.executeUpdate();
                     }
                     return null;

@@ -16,6 +16,7 @@ import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
 import it.tinna.smartdoc.shared.dto.documenti.FattureListResponse;
 import it.tinna.smartdoc.shared.dto.documenti.NotaCreditoDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.response.DocumentoSaveResultDto;
 
 @RestController
 @RequestMapping("/api/note-credito")
@@ -67,9 +68,11 @@ public class NoteCreditoController {
     }
 
     @PostMapping
-    public ResponseEntity<GenericResponseDto<Long>> save(@RequestBody NotaCreditoDto dto) throws SQLException {
+    public ResponseEntity<GenericResponseDto<DocumentoSaveResultDto>> save(@RequestBody NotaCreditoDto dto) throws SQLException {
+        Integer originalNum = dto.getNumDocumento();
         long id = noteCreditoDelegate.insert(dto);
-        return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        boolean riassegnato = originalNum != null && !originalNum.equals(dto.getNumDocumento());
+        return ResponseEntity.ok(new GenericResponseDto<>(new DocumentoSaveResultDto(id, dto.getNumDocumento(), riassegnato, originalNum), null));
     }
 
     @DeleteMapping("/{id}")

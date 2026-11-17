@@ -31,6 +31,7 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.response.DocumentoSaveResultDto;
 import org.springframework.security.core.context.SecurityContextHolder;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
@@ -98,25 +99,29 @@ public class DdtController {
     }
 
     @PostMapping
-    public GenericResponseDto<Long> insert(@RequestBody DdtDto dto) throws SQLException {
-        GenericResponseDto<Long> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> insert(@RequestBody DdtDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserCreated(user.getId());
         }
-        response.setPayload(ddtDelegate.insert(dto));
+        Integer originalNum = dto.getNumDocumento();
+        long id = ddtDelegate.insert(dto);
+        boolean riassegnato = originalNum != null && !originalNum.equals(dto.getNumDocumento());
+        response.setPayload(new DocumentoSaveResultDto(id, dto.getNumDocumento(), riassegnato, originalNum));
         return response;
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody DdtDto dto) throws SQLException {
-        GenericResponseDto<Void> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> update(@PathVariable long id, @RequestBody DdtDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserLastUpdate(user.getId());
         }
         dto.setId(id);
         ddtDelegate.update(dto);
+        response.setPayload(new DocumentoSaveResultDto(id, dto.getNumDocumento(), false, dto.getNumDocumento()));
         return response;
     }
 

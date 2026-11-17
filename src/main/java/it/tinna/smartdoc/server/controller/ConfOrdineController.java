@@ -27,6 +27,7 @@ import it.tinna.smartdoc.shared.dto.documenti.MovimentiDocumentoDto;
 import it.tinna.smartdoc.shared.dto.login.UtenteDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
+import it.tinna.smartdoc.shared.dto.response.DocumentoSaveResultDto;
 import org.springframework.security.core.context.SecurityContextHolder;
 import it.tinna.smartdoc.server.security.UserDetailsImpl;
 import it.tinna.smartdoc.server.delegate.login.LoginDelegate;
@@ -91,25 +92,29 @@ public class ConfOrdineController {
     }
 
     @PostMapping
-    public GenericResponseDto<Integer> insert(@RequestBody ConfOrdineDto dto) throws SQLException {
-        GenericResponseDto<Integer> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> insert(@RequestBody ConfOrdineDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserCreated(user.getId());
         }
-        response.setPayload(confOrdineDelegate.save(dto));
+        Integer originalNum = dto.getNumDocumento();
+        int id = confOrdineDelegate.save(dto);
+        boolean riassegnato = originalNum != null && !originalNum.equals(dto.getNumDocumento());
+        response.setPayload(new DocumentoSaveResultDto((long) id, dto.getNumDocumento(), riassegnato, originalNum));
         return response;
     }
 
     @PutMapping("/{id}")
-    public GenericResponseDto<Void> update(@PathVariable long id, @RequestBody ConfOrdineDto dto) throws SQLException {
-        GenericResponseDto<Void> response = new GenericResponseDto<>();
+    public GenericResponseDto<DocumentoSaveResultDto> update(@PathVariable long id, @RequestBody ConfOrdineDto dto) throws SQLException {
+        GenericResponseDto<DocumentoSaveResultDto> response = new GenericResponseDto<>();
         UtenteDto user = getCurrentUser();
         if (user != null) {
             dto.setUserLastUpdate(user.getId());
         }
         dto.setId(id);
         confOrdineDelegate.save(dto);
+        response.setPayload(new DocumentoSaveResultDto(id, dto.getNumDocumento(), false, dto.getNumDocumento()));
         return response;
     }
 

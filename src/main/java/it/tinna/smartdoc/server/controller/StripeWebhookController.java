@@ -42,6 +42,9 @@ public class StripeWebhookController {
     private JdbcTemplate sharedJdbcTemplate;
 
     @Autowired
+    private it.tinna.smartdoc.server.service.TenantProvisioningService tenantProvisioningService;
+
+    @Autowired
     @Qualifier("mailSenderServiceGeneric")
     private MailSenderService mailSenderServiceGeneric;
 
@@ -239,14 +242,17 @@ public class StripeWebhookController {
             // non correlata che non imposta esplicitamente un tenant.
             DatabaseContextHolder.setClientDatabase(dbName);
             try {
+                // Gruppi e regimi fiscali del nuovo tenant; l'admin viene associato al suo gruppo ADMIN
+                final long adminGroupId = tenantProvisioningService.initTenantData(tenantId);
                 sharedJdbcTemplate.execute((org.springframework.jdbc.core.ConnectionCallback<Object>) (Connection conn) -> {
                     try (PreparedStatement ps = conn.prepareStatement(
-                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', 1, ?, 0)")) {
+                            "INSERT INTO d_e_utenti (username, password, email, nome, cognome, k_d_e_gruppi, tenant_id, fl_deleted) VALUES (?, ?, ?, ?, 'Amministratore', ?, ?, 0)")) {
                         ps.setString(1, email);
                         ps.setString(2, initialTokenPassword);
                         ps.setString(3, email);
                         ps.setString(4, label);
-                        ps.setLong(5, tenantId);
+                        ps.setLong(5, adminGroupId);
+                        ps.setLong(6, tenantId);
                         ps.executeUpdate();
                     }
                     return null;

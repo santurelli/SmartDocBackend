@@ -21,6 +21,7 @@ import it.tinna.smartdoc.server.delegate.listini.ListiniDelegate;
 import it.tinna.smartdoc.server.delegate.risorse.RisorseDelegate;
 import it.tinna.smartdoc.server.delegate.tipipagamento.TipiPagamentoDelegate;
 import it.tinna.smartdoc.server.delegate.unitamisura.UnitaMisuraDelegate;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.aliquoteiva.AliquotaIvaDto;
 import it.tinna.smartdoc.shared.dto.documenti.ConfOrdineDto;
@@ -94,9 +95,13 @@ public class ConfOrdineDelegate extends it.tinna.smartdoc.server.delegate.BaseDe
     @Transactional(rollbackFor = Exception.class)
     public Integer save(ConfOrdineDto dto) throws SQLException {
         gestisciAnnotazioniRivalsa(dto);
-        if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
+        if (dto.getId() == 0 && isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
         {
-            throw new SQLException("Il numero di conferma ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            String nextNum = confOrdineDao.generaCodice(dto.getDataDocumento());
+            _log.warn("Numero conferma ordine {} già presente per l'anno di riferimento, riassegnato automaticamente al nuovo numero {}", dto.getNumDocumento(), nextNum);
+            dto.setNumDocumento(Integer.parseInt(nextNum));
+        } else if (dto.getId() > 0 && isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId())) {
+            throw new DocumentoGiaEsistenteException("Il numero di conferma ordine " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
         }
         Integer id;
         if (dto.getId() == 0) {

@@ -49,7 +49,7 @@ public class AliquoteIvaDao extends BaseDao
         }
         catch ( EmptyResultDataAccessException e )
         {
-            _log.error("Nessuna aliquota iva trovata con aliquota {}", aliquota);
+            _log.warn("Nessuna aliquota iva trovata con aliquota {}", aliquota);
             return new ArrayList<AliquotaIvaDto>();
         }
         catch ( DataAccessException e )
@@ -61,6 +61,10 @@ public class AliquoteIvaDao extends BaseDao
 
     public AliquotaIvaDto getById(Integer id) throws SQLException
     {
+        if ( id == null )
+        {
+            return null;
+        }
         try
         {
             BeanPropertyRowMapper<AliquotaIvaDto> rowMapper = new BeanPropertyRowMapper<>();
@@ -69,7 +73,7 @@ public class AliquoteIvaDao extends BaseDao
         }
         catch ( EmptyResultDataAccessException e )
         {
-            _log.error("Nessuna aliquota iva trovata con id {}", id);
+            _log.warn("Nessuna aliquota iva trovata con id {}", id);
             return null;
         }
         catch ( DataAccessException e )

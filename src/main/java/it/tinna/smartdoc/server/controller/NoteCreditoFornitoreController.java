@@ -12,6 +12,7 @@ import it.tinna.smartdoc.shared.dto.documenti.NotaCreditoFornitoreDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 
 import lombok.extern.slf4j.Slf4j;
 import com.google.gson.Gson;
@@ -63,7 +64,14 @@ public class NoteCreditoFornitoreController {
                 Integer id = noteCreditoFornitoreDelegate.insert(dto);
                 return ResponseEntity.ok(new GenericResponseDto<>(id, null));
             }
+        } catch (DocumentoGiaEsistenteException e) {
+            log.warn("Numero nota credito fornitore già presente: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero nota credito fornitore già presente: {}", e.getMessage());
+                throw e;
+            }
             log.error("Errore durante il salvataggio della nota credito fornitore: {}", new Gson().toJson(dto), e);
             throw e;
         }

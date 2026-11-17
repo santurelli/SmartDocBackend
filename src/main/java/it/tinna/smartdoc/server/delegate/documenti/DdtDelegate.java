@@ -26,6 +26,7 @@ import it.tinna.smartdoc.server.delegate.unitamisura.UnitaMisuraDelegate;
 import it.tinna.smartdoc.server.delegate.vettori.VettoriDelegate;
 import it.tinna.smartdoc.server.delegate.aspettobeni.AspettoBeniDelegate;
 import it.tinna.smartdoc.server.delegate.causalitrasporto.CausaliTrasportoDelegate;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 import it.tinna.smartdoc.shared.constants.ISharedConstants;
 import it.tinna.smartdoc.shared.dto.documenti.DdtDto;
 import it.tinna.smartdoc.shared.dto.documenti.DocumentoWrapperDto;
@@ -137,7 +138,9 @@ public class DdtDelegate extends BaseDelegate {
     public long insert(DdtDto dto) throws SQLException {
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
         {
-            throw new SQLException("Il numero di DDT " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            Integer nextNum = getNextNum(dto.getDataDocumento());
+            _log.warn("Numero DDT {} già presente per l'anno di riferimento, riassegnato automaticamente al nuovo numero {}", dto.getNumDocumento(), nextNum);
+            dto.setNumDocumento(nextNum);
         }
         long id = ddtDao.insert(dto);
         dto.setId(id);
@@ -163,7 +166,7 @@ public class DdtDelegate extends BaseDelegate {
     public void update(DdtDto dto) throws SQLException {
         if ( isExistentNumero(dto.getNumDocumento(), dto.getParticella(), dto.getDataDocumento(), dto.getId()) )
         {
-            throw new SQLException("Il numero di DDT " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
+            throw new DocumentoGiaEsistenteException("Il numero di DDT " + dto.getNumDocumento() + (StringUtils.isNotBlank(dto.getParticella()) ? "/" + dto.getParticella() : "") + " è già presente per l'anno di riferimento.");
         }
         ddtDao.update(dto);
         ddtDao.deleteProdottiById(dto.getId());

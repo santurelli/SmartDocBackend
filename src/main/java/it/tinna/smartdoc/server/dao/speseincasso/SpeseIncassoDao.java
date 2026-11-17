@@ -32,13 +32,16 @@ public class SpeseIncassoDao extends BaseDao {
 	}
 
 	public SpesaIncassoDto getById(Integer id) throws SQLException {
+		if ( id == null || id <= 0 ) {
+			return null;
+		}
 		try {
 			BeanPropertyRowMapper<SpesaIncassoDto> rowMapper = new BeanPropertyRowMapper<>();
 			rowMapper.setMappedClass(SpesaIncassoDto.class);
 			return jdbcTemplate.queryForObject(FileQueryReader.getQuery("SPESEINCASSO_S02"), rowMapper, id);
 		}
 		catch (EmptyResultDataAccessException e) {
-			_log.error("Nessuna spesa di incasso trovata con id {}", id);
+			_log.warn("Nessuna spesa di incasso trovata con id {}", id);
 			return null;
 		}
 		catch (DataAccessException e) {

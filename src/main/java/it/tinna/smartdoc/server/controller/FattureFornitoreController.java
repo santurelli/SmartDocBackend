@@ -12,6 +12,7 @@ import it.tinna.smartdoc.shared.dto.documenti.FatturaFornitoreDto;
 import it.tinna.smartdoc.shared.dto.response.DatatablesResponseDto;
 import it.tinna.smartdoc.shared.dto.response.GenericResponseDto;
 import it.tinna.smartdoc.shared.dto.tipipagamento.ScadenzaPagamentoDocumentoDto;
+import it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException;
 
 import lombok.extern.slf4j.Slf4j;
 import com.google.gson.Gson;
@@ -58,7 +59,14 @@ public class FattureFornitoreController {
         try {
             Integer id = fattureFornitoreDelegate.insert(dto);
             return ResponseEntity.ok(new GenericResponseDto<>(id, null));
+        } catch (DocumentoGiaEsistenteException e) {
+            log.warn("Numero fattura fornitore già presente: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero fattura fornitore già presente: {}", e.getMessage());
+                throw e;
+            }
             log.error("Errore durante il salvataggio della fattura fornitore: {}", new Gson().toJson(dto), e);
             throw e;
         }
@@ -70,7 +78,14 @@ public class FattureFornitoreController {
             dto.setId(id);
             fattureFornitoreDelegate.update(dto);
             return ResponseEntity.ok(new GenericResponseDto<>((int) id, null));
+        } catch (DocumentoGiaEsistenteException e) {
+            log.warn("Numero fattura fornitore già presente: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
+            if (e.getMessage() != null && (e.getMessage().contains("è già presente") || e.getMessage().contains("già esistente"))) {
+                log.warn("Numero fattura fornitore già presente: {}", e.getMessage());
+                throw e;
+            }
             log.error("Errore durante l'aggiornamento della fattura fornitore {}: {}", id, new Gson().toJson(dto), e);
             throw e;
         }
