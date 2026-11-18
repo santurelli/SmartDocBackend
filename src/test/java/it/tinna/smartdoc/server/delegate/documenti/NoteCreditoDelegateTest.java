@@ -75,16 +75,37 @@ public class NoteCreditoDelegateTest {
     }
 
     @Test
-    public void testInsert_Duplicate_ThrowsException() throws SQLException {
+    public void testInsert_Duplicate_AutoRecalculates() throws SQLException {
         NotaCreditoDto notaDto = new NotaCreditoDto();
         notaDto.setNumDocumento(50);
         notaDto.setDataDocumento("2026-03-21");
-        notaDto.setFlFatturaElettronica(0); // FIXED: set field to avoid NPE
+        notaDto.setFlFatturaElettronica(0);
+        notaDto.setProdotti(new ArrayList<>());
+
+        try (MockedConstruction<NoteCreditoDao> mockedDao = mockConstruction(NoteCreditoDao.class, (mock, context) -> {
+            when(mock.isExistentNumero(any(), any(), any(), anyInt(), anyLong())).thenReturn(true);
+            when(mock.getNextNum(any(), anyInt())).thenReturn(51);
+            when(mock.insert(any(NotaCreditoDto.class))).thenReturn(2002L);
+        })) {
+            long id = noteCreditoDelegate.insert(notaDto);
+
+            assertEquals(51, notaDto.getNumDocumento().intValue());
+            assertEquals(2002L, id);
+        }
+    }
+
+    @Test
+    public void testUpdate_Duplicate_ThrowsException() throws SQLException {
+        NotaCreditoDto notaDto = new NotaCreditoDto();
+        notaDto.setId(2001L);
+        notaDto.setNumDocumento(50);
+        notaDto.setDataDocumento("2026-03-21");
+        notaDto.setFlFatturaElettronica(0);
 
         try (MockedConstruction<NoteCreditoDao> mockedDao = mockConstruction(NoteCreditoDao.class, (mock, context) -> {
             when(mock.isExistentNumero(any(), any(), any(), anyInt(), anyLong())).thenReturn(true);
         })) {
-            assertThrows(SQLException.class, () -> noteCreditoDelegate.insert(notaDto));
+            assertThrows(it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException.class, () -> noteCreditoDelegate.update(notaDto));
         }
     }
 }

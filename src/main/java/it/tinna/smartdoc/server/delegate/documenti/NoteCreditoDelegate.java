@@ -956,10 +956,13 @@ public class NoteCreditoDelegate extends BaseDelegate
         }
         NoteCreditoDao noteCreditoDao = new NoteCreditoDao(jdbcTemplate);
         long idNotaCredito = noteCreditoDao.insert(dto);
-        for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
+        if ( dto.getProdotti() != null )
         {
-            prodottoDdtDto.setIdDocumento(idNotaCredito);
-            noteCreditoDao.insertProdotto(prodottoDdtDto);
+            for ( ProdottoDocumentoDto prodottoDdtDto : dto.getProdotti() )
+            {
+                prodottoDdtDto.setIdDocumento(idNotaCredito);
+                noteCreditoDao.insertProdotto(prodottoDdtDto);
+            }
         }
         // if ( dto.getListaSpeseIncassoFattura() != null )
         // {

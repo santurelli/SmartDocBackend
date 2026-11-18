@@ -82,13 +82,32 @@ public class ConfOrdineDelegateTest {
     }
 
     @Test
-    public void testSave_Duplicate_ThrowsException() throws SQLException {
+    public void testSave_Duplicate_AutoRecalculates() throws SQLException {
         ConfOrdineDto dto = new ConfOrdineDto();
+        dto.setId(0);
         dto.setNumDocumento(1);
         dto.setDataDocumento("2026-03-21");
 
         when(confOrdineDao.isExistentNumero(anyInt(), any(), any(), anyLong())).thenReturn(true);
+        when(confOrdineDao.generaCodice(any())).thenReturn("2");
+        when(confOrdineDao.insert(any(ConfOrdineDto.class))).thenReturn(3002);
         
-        assertThrows(SQLException.class, () -> confOrdineDelegate.save(dto));
+        Integer id = confOrdineDelegate.save(dto);
+
+        assertEquals(2, dto.getNumDocumento().intValue());
+        assertEquals(3002, id.intValue());
+        verify(confOrdineDao, times(1)).insert(dto);
+    }
+
+    @Test
+    public void testSave_Duplicate_Update_ThrowsException() throws SQLException {
+        ConfOrdineDto dto = new ConfOrdineDto();
+        dto.setId(3001L);
+        dto.setNumDocumento(1);
+        dto.setDataDocumento("2026-03-21");
+
+        when(confOrdineDao.isExistentNumero(anyInt(), any(), any(), anyLong())).thenReturn(true);
+
+        assertThrows(it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException.class, () -> confOrdineDelegate.save(dto));
     }
 }

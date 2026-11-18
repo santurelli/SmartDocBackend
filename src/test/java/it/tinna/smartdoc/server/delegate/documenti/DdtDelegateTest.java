@@ -65,14 +65,32 @@ public class DdtDelegateTest {
     }
 
     @Test
-    public void testInsert_DuplicateNumber_ThrowsException() throws SQLException {
+    public void testInsert_DuplicateNumber_AutoRecalculates() throws SQLException {
         DdtDto ddtDto = new DdtDto();
         ddtDto.setNumDocumento(1);
         ddtDto.setDataDocumento("2026-03-21");
 
         when(ddtDao.isExistentNumero(any(), any(), any(), anyLong())).thenReturn(true);
-        
-        assertThrows(SQLException.class, () -> ddtDelegate.insert(ddtDto));
+        when(ddtDao.getNextNum(any())).thenReturn(2);
+        when(ddtDao.insert(any(DdtDto.class))).thenReturn(1002L);
+
+        long id = ddtDelegate.insert(ddtDto);
+
+        assertEquals(2, ddtDto.getNumDocumento().intValue());
+        assertEquals(1002L, id);
+        verify(ddtDao, times(1)).insert(ddtDto);
+    }
+
+    @Test
+    public void testUpdate_DuplicateNumber_ThrowsException() throws SQLException {
+        DdtDto ddtDto = new DdtDto();
+        ddtDto.setId(1001L);
+        ddtDto.setNumDocumento(1);
+        ddtDto.setDataDocumento("2026-03-21");
+
+        when(ddtDao.isExistentNumero(any(), any(), any(), anyLong())).thenReturn(true);
+
+        assertThrows(it.tinna.smartdoc.server.exception.DocumentoGiaEsistenteException.class, () -> ddtDelegate.update(ddtDto));
     }
 
     @Test
