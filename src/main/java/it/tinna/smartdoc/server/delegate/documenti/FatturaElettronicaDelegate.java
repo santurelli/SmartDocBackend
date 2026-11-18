@@ -645,13 +645,21 @@ public class FatturaElettronicaDelegate extends BaseDelegate
                         // con il prezzo unitario caricato. In caso di FastOrder lo sconto riga è solitamente assente.
                     }
                     dettaglioLinea.setPrezzoTotale(totaleSenzaIva);
-                    AliquotaIvaDto aiDto = aiDao.getById(pdDto.getIdAliquotaIva());
-                    riDto.setAliquotaIva(aiDto.getImposta());
-                    riDto.setTipologiaIva(aiDto.getClasse());
-                    dettaglioLinea.setAliquotaIVA(aiDto.getImposta());
-                    if ( aiDto.getImposta().equals(0d) )
+                    AliquotaIvaDto aiDto = pdDto.getIdAliquotaIva() != null ? aiDao.getById(pdDto.getIdAliquotaIva()) : null;
+                    if ( aiDto != null )
                     {
-                        dettaglioLinea.setNatura(SdiFormatter.parseNaturaEsenzione(aiDto.getClasse()));
+                        riDto.setAliquotaIva(aiDto.getImposta());
+                        riDto.setTipologiaIva(aiDto.getClasse());
+                        dettaglioLinea.setAliquotaIVA(aiDto.getImposta());
+                        if ( aiDto.getImposta() != null && aiDto.getImposta().equals(0d) )
+                        {
+                            dettaglioLinea.setNatura(SdiFormatter.parseNaturaEsenzione(aiDto.getClasse()));
+                        }
+                    }
+                    else
+                    {
+                        riDto.setAliquotaIva(0d);
+                        dettaglioLinea.setAliquotaIVA(0d);
                     }
                     
                     if ( dto.getFlRitenutaAcconto() != null && dto.getFlRitenutaAcconto().intValue() == 1 )

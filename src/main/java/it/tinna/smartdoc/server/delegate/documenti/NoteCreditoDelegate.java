@@ -413,8 +413,15 @@ public class NoteCreditoDelegate extends BaseDelegate
                 else
                 {
                     RiepilogoIvaDto riDto = new RiepilogoIvaDto();
-                    riDto.setIdAliquotaIva(siDto.getIdAliquotaIva());
-                    AliquotaIvaDto aiDto = aiDao.getById(siDto.getIdAliquotaIva());
+                    riDto.setIdAliquotaIva(siDto.getIdAliquotaIva() == null ? 0 : siDto.getIdAliquotaIva());
+                    AliquotaIvaDto aiDto = siDto.getIdAliquotaIva() != null ? aiDao.getById(siDto.getIdAliquotaIva()) : null;
+                    if ( aiDto == null )
+                    {
+                        aiDto = new AliquotaIvaDto();
+                        aiDto.setImposta(0.0);
+                        aiDto.setCodice("N.D.");
+                        aiDto.setDescrizione("Aliquota non definita");
+                    }
                     pdDto.setPercentualeIvaFormattata(NumberUtils.formatAsPercentage(aiDto.getImposta()));
                     if ( riepilogoIva.contains(riDto) )
                     {
